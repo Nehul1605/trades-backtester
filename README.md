@@ -106,16 +106,6 @@ Follow these steps to set up the project locally.
 
 ---
 
-## 📸 Screenshots
-
-_(Add screenshots of your dashboard and analytics pages here)_
-
-|              Landing Page               |                  Dashboard                  |
-| :-------------------------------------: | :-----------------------------------------: |
-| <!-- ![Landing](public/landing.png) --> | <!-- ![Dashboard](public/dashboard.png) --> |
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
