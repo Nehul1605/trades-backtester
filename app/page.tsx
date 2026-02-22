@@ -75,9 +75,9 @@ export default async function HomePage() {
             <Button
               asChild
               size="sm"
-              className="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
+              className="h-8 px-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
             >
-              <Link href="/auth/sign-up">Get Started Free</Link>
+              <Link href="/auth/sign-up">Get Started</Link>
             </Button>
           </div>
         </div>
