@@ -1,63 +1,94 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { TrendingUp, LogOut, BarChart3, Home } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-import type { User } from "@supabase/supabase-js"
-import { ModeToggle } from "@/components/mode-toggle"
+import { Button } from "@/components/ui/button";
+import { Activity, LogOut, BarChart3, Home, Calendar, Link2 } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, usePathname } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
+import { ModeToggle } from "@/components/mode-toggle";
 
 interface DashboardHeaderProps {
-  user: User
+  user: User;
 }
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
-  const router = useRouter()
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/auth/login")
-  }
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  };
+
+  const navItems = [
+    { href: "/dashboard", label: "Journal", icon: Home },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/calendar", label: "Calendar", icon: Calendar, badge: "Soon" },
+    { href: "/integrations", label: "Connect", icon: Link2 },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-6 md:px-8 lg:px-10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20">
-            <TrendingUp className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold">TradeTracker Pro</h1>
-          </div>
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
+      <div className="flex h-14 items-center justify-between px-6">
+        {/* Left: Logo + Nav */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
+              <Activity className="w-4 h-4" />
+            </div>
+            <span className="text-base font-bold hidden sm:inline">
+              TradeTracker<span className="text-primary">Pro</span>
+            </span>
+          </Link>
+
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                  {item.badge && (
+                    <span className="ml-1 text-[8px] font-bold uppercase px-1 py-0 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/dashboard">
-              <Home className="w-4 h-4 mr-2" />
-              Dashboard
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/analytics">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Analytics
-            </Link>
-          </Button>
+        {/* Right: User + Actions */}
+        <div className="flex items-center gap-3">
           <ModeToggle />
-          <div className="flex items-center gap-3">
-            <div className="text-sm">
-              <p className="font-medium">{user.email}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
+          <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-[180px]">
+            {user.email}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </Button>
         </div>
       </div>
     </header>
-  )
+  );
 }

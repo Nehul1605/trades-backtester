@@ -1,19 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { AlertCircle, TrendingUp } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { AlertCircle, TrendingUp } from "lucide-react";
 
 export default async function ErrorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error: string }>
+  searchParams: Promise<{ error: string }>;
 }) {
-  const params = await searchParams
+  const params = await searchParams;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6 relative overflow-hidden">
       {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a2e_1px,transparent_1px),linear-gradient(to_bottom,#1a1a2e_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30" />
 
       <div className="w-full max-w-md relative z-10">
         <div className="flex flex-col gap-6">
@@ -23,7 +23,9 @@ export default async function ErrorPage({
               <TrendingUp className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-balance">TradeTracker Pro</h1>
+              <h1 className="text-2xl font-bold text-balance">
+                TradeTracker Pro
+              </h1>
             </div>
           </div>
 
@@ -34,12 +36,16 @@ export default async function ErrorPage({
                   <AlertCircle className="w-8 h-8 text-destructive" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold">Authentication Error</CardTitle>
+              <CardTitle className="text-2xl font-bold">
+                Authentication Error
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {params?.error ? (
                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="text-sm text-destructive text-center">Error: {params.error}</p>
+                  <p className="text-sm text-destructive text-center">
+                    Error: {params.error}
+                  </p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center">
@@ -54,5 +60,5 @@ export default async function ErrorPage({
         </div>
       </div>
     </div>
-  )
+  );
 }
