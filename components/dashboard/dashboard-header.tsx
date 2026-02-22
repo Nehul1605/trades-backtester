@@ -75,7 +75,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         {/* Right: User + Actions */}
         <div className="flex items-center gap-3">
           <ModeToggle />
-          <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-[180px]">
+          <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
             {user.email}
           </span>
           <Button

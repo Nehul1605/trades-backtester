@@ -268,7 +268,7 @@ export function TradeList({ trades }: TradeListProps) {
                           <div className="space-y-2">
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Strategy</span>
-                              <span className="truncate max-w-[100px] text-right font-bold" title={trade.strategy_name || "Manual"}>
+                              <span className="truncate max-w-25 text-right font-bold" title={trade.strategy_name || "Manual"}>
                                 {trade.strategy_name || "Manual"}
                               </span>
                             </div>

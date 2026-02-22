@@ -70,7 +70,7 @@ export function RecentTrades({ trades }: RecentTradesProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center h-[240px] text-muted-foreground text-xs gap-2 border border-dashed border-border/40 rounded-xl bg-secondary/5">
+          <div className="flex flex-col items-center justify-center h-60 text-muted-foreground text-xs gap-2 border border-dashed border-border/40 rounded-xl bg-secondary/5">
             <ReceiptText className="w-8 h-8 opacity-20" />
             No recent closed positions
           </div>

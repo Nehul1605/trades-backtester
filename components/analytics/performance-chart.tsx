@@ -58,7 +58,7 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
+          <div className="flex items-center justify-center h-75 text-muted-foreground text-sm">
             No closed trades to display
           </div>
         </CardContent>

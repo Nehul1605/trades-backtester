@@ -83,7 +83,7 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
           <CardDescription>Performance filtered by execution logic</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center h-[240px] text-muted-foreground text-xs gap-2 border border-dashed border-border/40 rounded-xl bg-secondary/5">
+          <div className="flex flex-col items-center justify-center h-60 text-muted-foreground text-xs gap-2 border border-dashed border-border/40 rounded-xl bg-secondary/5">
             <BarChart3 className="w-8 h-8 opacity-20" />
             No strategy data available
           </div>

@@ -13,7 +13,7 @@ export default async function ErrorPage({
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6 relative overflow-hidden">
       {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-size-[4rem_4rem] opacity-30" />
 
       <div className="w-full max-w-md relative z-10">
         <div className="flex flex-col gap-6">

@@ -53,7 +53,7 @@ export function TradeTypeDistribution({ trades }: TradeTypeDistributionProps) {
           <CardDescription>Long vs Short trade performance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
+          <div className="flex items-center justify-center h-75 text-muted-foreground text-sm">
             No closed trades to display
           </div>
         </CardContent>
@@ -111,7 +111,7 @@ export function TradeTypeDistribution({ trades }: TradeTypeDistributionProps) {
               formatter={(value: any, name: string, props: any) => {
                 const pnl = props.payload.pnl;
                 return [
-                  <div key={name} className="flex flex-col gap-2 min-w-[120px]">
+                  <div key={name} className="flex flex-col gap-2 min-w-30">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Volume:</span>
                       <span className="text-foreground font-bold">{value} Trades</span>
