@@ -22,6 +22,10 @@ interface Trade {
   status: string;
   broker_account_id?: string;
   quantity: number;
+  entry_price: number;
+  exit_price: number | null;
+  entry_price_text?: string | null;
+  exit_price_text?: string | null;
 }
 
 interface RecentTradesProps {
@@ -124,15 +128,28 @@ export function RecentTrades({ trades }: RecentTradesProps) {
                       {trade.trade_type}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
-                      <Calendar className="w-3 h-3 text-muted-foreground/60" />
-                      {formatDate(trade.entry_date)}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground/40">•</span>
-                    <span className="text-[11px] text-muted-foreground font-mono font-medium">
-                      {trade.quantity} lots
-                    </span>
+                  <div className="flex flex-col gap-1 mt-1">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                        <Calendar className="w-3 h-3 text-muted-foreground/60" />
+                        {formatDate(trade.entry_date)}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/40">•</span>
+                      <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                        {trade.quantity} lots
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">Entry @</span>
+                      <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                        {trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/40">•</span>
+                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">Exit @</span>
+                      <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                        {trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

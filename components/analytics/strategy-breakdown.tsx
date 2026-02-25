@@ -14,10 +14,17 @@ import { useState } from "react";
 
 interface Trade {
   id: string;
+  symbol: string;
   strategy_name: string | null;
   pnl: number | null;
   pnl_percentage: number | null;
   status: string;
+  entry_price: number;
+  exit_price: number | null;
+  entry_price_text?: string | null;
+  exit_price_text?: string | null;
+  entry_date: string;
+  trade_type: string;
 }
 
 interface StrategyBreakdownProps {
@@ -26,6 +33,7 @@ interface StrategyBreakdownProps {
 
 export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
   const [visibleCount, setVisibleCount] = useState(3);
+  const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null);
   const closedTrades = trades.filter(
     (t) => t.status === "closed" && t.pnl !== null && t.strategy_name,
   );
@@ -68,8 +76,15 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2,
     }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
   };
 
   if (strategies.length === 0) {
@@ -113,8 +128,11 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
       <CardContent className="px-5 pb-6">
         <div className="space-y-5">
           {strategies.map((strategy) => (
-            <div key={strategy.name} className="space-y-3 group cursor-default">
-              <div className="flex items-center justify-between">
+            <div key={strategy.name} className="space-y-3">
+              <div 
+                className="group cursor-pointer flex items-center justify-between hover:bg-secondary/5 p-1 rounded-lg transition-all"
+                onClick={() => setExpandedStrategy(expandedStrategy === strategy.name ? null : strategy.name)}
+              >
                 <div className="flex items-center gap-2.5">
                   <div className={`p-2 rounded-md ${strategy.totalPnL >= 0 ? "bg-profit/10" : "bg-loss/10"}`}>
                     {strategy.totalPnL >= 0 ? <TrendingUp className="w-4 h-4 text-profit" /> : <TrendingDown className="w-4 h-4 text-loss" />}
@@ -128,11 +146,15 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
                     </p>
                     <p className="text-[11px] text-muted-foreground font-medium uppercase opacity-60">Cumulative</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                  {expandedStrategy === strategy.name ? (
+                    <ChevronDown className="w-4 h-4 text-primary transition-colors" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                  )}
                 </div>
               </div>
               
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" onClick={() => setExpandedStrategy(expandedStrategy === strategy.name ? null : strategy.name)}>
                 <div className="flex justify-between text-[11px]">
                   <div className="flex gap-3">
                     <span className="text-muted-foreground">Win Rate: <span className="text-foreground font-mono font-bold">{strategy.winRate.toFixed(1)}%</span></span>
@@ -149,6 +171,45 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
                   />
                 </div>
               </div>
+
+              {expandedStrategy === strategy.name && (
+                <div className="mt-4 space-y-2 border-l-2 border-primary/20 pl-4 py-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-3 tracking-widest">Recent Trades for {strategy.name}</p>
+                  <div className="space-y-3">
+                    {closedTrades
+                      .filter(t => (t.strategy_name || "Unknown") === strategy.name)
+                      .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
+                      .slice(0, 5)
+                      .map(trade => (
+                        <div key={trade.id} className="flex items-center justify-between text-[11px] bg-secondary/5 p-2 rounded border border-border/10">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold">{trade.symbol}</span>
+                              <Badge variant="outline" className="text-[8px] h-3.5 px-1 font-bold uppercase">{trade.trade_type}</Badge>
+                              <span className="text-muted-foreground/60">{formatDate(trade.entry_date)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground font-mono">
+                              <span>Entry: {trade.entry_price_text ?? trade.entry_price.toFixed(2)}</span>
+                              <span>•</span>
+                              <span>Exit: {trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-bold font-mono ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}>
+                              {trade.pnl ? formatCurrency(trade.pnl) : "—"}
+                            </p>
+                            <p className={`text-[9px] font-mono opacity-80 ${trade.pnl_percentage && trade.pnl_percentage >= 0 ? "text-profit" : "text-loss"}`}>
+                              {trade.pnl_percentage ? `${trade.pnl_percentage.toFixed(2)}%` : "0.00%"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    {strategy.count > 5 && (
+                      <p className="text-[10px] text-center text-muted-foreground italic">Showing last 5 of {strategy.count} trades</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
