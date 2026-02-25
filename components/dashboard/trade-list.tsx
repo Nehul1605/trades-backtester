@@ -359,7 +359,7 @@ export function TradeList({ trades }: TradeListProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="grid grid-cols-5 gap-4 items-center">
                     <div className="space-y-1">
                       <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">P&L</p>
                       <p className={`text-sm font-bold font-mono ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}>
@@ -375,7 +375,13 @@ export function TradeList({ trades }: TradeListProps) {
                     <div className="space-y-1">
                       <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Entry</p>
                       <p className="text-sm font-bold font-mono text-foreground/80">
-                        {trade.entry_price_text ?? trade.entry_price.toFixed(2)}
+                        {trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Exit</p>
+                      <p className="text-sm font-bold font-mono text-foreground/80">
+                        {trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}
                       </p>
                     </div>
                     <div className="text-right space-y-1">
@@ -395,6 +401,14 @@ export function TradeList({ trades }: TradeListProps) {
                           </p>
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Entry</span>
+                              <span className="font-mono font-bold text-foreground/90">{trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Exit</span>
+                              <span className="font-mono font-bold text-foreground/90">{trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</span>
+                            </div>
+                            <div className="flex justify-between text-xs mt-1 pt-1 border-t border-border/10">
                               <span className="text-muted-foreground">Entry Date</span>
                               <span className="font-mono font-bold">{formatDate(trade.entry_date)}</span>
                             </div>
