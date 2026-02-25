@@ -10,7 +10,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight, RefreshCw, Calendar, Clock, ReceiptText, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw,
+  Calendar,
+  Clock,
+  ReceiptText,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface Trade {
   id: string;
@@ -40,7 +49,7 @@ export function RecentTrades({ trades }: RecentTradesProps) {
       (a, b) =>
         new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime(),
     );
-  
+
   const recentTrades = allRecent.slice(0, visibleCount);
   const hasMore = allRecent.length > visibleCount;
 
@@ -48,7 +57,7 @@ export function RecentTrades({ trades }: RecentTradesProps) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
@@ -59,7 +68,7 @@ export function RecentTrades({ trades }: RecentTradesProps) {
     });
   };
 
-  const isBrokerSynced = trades.some(t => t.broker_account_id);
+  const isBrokerSynced = trades.some((t) => t.broker_account_id);
 
   if (recentTrades.length === 0) {
     return (
@@ -68,9 +77,13 @@ export function RecentTrades({ trades }: RecentTradesProps) {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
-              <CardTitle className="text-sm font-bold uppercase tracking-wider">Recent Activity</CardTitle>
+              <CardTitle className="text-sm font-bold uppercase tracking-wider">
+                Recent Activity
+              </CardTitle>
             </div>
-            <CardDescription className="text-[10px]">Your latest closed executions</CardDescription>
+            <CardDescription className="text-[10px]">
+              Your latest closed executions
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -89,12 +102,19 @@ export function RecentTrades({ trades }: RecentTradesProps) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            <CardTitle className="text-sm font-bold uppercase tracking-wider">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">
+              Recent Activity
+            </CardTitle>
           </div>
-          <CardDescription className="text-[10px]">Your latest closed executions</CardDescription>
+          <CardDescription className="text-[10px]">
+            Your latest closed executions
+          </CardDescription>
         </div>
         {isBrokerSynced && (
-          <Badge variant="outline" className="text-[9px] text-emerald-500 bg-emerald-500/5 border-emerald-500/20 gap-1 px-2 py-0">
+          <Badge
+            variant="outline"
+            className="text-[9px] text-emerald-500 bg-emerald-500/5 border-emerald-500/20 gap-1 px-2 py-0"
+          >
             <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
             LIVE
           </Badge>
@@ -123,8 +143,13 @@ export function RecentTrades({ trades }: RecentTradesProps) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-sm font-bold tracking-tight">{trade.symbol}</span>
-                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-bold uppercase border-border/60">
+                    <span className="text-sm font-bold tracking-tight">
+                      {trade.symbol}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] h-4 px-1.5 font-bold uppercase border-border/60"
+                    >
                       {trade.trade_type}
                     </Badge>
                   </div>
@@ -134,31 +159,52 @@ export function RecentTrades({ trades }: RecentTradesProps) {
                         <Calendar className="w-3 h-3 text-muted-foreground/60" />
                         {formatDate(trade.entry_date)}
                       </span>
-                      <span className="text-[11px] text-muted-foreground/40">•</span>
+                      <span className="text-[11px] text-muted-foreground/40">
+                        •
+                      </span>
                       <span className="text-[11px] text-muted-foreground font-mono font-medium">
                         {trade.quantity} lots
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">Entry @</span>
-                      <span className="text-[11px] text-muted-foreground font-mono font-medium">
-                        {trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}
+                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">
+                        Entry @
                       </span>
-                      <span className="text-[11px] text-muted-foreground/40">•</span>
-                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">Exit @</span>
                       <span className="text-[11px] text-muted-foreground font-mono font-medium">
-                        {trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}
+                        {trade.entry_price_text ??
+                          (trade.entry_price
+                            ? trade.entry_price.toFixed(2)
+                            : "—")}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/40">
+                        •
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60 font-bold tracking-wider uppercase">
+                        Exit @
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                        {trade.exit_price_text ??
+                          (trade.exit_price
+                            ? trade.exit_price.toFixed(2)
+                            : "—")}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-sm font-mono font-bold ${(trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"}`}>
-                  {(trade.pnl || 0) >= 0 ? "+" : ""}{formatCurrency(trade.pnl || 0)}
+                <p
+                  className={`text-sm font-mono font-bold ${(trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"}`}
+                >
+                  {(trade.pnl || 0) >= 0 ? "+" : ""}
+                  {formatCurrency(trade.pnl || 0)}
                 </p>
-                <p className={`text-[11px] font-mono font-bold opacity-80 ${(trade.pnl_percentage || 0) >= 0 ? "text-profit" : "text-loss"}`}>
-                  {trade.pnl_percentage ? `${(trade.pnl_percentage >= 0 ? "+" : "")}${trade.pnl_percentage.toFixed(2)}%` : "0.00%"}
+                <p
+                  className={`text-[11px] font-mono font-bold opacity-80 ${(trade.pnl_percentage || 0) >= 0 ? "text-profit" : "text-loss"}`}
+                >
+                  {trade.pnl_percentage
+                    ? `${trade.pnl_percentage >= 0 ? "+" : ""}${trade.pnl_percentage.toFixed(2)}%`
+                    : "0.00%"}
                 </p>
               </div>
             </div>
@@ -167,20 +213,20 @@ export function RecentTrades({ trades }: RecentTradesProps) {
 
         <div className="flex gap-2 mt-6 pt-2">
           {hasMore && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="flex-1 text-[11px] h-9 uppercase font-bold text-muted-foreground hover:text-primary hover:bg-primary/5 border border-dashed border-border/40"
-              onClick={() => setVisibleCount(prev => prev + 3)}
+              onClick={() => setVisibleCount((prev) => prev + 3)}
             >
               Load More Activity
               <ChevronDown className="ml-1 w-4 h-4" />
             </Button>
           )}
           {visibleCount > 3 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className={`${!hasMore ? "w-full" : "w-24"} text-[11px] h-9 uppercase font-bold text-muted-foreground hover:text-destructive/80 hover:bg-loss/5 border border-dashed border-border/40`}
               onClick={() => setVisibleCount(3)}
             >
