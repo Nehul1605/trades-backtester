@@ -249,22 +249,11 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
                       .filter(
                         (t) => (t.strategy_name || "Unknown") === strategy.name,
                       )
-                      .sort((a, b) => {
-                        const dateA = new Date(
-                          a.exit_date || a.entry_date,
-                        ).getTime();
-                        const dateB = new Date(
-                          b.exit_date || b.entry_date,
-                        ).getTime();
-                        if (dateB !== dateA) return dateB - dateA;
-                        if (a.created_at && b.created_at) {
-                          return (
-                            new Date(b.created_at).getTime() -
-                            new Date(a.created_at).getTime()
-                          );
-                        }
-                        return 0;
-                      })
+                      .sort(
+                        (a, b) =>
+                          new Date(b.entry_date).getTime() -
+                          new Date(a.entry_date).getTime(),
+                      )
                       .slice(0, 5)
                       .map((trade) => (
                         <div

@@ -46,19 +46,10 @@ export function RecentTrades({ trades }: RecentTradesProps) {
   const [visibleCount, setVisibleCount] = useState(3);
   const allRecent = trades
     .filter((t) => t.status === "closed" && t.pnl !== null)
-    .sort((a, b) => {
-      const dateA = new Date(a.exit_date || a.entry_date).getTime();
-      const dateB = new Date(b.exit_date || b.entry_date).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-
-      // Tie-breaker: creation time
-      if (a.created_at && b.created_at) {
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      }
-      return 0;
-    });
+    .sort(
+      (a, b) =>
+        new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime(),
+    );
 
   const recentTrades = allRecent.slice(0, visibleCount);
   const hasMore = allRecent.length > visibleCount;

@@ -138,39 +138,8 @@ export function TradeList({ trades }: TradeListProps) {
       ? trades
       : trades.filter((t) => t.symbol === filterSymbol);
 
-  const openTrades = filtered
-    .filter((t) => t.status === "open")
-    .sort((a, b) => {
-      const dateA = new Date(a.entry_date).getTime();
-      const dateB = new Date(b.entry_date).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      if (a.created_at && b.created_at) {
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      }
-      return 0;
-    });
-
-  const closedTrades = filtered
-    .filter((t) => t.status === "closed")
-    .sort((a, b) => {
-      // Sort by exit_date descending
-      const dateA = new Date(a.exit_date || a.entry_date).getTime();
-      const dateB = new Date(b.exit_date || b.entry_date).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      // Secondary sort: entry_date
-      const entryA = new Date(a.entry_date).getTime();
-      const entryB = new Date(b.entry_date).getTime();
-      if (entryB !== entryA) return entryB - entryA;
-      // Tie breaker: created_at
-      if (a.created_at && b.created_at) {
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      }
-      return 0;
-    });
+  const openTrades = filtered.filter((t) => t.status === "open");
+  const closedTrades = filtered.filter((t) => t.status === "closed");
 
   const hasMore = closedTrades.length > visibleCount;
 
