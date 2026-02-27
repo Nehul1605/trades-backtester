@@ -9,10 +9,20 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, ExternalLink, History, ChevronDown, ChevronUp, LayoutList, Calendar, Target, Info } from "lucide-react";
+import {
+  Trash2,
+  ExternalLink,
+  History,
+  ChevronDown,
+  ChevronUp,
+  LayoutList,
+  Calendar,
+  Target,
+  Info,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -65,17 +75,105 @@ export function TradeList({ trades }: TradeListProps) {
   const [visibleCount, setVisibleCount] = useState(4);
   const [expandedTradeId, setExpandedTradeId] = useState<string | null>(null);
 
+  // Auto-recalibrate P&L for existing trades if they were calculated with the old logic
+  useEffect(() => {
+    const recalibrate = async () => {
+      const supabase = createClient();
+      const updates = trades
+        .filter(
+          (t) => t.status === "closed" && (t.exit_price || t.exit_price_text),
+        )
+        .map((t) => {
+          try {
+            const { pnl: calcPnl, pnlPct } = computePnlUSD({
+              symbol: t.symbol,
+              entryPrice: t.entry_price_text || t.entry_price,
+              exitPrice: t.exit_price_text || t.exit_price!,
+              quantity: t.quantity,
+              tradeType: t.trade_type as "long" | "short",
+            });
+
+            const currentPnl = t.pnl || 0;
+            const currentPct = t.pnl_percentage || 0;
+
+            if (
+              Math.abs(currentPnl - calcPnl) > 0.01 ||
+              Math.abs(currentPct - pnlPct) > 0.01
+            ) {
+              return { id: t.id, pnl: calcPnl, pnl_percentage: pnlPct };
+            }
+          } catch (e) {
+            console.error("Error recalibrating trade", t.id, e);
+          }
+          return null;
+        })
+        .filter(
+          (u): u is { id: string; pnl: number; pnl_percentage: number } =>
+            u !== null,
+        );
+
+      if (updates.length > 0) {
+        console.log(
+          `[v0] Recalibrating ${updates.length} trades with new P&L logic...`,
+        );
+        for (const update of updates) {
+          await supabase
+            .from("trades")
+            .update({
+              pnl: update.pnl,
+              pnl_percentage: update.pnl_percentage,
+            })
+            .eq("id", update.id);
+        }
+        router.refresh();
+      }
+    };
+    recalibrate();
+  }, [trades.length]);
+
   const symbols = Array.from(new Set(trades.map((t) => t.symbol))).sort();
 
   const filtered =
     filterSymbol === "ALL"
       ? trades
       : trades.filter((t) => t.symbol === filterSymbol);
-  
-  const openTrades = filtered.filter((t) => t.status === "open");
-  const closedTrades = filtered.filter((t) => t.status === "closed");
-  
+
+  const openTrades = filtered
+    .filter((t) => t.status === "open")
+    .sort((a, b) => {
+      const dateA = new Date(a.entry_date).getTime();
+      const dateB = new Date(b.entry_date).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      if (a.created_at && b.created_at) {
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+      return 0;
+    });
+
+  const closedTrades = filtered
+    .filter((t) => t.status === "closed")
+    .sort((a, b) => {
+      // Sort by exit_date descending
+      const dateA = new Date(a.exit_date || a.entry_date).getTime();
+      const dateB = new Date(b.exit_date || b.entry_date).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      // Secondary sort: entry_date
+      const entryA = new Date(a.entry_date).getTime();
+      const entryB = new Date(b.entry_date).getTime();
+      if (entryB !== entryA) return entryB - entryA;
+      // Tie breaker: created_at
+      if (a.created_at && b.created_at) {
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+      return 0;
+    });
+
   const hasMore = closedTrades.length > visibleCount;
+
   const displayedClosedTrades = closedTrades.slice(0, visibleCount);
 
   const handleDelete = async (id: string) => {
@@ -96,11 +194,21 @@ export function TradeList({ trades }: TradeListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
   const formatCurrency = (value: number) => {
@@ -166,34 +274,52 @@ export function TradeList({ trades }: TradeListProps) {
               </span>
               Open Trades
             </h4>
-            <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20">{openTrades.length}</Badge>
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20"
+            >
+              {openTrades.length}
+            </Badge>
           </div>
-          
+
           {openTrades.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center italic">No active trades currently open.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center italic">
+              No active trades currently open.
+            </p>
           ) : (
             <div className="space-y-3">
               {openTrades.map((trade) => (
                 <div
                   key={trade.id}
                   className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer group ${
-                    expandedTradeId === trade.id 
-                      ? "border-emerald-500/50 bg-emerald-500/10 shadow-sm" 
+                    expandedTradeId === trade.id
+                      ? "border-emerald-500/50 bg-emerald-500/10 shadow-sm"
                       : "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10"
                   }`}
-                  onClick={() => setExpandedTradeId(expandedTradeId === trade.id ? null : trade.id)}
+                  onClick={() =>
+                    setExpandedTradeId(
+                      expandedTradeId === trade.id ? null : trade.id,
+                    )
+                  }
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-base tracking-tight">{trade.symbol}</span>
+                      <span className="font-bold text-base tracking-tight">
+                        {trade.symbol}
+                      </span>
                       <Badge
-                        variant={trade.trade_type === "long" ? "default" : "secondary"}
+                        variant={
+                          trade.trade_type === "long" ? "default" : "secondary"
+                        }
                         className="text-[11px] px-2 h-5 uppercase font-bold"
                       >
                         {trade.trade_type}
                       </Badge>
                       {trade.broker_account_id && (
-                        <Badge variant="outline" className="text-[10px] h-4.5 border-emerald-500/30 text-emerald-500 font-semibold px-2">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] h-4.5 border-emerald-500/30 text-emerald-500 font-semibold px-2"
+                        >
                           SYNCED
                         </Badge>
                       )}
@@ -203,9 +329,15 @@ export function TradeList({ trades }: TradeListProps) {
                         <ChevronDown className="w-4 h-4 text-muted-foreground/40 transition-transform group-hover:text-muted-foreground/60" />
                       )}
                     </div>
-                    
-                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <CloseTradeButton trade={trade} onClosed={() => router.refresh()} />
+
+                    <div
+                      className="flex items-center gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <CloseTradeButton
+                        trade={trade}
+                        onClosed={() => router.refresh()}
+                      />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -220,19 +352,25 @@ export function TradeList({ trades }: TradeListProps) {
 
                   <div className="grid grid-cols-3 gap-4 items-center">
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">Entry Price</p>
+                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">
+                        Entry Price
+                      </p>
                       <p className="text-sm font-bold font-mono text-foreground">
                         {trade.entry_price_text ?? trade.entry_price.toFixed(2)}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">Quantity</p>
+                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">
+                        Quantity
+                      </p>
                       <p className="text-sm font-bold font-mono text-foreground">
                         {trade.quantity}
                       </p>
                     </div>
                     <div className="text-right space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">Entered On</p>
+                      <p className="text-[11px] text-muted-foreground leading-none uppercase font-bold tracking-wider opacity-80">
+                        Entered On
+                      </p>
                       <p className="text-[12px] font-bold text-muted-foreground font-mono">
                         {formatDate(trade.entry_date)}
                       </p>
@@ -248,16 +386,32 @@ export function TradeList({ trades }: TradeListProps) {
                           </p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Status</span>
-                              <span className="font-mono text-emerald-500 font-bold uppercase tracking-tight">{trade.status}</span>
+                              <span className="text-muted-foreground">
+                                Status
+                              </span>
+                              <span className="font-mono text-emerald-500 font-bold uppercase tracking-tight">
+                                {trade.status}
+                              </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Stop Loss</span>
-                              <span className="font-mono font-bold">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "No SL Entry"}</span>
+                              <span className="text-muted-foreground">
+                                Stop Loss
+                              </span>
+                              <span className="font-mono font-bold">
+                                {trade.stop_loss
+                                  ? trade.stop_loss.toFixed(2)
+                                  : "No SL Entry"}
+                              </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Take Profit</span>
-                              <span className="font-mono font-bold">{trade.take_profit ? trade.take_profit.toFixed(2) : "No TP Entry"}</span>
+                              <span className="text-muted-foreground">
+                                Take Profit
+                              </span>
+                              <span className="font-mono font-bold">
+                                {trade.take_profit
+                                  ? trade.take_profit.toFixed(2)
+                                  : "No TP Entry"}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -267,14 +421,25 @@ export function TradeList({ trades }: TradeListProps) {
                           </p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Strategy</span>
-                              <span className="truncate max-w-25 text-right font-bold" title={trade.strategy_name || "Manual"}>
+                              <span className="text-muted-foreground">
+                                Strategy
+                              </span>
+                              <span
+                                className="truncate max-w-25 text-right font-bold"
+                                title={trade.strategy_name || "Manual"}
+                              >
                                 {trade.strategy_name || "Manual"}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Connection</span>
-                              <span className="text-right font-bold">{trade.broker_account_id ? "MT5/Exness Sync" : "Manual Log"}</span>
+                              <span className="text-muted-foreground">
+                                Connection
+                              </span>
+                              <span className="text-right font-bold">
+                                {trade.broker_account_id
+                                  ? "MT5/Exness Sync"
+                                  : "Manual Log"}
+                              </span>
                             </div>
                             {trade.notes && (
                               <div className="mt-2 pt-2 border-t border-border/20 text-xs italic text-muted-foreground/80 leading-relaxed font-serif">
@@ -298,9 +463,14 @@ export function TradeList({ trades }: TradeListProps) {
               <History className="w-5 h-5 text-muted-foreground/60" />
               Trade Performance History
             </h4>
-            <Badge variant="outline" className="bg-secondary/30 px-3 py-1 text-sm">{closedTrades.length}</Badge>
+            <Badge
+              variant="outline"
+              className="bg-secondary/30 px-3 py-1 text-sm"
+            >
+              {closedTrades.length}
+            </Badge>
           </div>
-          
+
           {closedTrades.length === 0 ? (
             <p className="text-sm text-muted-foreground py-10 text-center bg-secondary/10 rounded-xl border border-dashed border-border/50">
               Your historical data will appear here.
@@ -311,23 +481,34 @@ export function TradeList({ trades }: TradeListProps) {
                 <div
                   key={trade.id}
                   className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer group ${
-                    expandedTradeId === trade.id 
-                      ? "border-primary/50 bg-primary/10 shadow-md ring-1 ring-primary/20" 
+                    expandedTradeId === trade.id
+                      ? "border-primary/50 bg-primary/10 shadow-md ring-1 ring-primary/20"
                       : "border-border/40 bg-card/30 hover:bg-card/60 hover:shadow-sm"
                   }`}
-                  onClick={() => setExpandedTradeId(expandedTradeId === trade.id ? null : trade.id)}
+                  onClick={() =>
+                    setExpandedTradeId(
+                      expandedTradeId === trade.id ? null : trade.id,
+                    )
+                  }
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-base tracking-tight">{trade.symbol}</span>
+                      <span className="font-bold text-base tracking-tight">
+                        {trade.symbol}
+                      </span>
                       <Badge
-                        variant={trade.trade_type === "long" ? "default" : "secondary"}
+                        variant={
+                          trade.trade_type === "long" ? "default" : "secondary"
+                        }
                         className="text-[11px] px-2 h-5 uppercase font-bold"
                       >
                         {trade.trade_type}
                       </Badge>
                       {trade.broker_account_id && (
-                        <Badge variant="outline" className="text-[10px] h-4.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 px-2 font-bold">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] h-4.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 px-2 font-bold"
+                        >
                           SYNCED
                         </Badge>
                       )}
@@ -337,11 +518,24 @@ export function TradeList({ trades }: TradeListProps) {
                         <ChevronDown className="w-4 h-4 text-muted-foreground/40 transition-transform group-hover:text-muted-foreground/60" />
                       )}
                     </div>
-                    
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
+
+                    <div
+                      className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {trade.screenshot_url && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="View Screenshot">
-                          <a href={trade.screenshot_url} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                          title="View Screenshot"
+                        >
+                          <a
+                            href={trade.screenshot_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <ExternalLink className="w-4 h-4" />
                           </a>
                         </Button>
@@ -361,31 +555,53 @@ export function TradeList({ trades }: TradeListProps) {
 
                   <div className="grid grid-cols-5 gap-4 items-center">
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">P&L</p>
-                      <p className={`text-sm font-bold font-mono ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}>
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">
+                        P&L
+                      </p>
+                      <p
+                        className={`text-sm font-bold font-mono ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}
+                      >
                         {trade.pnl ? formatCurrency(trade.pnl) : "—"}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Return</p>
-                      <p className={`text-sm font-bold font-mono ${(trade.pnl_percentage || 0) >= 0 ? "text-profit/90" : "text-loss/90"}`}>
-                        {trade.pnl_percentage ? `${trade.pnl_percentage.toFixed(2)}%` : "—"}
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">
+                        Return
+                      </p>
+                      <p
+                        className={`text-sm font-bold font-mono ${(trade.pnl_percentage || 0) >= 0 ? "text-profit/90" : "text-loss/90"}`}
+                      >
+                        {trade.pnl_percentage
+                          ? `${trade.pnl_percentage.toFixed(2)}%`
+                          : "—"}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Entry</p>
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">
+                        Entry
+                      </p>
                       <p className="text-sm font-bold font-mono text-foreground/80">
-                        {trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}
+                        {trade.entry_price_text ??
+                          (trade.entry_price
+                            ? trade.entry_price.toFixed(2)
+                            : "—")}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Exit</p>
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">
+                        Exit
+                      </p>
                       <p className="text-sm font-bold font-mono text-foreground/80">
-                        {trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}
+                        {trade.exit_price_text ??
+                          (trade.exit_price
+                            ? trade.exit_price.toFixed(2)
+                            : "—")}
                       </p>
                     </div>
                     <div className="text-right space-y-1">
-                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">Closed On</p>
+                      <p className="text-[11px] text-muted-foreground leading-none font-bold uppercase tracking-wider opacity-60">
+                        Closed On
+                      </p>
                       <p className="text-[11px] font-bold text-muted-foreground font-mono">
                         {trade.exit_date ? formatDate(trade.exit_date) : "—"}
                       </p>
@@ -397,66 +613,110 @@ export function TradeList({ trades }: TradeListProps) {
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="bg-background/20 p-3 rounded-xl border border-border/20 shadow-sm">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
-                             Execution Log
+                            Execution Log
                           </p>
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Entry</span>
-                              <span className="font-mono font-bold text-foreground/90">{trade.entry_price_text ?? (trade.entry_price ? trade.entry_price.toFixed(2) : "—")}</span>
+                              <span className="text-muted-foreground">
+                                Entry
+                              </span>
+                              <span className="font-mono font-bold text-foreground/90">
+                                {trade.entry_price_text ??
+                                  (trade.entry_price
+                                    ? trade.entry_price.toFixed(2)
+                                    : "—")}
+                              </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Exit</span>
-                              <span className="font-mono font-bold text-foreground/90">{trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</span>
+                              <span className="text-muted-foreground">
+                                Exit
+                              </span>
+                              <span className="font-mono font-bold text-foreground/90">
+                                {trade.exit_price_text ??
+                                  (trade.exit_price
+                                    ? trade.exit_price.toFixed(2)
+                                    : "—")}
+                              </span>
                             </div>
                             <div className="flex justify-between text-xs mt-1 pt-1 border-t border-border/10">
-                              <span className="text-muted-foreground">Entry Date</span>
-                              <span className="font-mono font-bold">{formatDate(trade.entry_date)}</span>
+                              <span className="text-muted-foreground">
+                                Entry Date
+                              </span>
+                              <span className="font-mono font-bold">
+                                {formatDate(trade.entry_date)}
+                              </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Exit Date</span>
-                              <span className="font-mono font-bold">{trade.exit_date ? formatDate(trade.exit_date) : "—"}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-background/20 p-3 rounded-xl border border-border/20 shadow-sm">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
-                             Position Data
-                          </p>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Volume/Lots</span>
-                              <span className="font-mono font-bold">{trade.quantity}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Order Type</span>
-                              <span className="uppercase font-bold text-[10px] bg-secondary/50 px-2 py-0.5 rounded tracking-widest">{trade.trade_type}</span>
+                              <span className="text-muted-foreground">
+                                Exit Date
+                              </span>
+                              <span className="font-mono font-bold">
+                                {trade.exit_date
+                                  ? formatDate(trade.exit_date)
+                                  : "—"}
+                              </span>
                             </div>
                           </div>
                         </div>
                         <div className="bg-background/20 p-3 rounded-xl border border-border/20 shadow-sm">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
-                             Profit Metrics
+                            Position Data
                           </p>
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Final P&L</span>
-                              <span className={`font-mono font-bold ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}>
+                              <span className="text-muted-foreground">
+                                Volume/Lots
+                              </span>
+                              <span className="font-mono font-bold">
+                                {trade.quantity}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                Order Type
+                              </span>
+                              <span className="uppercase font-bold text-[10px] bg-secondary/50 px-2 py-0.5 rounded tracking-widest">
+                                {trade.trade_type}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-background/20 p-3 rounded-xl border border-border/20 shadow-sm">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
+                            Profit Metrics
+                          </p>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                Final P&L
+                              </span>
+                              <span
+                                className={`font-mono font-bold ${trade.pnl && trade.pnl >= 0 ? "text-profit" : "text-loss"}`}
+                              >
                                 {trade.pnl ? formatCurrency(trade.pnl) : "—"}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">ROI (%)</span>
-                              <span className={`font-mono font-bold ${trade.pnl_percentage && trade.pnl_percentage >= 0 ? "text-profit/90" : "text-loss/90"}`}>
-                                {trade.pnl_percentage ? `${trade.pnl_percentage.toFixed(2)}%` : "—"}
+                              <span className="text-muted-foreground">
+                                ROI (%)
+                              </span>
+                              <span
+                                className={`font-mono font-bold ${trade.pnl_percentage && trade.pnl_percentage >= 0 ? "text-profit/90" : "text-loss/90"}`}
+                              >
+                                {trade.pnl_percentage
+                                  ? `${trade.pnl_percentage.toFixed(2)}%`
+                                  : "—"}
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
-                      
+
                       {trade.notes && (
                         <div className="bg-secondary/20 p-3 rounded-xl text-xs text-muted-foreground leading-relaxed">
-                          <p className="font-bold text-[10px] uppercase mb-1 tracking-widest text-foreground/70">Execution Notes</p>
+                          <p className="font-bold text-[10px] uppercase mb-1 tracking-widest text-foreground/70">
+                            Execution Notes
+                          </p>
                           &quot;{trade.notes}&quot;
                         </div>
                       )}
@@ -464,23 +724,23 @@ export function TradeList({ trades }: TradeListProps) {
                   )}
                 </div>
               ))}
-              
+
               <div className="flex gap-4 pt-2">
                 {hasMore && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="flex-1 py-6 text-xs uppercase font-bold tracking-wider text-muted-foreground hover:text-primary hover:bg-primary/5 mt-2 border border-dashed border-border/60 transition-all"
-                    onClick={() => setVisibleCount(prev => prev + 4)}
+                    onClick={() => setVisibleCount((prev) => prev + 4)}
                   >
                     View More History
                     <ChevronDown className="ml-2 w-5 h-5" />
                   </Button>
                 )}
                 {visibleCount > 4 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className={`${!hasMore ? "w-full" : "w-40"} py-6 text-xs uppercase font-bold tracking-wider text-muted-foreground hover:text-destructive/80 hover:bg-destructive/5 mt-2 border border-dashed border-border/60 transition-all`}
                     onClick={() => setVisibleCount(4)}
                   >
@@ -506,14 +766,32 @@ function CloseTradeButton({
 }) {
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
-  const [exitDate, setExitDate] = useState<string>("");
+  const [exitDate, setExitDate] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
-  const today = new Date().toISOString().split("T")[0];
 
   const handleClose = async () => {
     setSaving(true);
     try {
+      // Build exit date using current time but user selected date
+      const [y, m, d] = exitDate.split("-").map(Number);
+      const now = new Date();
+      const dt = new Date();
+      dt.setFullYear(y, m - 1, d);
+      dt.setHours(
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds(),
+      );
+      const finalExitDate = dt.toISOString();
+
       const { pnl, pnlPct } = computePnlUSD({
         symbol: trade.symbol,
         entryPrice: (trade.entry_price_text ?? trade.entry_price) as any,
@@ -528,7 +806,7 @@ function CloseTradeButton({
           status: "closed",
           exit_price_text: exitPrice,
           exit_price: Number.parseFloat(exitPrice),
-          exit_date: exitDate || null,
+          exit_date: finalExitDate,
           pnl,
           pnl_percentage: pnlPct,
         })
@@ -568,11 +846,11 @@ function CloseTradeButton({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="exit_date">Exit Date</Label>
+            <Label htmlFor="exit_date">Exit Date (IST)</Label>
             <Input
               id="exit_date"
               type="date"
-              max={today}
+              max={new Date().toISOString().split("T")[0]}
               value={exitDate}
               onChange={(e) => setExitDate(e.target.value)}
             />

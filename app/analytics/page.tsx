@@ -23,7 +23,8 @@ export default async function AnalyticsPage() {
     .from("trades")
     .select("*")
     .eq("user_id", user.id)
-    .order("entry_date", { ascending: true });
+    .order("entry_date", { ascending: true })
+    .order("created_at", { ascending: true });
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
