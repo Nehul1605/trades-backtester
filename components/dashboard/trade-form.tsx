@@ -1,22 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useMemo, useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import SymbolCombobox, { type SymbolOption } from "@/components/inputs/symbol-combobox"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Upload } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { computePnlUSD } from "@/lib/pnl"
+import type React from "react";
+import { useMemo, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import SymbolCombobox, {
+  type SymbolOption,
+} from "@/components/inputs/symbol-combobox";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { computePnlUSD } from "@/lib/pnl";
 
 interface TradeFormProps {
-  userId: string
+  userId: string;
 }
 
 const SYMBOL_OPTIONS: SymbolOption[] = [
@@ -33,16 +47,25 @@ const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "USDJPY", label: "USDJPY" },
   { value: "DXY", label: "DXY" },
   { value: "USOIL", label: "USOIL" },
-]
+];
+
+const getISTDate = () => {
+  const now = new Date();
+  // We want the local YYYY-MM-DD
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export function TradeForm({ userId }: TradeFormProps) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [screenshot, setScreenshot] = useState<File | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
 
-  const [withSL, setWithSL] = useState(false)
-  const [withTP, setWithTP] = useState(false)
+  const [withSL, setWithSL] = useState(false);
+  const [withTP, setWithTP] = useState(false);
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -50,36 +73,54 @@ export function TradeForm({ userId }: TradeFormProps) {
     exit_price: "",
     quantity: "",
     trade_type: "long",
-    entry_date: "",
+    entry_date: getISTDate(),
     exit_date: "",
     status: "open",
     strategy_name: "",
     notes: "",
     stop_loss: "", // optional
     take_profit: "", // optional
-  })
-
-  const today = useMemo(() => new Date().toISOString().split("T")[0], [])
+  });
 
   useEffect(() => {
+    if (formData.status === "closed" && !formData.exit_date) {
+      setFormData((prev) => ({ ...prev, exit_date: getISTDate() }));
+    }
+
     if (formData.status === "open") {
       if (formData.exit_price || formData.exit_date) {
-        setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }))
+        setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }));
       }
     }
-  }, [formData.status])
+  }, [formData.status]);
 
- const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const supabase = createClient()
+      if (!formData.symbol) {
+        throw new Error("Symbol is required");
+      }
+      if (
+        !formData.entry_price ||
+        Number.isNaN(Number.parseFloat(formData.entry_price))
+      ) {
+        throw new Error("Valid entry price is required");
+      }
+      if (
+        !formData.quantity ||
+        Number.isNaN(Number.parseFloat(formData.quantity))
+      ) {
+        throw new Error("Valid quantity is required");
+      }
+
+      const supabase = createClient();
 
       // Calculate P&L if trade is closed using precise engine
-      let pnl = null
-      let pnl_percentage = null
+      let pnl = null;
+      let pnl_percentage = null;
 
       if (formData.status === "closed" && formData.exit_price) {
         const { pnl: calcPnl, pnlPct } = computePnlUSD({
@@ -88,29 +129,54 @@ export function TradeForm({ userId }: TradeFormProps) {
           exitPrice: formData.exit_price,
           quantity: formData.quantity,
           tradeType: formData.trade_type as "long" | "short",
-        })
-        pnl = calcPnl
-        pnl_percentage = pnlPct
+        });
+        pnl = calcPnl;
+        pnl_percentage = pnlPct;
       }
 
       // Upload screenshot if provided
-      let screenshot_url = null
+      let screenshot_url = null;
       if (screenshot) {
-        const fileExt = screenshot.name.split(".").pop()
-        const fileName = `${userId}/${Date.now()}.${fileExt}`
+        const fileExt = screenshot.name.split(".").pop();
+        const fileName = `${userId}/${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from("trade-screenshots")
-          .upload(fileName, screenshot, { upsert: true, contentType: screenshot.type })
+          .upload(fileName, screenshot, {
+            upsert: true,
+            contentType: screenshot.type,
+          });
 
         if (uploadError) {
-          console.error("Screenshot upload error:", uploadError)
+          console.error("Screenshot upload error:", uploadError);
         } else {
           const {
             data: { publicUrl },
-          } = supabase.storage.from("trade-screenshots").getPublicUrl(fileName)
-          screenshot_url = publicUrl
+          } = supabase.storage.from("trade-screenshots").getPublicUrl(fileName);
+          screenshot_url = publicUrl;
         }
       }
+
+      // Build entry/exit dates using current time but user selected date
+      // We use the current LOCAL time parts to ensure the saved time matches what the user sees on their clock
+      const now = new Date();
+
+      const constructDateTime = (dateStr: string) => {
+        if (!dateStr) return null;
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const dt = new Date();
+        // Set date from picker, and time from CURRENT clock
+        dt.setFullYear(y, m - 1, d);
+        dt.setHours(
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds(),
+          now.getMilliseconds(),
+        );
+        return dt.toISOString();
+      };
+
+      const entryDate = constructDateTime(formData.entry_date);
+      const exitDate = constructDateTime(formData.exit_date);
 
       const { error: insertError } = await supabase.from("trades").insert({
         user_id: userId,
@@ -118,20 +184,31 @@ export function TradeForm({ userId }: TradeFormProps) {
         entry_price_text: formData.entry_price,
         exit_price_text: formData.exit_price || null,
         entry_price: Number.parseFloat(formData.entry_price),
-        exit_price: formData.exit_price ? Number.parseFloat(formData.exit_price) : null,
+        exit_price: formData.exit_price
+          ? Number.parseFloat(formData.exit_price)
+          : null,
         quantity: Number.parseFloat(formData.quantity),
         trade_type: formData.trade_type,
-        entry_date: formData.entry_date,
-        exit_date: formData.exit_date || null,
+        entry_date: entryDate,
+        exit_date: exitDate,
         status: formData.status,
         strategy_name: formData.strategy_name || null,
         notes: formData.notes || null,
         screenshot_url,
         pnl,
         pnl_percentage,
-      })
+        stop_loss: formData.stop_loss
+          ? Number.parseFloat(formData.stop_loss)
+          : null,
+        take_profit: formData.take_profit
+          ? Number.parseFloat(formData.take_profit)
+          : null,
+      });
 
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error("Supabase insert error:", insertError);
+        throw insertError;
+      }
 
       // Reset form
       setFormData({
@@ -140,21 +217,26 @@ export function TradeForm({ userId }: TradeFormProps) {
         exit_price: "",
         quantity: "",
         trade_type: "long",
-        entry_date: "",
+        entry_date: getISTDate(),
         exit_date: "",
         status: "open",
         strategy_name: "",
         notes: "",
-      })
-      setScreenshot(null)
+        stop_loss: "",
+        take_profit: "",
+      });
+      setScreenshot(null);
 
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add trade")
+      router.refresh();
+    } catch (err: any) {
+      console.error("Trade entry error:", err);
+      setError(
+        err?.message || "Failed to add trade. Please check your inputs.",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -169,7 +251,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Label htmlFor="symbol">Symbol</Label>
             <SymbolCombobox
               value={formData.symbol}
-              onChange={(val: string) => setFormData({ ...formData, symbol: val })}
+              onChange={(val: string) =>
+                setFormData({ ...formData, symbol: val })
+              }
               options={SYMBOL_OPTIONS}
               placeholder="Search symbol..."
               className="mt-2"
@@ -182,7 +266,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Select
               id="trade_type"
               value={formData.trade_type}
-              onValueChange={(value) => setFormData({ ...formData, trade_type: value })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, trade_type: value })
+              }
             >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Select trade type" />
@@ -193,14 +279,16 @@ export function TradeForm({ userId }: TradeFormProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* {Satus} */}
           <div>
             <Label htmlFor="status">Status</Label>
             <Select
               id="status"
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, status: value })
+              }
             >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Select status" />
@@ -220,8 +308,11 @@ export function TradeForm({ userId }: TradeFormProps) {
               type="number"
               inputMode="decimal"
               step="any"
+              required
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, quantity: e.target.value })
+              }
               className="mt-2"
             />
           </div>
@@ -236,8 +327,11 @@ export function TradeForm({ userId }: TradeFormProps) {
                   type="number"
                   inputMode="decimal"
                   step="any"
+                  required
                   value={formData.entry_price}
-                  onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, entry_price: e.target.value })
+                  }
                   className="mt-2"
                 />
               </div>
@@ -263,7 +357,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                       inputMode="decimal"
                       step="any"
                       value={formData.stop_loss}
-                      onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, stop_loss: e.target.value })
+                      }
                       placeholder="Enter SL price"
                     />
                   </div>
@@ -282,7 +378,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                   step="any"
                   disabled={formData.status === "open"}
                   value={formData.exit_price}
-                  onChange={(e) => setFormData({ ...formData, exit_price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, exit_price: e.target.value })
+                  }
                   className="mt-2"
                 />
               </div>
@@ -296,7 +394,10 @@ export function TradeForm({ userId }: TradeFormProps) {
                     aria-label="Enable Take Profit"
                     // disabled={formData.status === "open"}
                   />
-                  <Label htmlFor="withTP" className={formData.status === "open" ? "" : ""}>
+                  <Label
+                    htmlFor="withTP"
+                    className={formData.status === "open" ? "" : ""}
+                  >
                     Add Take Profit
                   </Label>
                 </div>
@@ -311,7 +412,12 @@ export function TradeForm({ userId }: TradeFormProps) {
                       inputMode="decimal"
                       step="any"
                       value={formData.take_profit}
-                      onChange={(e) => setFormData({ ...formData, take_profit: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          take_profit: e.target.value,
+                        })
+                      }
                       placeholder="Enter TP price"
                       disabled={formData.status === "open"}
                     />
@@ -324,25 +430,29 @@ export function TradeForm({ userId }: TradeFormProps) {
           {/* Entry date input */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label htmlFor="entry_date">Entry Date</Label>
+              <Label htmlFor="entry_date">Entry Date (IST)</Label>
               <Input
                 id="entry_date"
                 type="date"
-                max={today}
+                max={getISTDate()}
                 value={formData.entry_date}
-                onChange={(e) => setFormData({ ...formData, entry_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, entry_date: e.target.value })
+                }
                 className="mt-2"
               />
             </div>
             <div>
-              <Label htmlFor="exit_date">Exit Date</Label>
+              <Label htmlFor="exit_date">Exit Date (IST)</Label>
               <Input
                 id="exit_date"
                 type="date"
-                max={today}
+                max={getISTDate()}
                 disabled={formData.status === "open"}
                 value={formData.exit_date}
-                onChange={(e) => setFormData({ ...formData, exit_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, exit_date: e.target.value })
+                }
                 className="mt-2"
               />
             </div>
@@ -354,7 +464,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Input
               id="strategy_name"
               value={formData.strategy_name}
-              onChange={(e) => setFormData({ ...formData, strategy_name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, strategy_name: e.target.value })
+              }
               className="mt-2"
             />
           </div>
@@ -365,11 +477,13 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               className="mt-2"
             />
           </div>
-<div className="grid gap-2">
+          <div className="grid gap-2">
             <Label htmlFor="screenshot">Screenshot (Optional)</Label>
             <div className="flex flex-col gap-2">
               <Input
@@ -383,7 +497,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                 <div className="flex items-start gap-3">
                   <div className="rounded-md overflow-hidden border border-border/50">
                     <img
-                      src={URL.createObjectURL(screenshot) || "/placeholder.svg"}
+                      src={
+                        URL.createObjectURL(screenshot) || "/placeholder.svg"
+                      }
                       alt="Screenshot preview"
                       className="h-24 w-36 object-cover"
                     />
@@ -412,5 +528,5 @@ export function TradeForm({ userId }: TradeFormProps) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +75,62 @@ export function TradeList({ trades }: TradeListProps) {
   const [visibleCount, setVisibleCount] = useState(4);
   const [expandedTradeId, setExpandedTradeId] = useState<string | null>(null);
 
+  // Auto-recalibrate P&L for existing trades if they were calculated with the old logic
+  useEffect(() => {
+    const recalibrate = async () => {
+      const supabase = createClient();
+      const updates = trades
+        .filter(
+          (t) => t.status === "closed" && (t.exit_price || t.exit_price_text),
+        )
+        .map((t) => {
+          try {
+            const { pnl: calcPnl, pnlPct } = computePnlUSD({
+              symbol: t.symbol,
+              entryPrice: t.entry_price_text || t.entry_price,
+              exitPrice: t.exit_price_text || t.exit_price!,
+              quantity: t.quantity,
+              tradeType: t.trade_type as "long" | "short",
+            });
+
+            const currentPnl = t.pnl || 0;
+            const currentPct = t.pnl_percentage || 0;
+
+            if (
+              Math.abs(currentPnl - calcPnl) > 0.01 ||
+              Math.abs(currentPct - pnlPct) > 0.01
+            ) {
+              return { id: t.id, pnl: calcPnl, pnl_percentage: pnlPct };
+            }
+          } catch (e) {
+            console.error("Error recalibrating trade", t.id, e);
+          }
+          return null;
+        })
+        .filter(
+          (u): u is { id: string; pnl: number; pnl_percentage: number } =>
+            u !== null,
+        );
+
+      if (updates.length > 0) {
+        console.log(
+          `[v0] Recalibrating ${updates.length} trades with new P&L logic...`,
+        );
+        for (const update of updates) {
+          await supabase
+            .from("trades")
+            .update({
+              pnl: update.pnl,
+              pnl_percentage: update.pnl_percentage,
+            })
+            .eq("id", update.id);
+        }
+        router.refresh();
+      }
+    };
+    recalibrate();
+  }, [trades.length]);
+
   const symbols = Array.from(new Set(trades.map((t) => t.symbol))).sort();
 
   const filtered =
@@ -86,6 +142,7 @@ export function TradeList({ trades }: TradeListProps) {
   const closedTrades = filtered.filter((t) => t.status === "closed");
 
   const hasMore = closedTrades.length > visibleCount;
+
   const displayedClosedTrades = closedTrades.slice(0, visibleCount);
 
   const handleDelete = async (id: string) => {
@@ -106,11 +163,21 @@ export function TradeList({ trades }: TradeListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
   const formatCurrency = (value: number) => {
@@ -668,14 +735,32 @@ function CloseTradeButton({
 }) {
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
-  const [exitDate, setExitDate] = useState<string>("");
+  const [exitDate, setExitDate] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
-  const today = new Date().toISOString().split("T")[0];
 
   const handleClose = async () => {
     setSaving(true);
     try {
+      // Build exit date using current time but user selected date
+      const [y, m, d] = exitDate.split("-").map(Number);
+      const now = new Date();
+      const dt = new Date();
+      dt.setFullYear(y, m - 1, d);
+      dt.setHours(
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds(),
+      );
+      const finalExitDate = dt.toISOString();
+
       const { pnl, pnlPct } = computePnlUSD({
         symbol: trade.symbol,
         entryPrice: (trade.entry_price_text ?? trade.entry_price) as any,
@@ -690,7 +775,7 @@ function CloseTradeButton({
           status: "closed",
           exit_price_text: exitPrice,
           exit_price: Number.parseFloat(exitPrice),
-          exit_date: exitDate || null,
+          exit_date: finalExitDate,
           pnl,
           pnl_percentage: pnlPct,
         })
@@ -730,11 +815,11 @@ function CloseTradeButton({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="exit_date">Exit Date</Label>
+            <Label htmlFor="exit_date">Exit Date (IST)</Label>
             <Input
               id="exit_date"
               type="date"
-              max={today}
+              max={new Date().toISOString().split("T")[0]}
               value={exitDate}
               onChange={(e) => setExitDate(e.target.value)}
             />

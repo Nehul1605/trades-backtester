@@ -33,6 +33,7 @@ interface Trade {
   exit_price_text?: string | null;
   entry_date: string;
   trade_type: string;
+  created_at?: string;
 }
 
 interface StrategyBreakdownProps {
@@ -89,10 +90,20 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
   if (strategies.length === 0) {

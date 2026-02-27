@@ -21,7 +21,8 @@ export default async function DashboardPage() {
     .from("trades")
     .select("*")
     .eq("user_id", user.id)
-    .order("entry_date", { ascending: false });
+    .order("entry_date", { ascending: false })
+    .order("created_at", { ascending: false });
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

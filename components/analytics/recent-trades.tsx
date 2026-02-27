@@ -35,6 +35,7 @@ interface Trade {
   exit_price: number | null;
   entry_price_text?: string | null;
   exit_price_text?: string | null;
+  created_at?: string;
 }
 
 interface RecentTradesProps {
@@ -62,10 +63,20 @@ export function RecentTrades({ trades }: RecentTradesProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
   const isBrokerSynced = trades.some((t) => t.broker_account_id);
