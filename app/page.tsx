@@ -15,17 +15,14 @@ import {
   Calendar,
   Link2,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import CandlestickBackground from "@/components/CandlestickBackground";
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
 
-  if (user) {
+  if (session?.user) {
     redirect("/dashboard");
   }
 

@@ -1,26 +1,30 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Activity, LogOut, BarChart3, Home, Calendar, Link2 } from "lucide-react";
+import {
+  Activity,
+  LogOut,
+  BarChart3,
+  Home,
+  Calendar,
+  Link2,
+} from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import { ModeToggle } from "@/components/mode-toggle";
 
-interface DashboardHeaderProps {
-  user: User;
-}
-
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.push("/auth/login");
   };
+
+  const email = session?.user?.email ?? "";
 
   const navItems = [
     { href: "/dashboard", label: "Journal", icon: Home },
@@ -76,7 +80,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <div className="flex items-center gap-3">
           <ModeToggle />
           <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
-            {user.email}
+            {email}
           </span>
           <Button
             variant="ghost"

@@ -20,9 +20,9 @@ import {
   Target,
   Info,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { deleteTrade, updateTrade } from "@/lib/appwrite/actions";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -75,62 +75,6 @@ export function TradeList({ trades }: TradeListProps) {
   const [visibleCount, setVisibleCount] = useState(4);
   const [expandedTradeId, setExpandedTradeId] = useState<string | null>(null);
 
-  // Auto-recalibrate P&L for existing trades if they were calculated with the old logic
-  useEffect(() => {
-    const recalibrate = async () => {
-      const supabase = createClient();
-      const updates = trades
-        .filter(
-          (t) => t.status === "closed" && (t.exit_price || t.exit_price_text),
-        )
-        .map((t) => {
-          try {
-            const { pnl: calcPnl, pnlPct } = computePnlUSD({
-              symbol: t.symbol,
-              entryPrice: t.entry_price_text || t.entry_price,
-              exitPrice: t.exit_price_text || t.exit_price!,
-              quantity: t.quantity,
-              tradeType: t.trade_type as "long" | "short",
-            });
-
-            const currentPnl = t.pnl || 0;
-            const currentPct = t.pnl_percentage || 0;
-
-            if (
-              Math.abs(currentPnl - calcPnl) > 0.01 ||
-              Math.abs(currentPct - pnlPct) > 0.01
-            ) {
-              return { id: t.id, pnl: calcPnl, pnl_percentage: pnlPct };
-            }
-          } catch (e) {
-            console.error("Error recalibrating trade", t.id, e);
-          }
-          return null;
-        })
-        .filter(
-          (u): u is { id: string; pnl: number; pnl_percentage: number } =>
-            u !== null,
-        );
-
-      if (updates.length > 0) {
-        console.log(
-          `[v0] Recalibrating ${updates.length} trades with new P&L logic...`,
-        );
-        for (const update of updates) {
-          await supabase
-            .from("trades")
-            .update({
-              pnl: update.pnl,
-              pnl_percentage: update.pnl_percentage,
-            })
-            .eq("id", update.id);
-        }
-        router.refresh();
-      }
-    };
-    recalibrate();
-  }, [trades.length]);
-
   const symbols = Array.from(new Set(trades.map((t) => t.symbol))).sort();
 
   const filtered =
@@ -142,18 +86,16 @@ export function TradeList({ trades }: TradeListProps) {
   const closedTrades = filtered.filter((t) => t.status === "closed");
 
   const hasMore = closedTrades.length > visibleCount;
-
   const displayedClosedTrades = closedTrades.slice(0, visibleCount);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this trade?")) return;
 
     setDeletingId(id);
-    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("trades").delete().eq("id", id);
-      if (error) throw error;
+      const result = await deleteTrade(id);
+      if (result.error) throw new Error(result.error);
       router.refresh();
     } catch (err) {
       console.error("Failed to delete trade:", err);
@@ -163,21 +105,24 @@ export function TradeList({ trades }: TradeListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return (
-      date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }) +
-      " " +
-      date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      })
-    );
+    const d = new Date(dateString);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
   };
 
   const formatCurrency = (value: number) => {
@@ -360,6 +305,14 @@ export function TradeList({ trades }: TradeListProps) {
                               </span>
                               <span className="font-mono text-emerald-500 font-bold uppercase tracking-tight">
                                 {trade.status}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                Entry Time
+                              </span>
+                              <span className="font-mono font-bold">
+                                {formatDateTime(trade.entry_date)}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
@@ -612,7 +565,7 @@ export function TradeList({ trades }: TradeListProps) {
                                 Entry Date
                               </span>
                               <span className="font-mono font-bold">
-                                {formatDate(trade.entry_date)}
+                                {formatDateTime(trade.entry_date)}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
@@ -621,7 +574,7 @@ export function TradeList({ trades }: TradeListProps) {
                               </span>
                               <span className="font-mono font-bold">
                                 {trade.exit_date
-                                  ? formatDate(trade.exit_date)
+                                  ? formatDateTime(trade.exit_date)
                                   : "—"}
                               </span>
                             </div>
@@ -736,31 +689,20 @@ function CloseTradeButton({
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
   const [exitDate, setExitDate] = useState<string>(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
   });
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   const handleClose = async () => {
     setSaving(true);
     try {
-      // Build exit date using current time but user selected date
-      const [y, m, d] = exitDate.split("-").map(Number);
-      const now = new Date();
-      const dt = new Date();
-      dt.setFullYear(y, m - 1, d);
-      dt.setHours(
-        now.getHours(),
-        now.getMinutes(),
-        now.getSeconds(),
-        now.getMilliseconds(),
-      );
-      const finalExitDate = dt.toISOString();
-
       const { pnl, pnlPct } = computePnlUSD({
         symbol: trade.symbol,
         entryPrice: (trade.entry_price_text ?? trade.entry_price) as any,
@@ -769,19 +711,31 @@ function CloseTradeButton({
         tradeType: (trade.trade_type as "long" | "short") || "long",
       });
 
-      const { error } = await supabase
-        .from("trades")
-        .update({
-          status: "closed",
-          exit_price_text: exitPrice,
-          exit_price: Number.parseFloat(exitPrice),
-          exit_date: finalExitDate,
-          pnl,
-          pnl_percentage: pnlPct,
-        })
-        .eq("id", trade.id);
+      const toTimestamp = (dateStr: string): string | null => {
+        if (!dateStr) return null;
+        if (dateStr.includes("T")) return new Date(dateStr).toISOString();
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const now = new Date();
+        return new Date(
+          y,
+          m - 1,
+          d,
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds(),
+        ).toISOString();
+      };
 
-      if (error) throw error;
+      const result = await updateTrade(trade.id, {
+        status: "closed",
+        exit_price_text: exitPrice,
+        exit_price: Number.parseFloat(exitPrice),
+        exit_date: toTimestamp(exitDate),
+        pnl,
+        pnl_percentage: pnlPct,
+      });
+
+      if (result.error) throw new Error(result.error);
       setOpen(false);
       onClosed();
     } catch (e) {
@@ -815,11 +769,10 @@ function CloseTradeButton({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="exit_date">Exit Date (IST)</Label>
+            <Label htmlFor="exit_date">Exit Date</Label>
             <Input
               id="exit_date"
               type="date"
-              max={new Date().toISOString().split("T")[0]}
               value={exitDate}
               onChange={(e) => setExitDate(e.target.value)}
             />
