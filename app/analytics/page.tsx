@@ -15,7 +15,11 @@ export default async function AnalyticsPage() {
     redirect("/auth/login");
   }
 
-  const tradeDocs = await getTradesForUser(session.user.id, "entry_date", "asc");
+  const tradeDocs = await getTradesForUser(
+    session.user.id,
+    "entry_date",
+    "asc",
+  );
 
   const trades = tradeDocs.map((doc: any) => ({
     id: doc.$id,

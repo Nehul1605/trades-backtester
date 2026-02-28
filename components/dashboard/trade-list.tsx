@@ -690,9 +690,13 @@ function CloseTradeButton({
   const [exitPrice, setExitPrice] = useState<string>("");
   const [exitDate, setExitDate] = useState<string>(() => {
     const d = new Date();
-    return d.getFullYear() + "-" +
-      String(d.getMonth() + 1).padStart(2, "0") + "-" +
-      String(d.getDate()).padStart(2, "0");
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
   });
   const [saving, setSaving] = useState(false);
 
@@ -712,7 +716,14 @@ function CloseTradeButton({
         if (dateStr.includes("T")) return new Date(dateStr).toISOString();
         const [y, m, d] = dateStr.split("-").map(Number);
         const now = new Date();
-        return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+        return new Date(
+          y,
+          m - 1,
+          d,
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds(),
+        ).toISOString();
       };
 
       const result = await updateTrade(trade.id, {

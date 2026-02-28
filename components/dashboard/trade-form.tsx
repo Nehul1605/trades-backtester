@@ -1,22 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useMemo, useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import SymbolCombobox, { type SymbolOption } from "@/components/inputs/symbol-combobox"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Upload } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createTrade, uploadTradeScreenshot } from "@/lib/appwrite/actions"
-import { computePnlUSD } from "@/lib/pnl"
+import type React from "react";
+import { useMemo, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import SymbolCombobox, {
+  type SymbolOption,
+} from "@/components/inputs/symbol-combobox";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createTrade, uploadTradeScreenshot } from "@/lib/appwrite/actions";
+import { computePnlUSD } from "@/lib/pnl";
 
 interface TradeFormProps {
-  userId: string
+  userId: string;
 }
 
 const SYMBOL_OPTIONS: SymbolOption[] = [
@@ -33,23 +47,27 @@ const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "USDJPY", label: "USDJPY" },
   { value: "DXY", label: "DXY" },
   { value: "USOIL", label: "USOIL" },
-]
+];
 
 export function TradeForm({ userId }: TradeFormProps) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [screenshot, setScreenshot] = useState<File | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
 
-  const [withSL, setWithSL] = useState(false)
-  const [withTP, setWithTP] = useState(false)
+  const [withSL, setWithSL] = useState(false);
+  const [withTP, setWithTP] = useState(false);
 
   const today = useMemo(() => {
     const d = new Date();
-    return d.getFullYear() + "-" +
-      String(d.getMonth() + 1).padStart(2, "0") + "-" +
-      String(d.getDate()).padStart(2, "0");
-  }, [])
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
+  }, []);
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -64,27 +82,30 @@ export function TradeForm({ userId }: TradeFormProps) {
     notes: "",
     stop_loss: "", // optional
     take_profit: "", // optional
-  })
+  });
 
   useEffect(() => {
     if (formData.status === "open") {
       if (formData.exit_price || formData.exit_date) {
-        setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }))
+        setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }));
       }
     } else if (formData.status === "closed" && !formData.exit_date) {
-      setFormData((prev) => ({ ...prev, exit_date: new Date().toISOString().split("T")[0] }))
+      setFormData((prev) => ({
+        ...prev,
+        exit_date: new Date().toISOString().split("T")[0],
+      }));
     }
-  }, [formData.status])
+  }, [formData.status]);
 
- const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
     try {
       // Calculate P&L if trade is closed using precise engine
-      let pnl = null
-      let pnl_percentage = null
+      let pnl = null;
+      let pnl_percentage = null;
 
       if (formData.status === "closed" && formData.exit_price) {
         const { pnl: calcPnl, pnlPct } = computePnlUSD({
@@ -93,18 +114,18 @@ export function TradeForm({ userId }: TradeFormProps) {
           exitPrice: formData.exit_price,
           quantity: formData.quantity,
           tradeType: formData.trade_type as "long" | "short",
-        })
-        pnl = calcPnl
-        pnl_percentage = pnlPct
+        });
+        pnl = calcPnl;
+        pnl_percentage = pnlPct;
       }
 
       // Upload screenshot if provided
-      let screenshot_url = null
+      let screenshot_url = null;
       if (screenshot) {
-        const fd = new FormData()
-        fd.append("file", screenshot)
-        fd.append("userId", userId)
-        screenshot_url = await uploadTradeScreenshot(fd)
+        const fd = new FormData();
+        fd.append("file", screenshot);
+        fd.append("userId", userId);
+        screenshot_url = await uploadTradeScreenshot(fd);
       }
 
       // Store full ISO timestamp (date picked + current time)
@@ -114,8 +135,15 @@ export function TradeForm({ userId }: TradeFormProps) {
         // date-only: combine with current time
         const [y, m, d] = dateStr.split("-").map(Number);
         const now = new Date();
-        return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
-      }
+        return new Date(
+          y,
+          m - 1,
+          d,
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds(),
+        ).toISOString();
+      };
 
       const result = await createTrade({
         user_id: userId,
@@ -123,7 +151,9 @@ export function TradeForm({ userId }: TradeFormProps) {
         entry_price_text: formData.entry_price,
         exit_price_text: formData.exit_price || null,
         entry_price: Number.parseFloat(formData.entry_price),
-        exit_price: formData.exit_price ? Number.parseFloat(formData.exit_price) : null,
+        exit_price: formData.exit_price
+          ? Number.parseFloat(formData.exit_price)
+          : null,
         quantity: Number.parseFloat(formData.quantity),
         trade_type: formData.trade_type,
         entry_date: toTimestamp(formData.entry_date)!,
@@ -134,9 +164,9 @@ export function TradeForm({ userId }: TradeFormProps) {
         screenshot_url,
         pnl,
         pnl_percentage,
-      })
+      });
 
-      if (result.error) throw new Error(result.error)
+      if (result.error) throw new Error(result.error);
 
       // Reset form
       setFormData({
@@ -152,16 +182,16 @@ export function TradeForm({ userId }: TradeFormProps) {
         notes: "",
         stop_loss: "",
         take_profit: "",
-      })
-      setScreenshot(null)
+      });
+      setScreenshot(null);
 
-      router.refresh()
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add trade")
+      setError(err instanceof Error ? err.message : "Failed to add trade");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -176,7 +206,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Label htmlFor="symbol">Symbol</Label>
             <SymbolCombobox
               value={formData.symbol}
-              onChange={(val: string) => setFormData({ ...formData, symbol: val })}
+              onChange={(val: string) =>
+                setFormData({ ...formData, symbol: val })
+              }
               options={SYMBOL_OPTIONS}
               placeholder="Search symbol..."
               className="mt-2"
@@ -189,7 +221,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Select
               id="trade_type"
               value={formData.trade_type}
-              onValueChange={(value) => setFormData({ ...formData, trade_type: value })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, trade_type: value })
+              }
             >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Select trade type" />
@@ -200,14 +234,16 @@ export function TradeForm({ userId }: TradeFormProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* {Satus} */}
           <div>
             <Label htmlFor="status">Status</Label>
             <Select
               id="status"
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, status: value })
+              }
             >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Select status" />
@@ -228,7 +264,9 @@ export function TradeForm({ userId }: TradeFormProps) {
               inputMode="decimal"
               step="any"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, quantity: e.target.value })
+              }
               className="mt-2"
             />
           </div>
@@ -244,7 +282,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                   inputMode="decimal"
                   step="any"
                   value={formData.entry_price}
-                  onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, entry_price: e.target.value })
+                  }
                   className="mt-2"
                 />
               </div>
@@ -270,7 +310,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                       inputMode="decimal"
                       step="any"
                       value={formData.stop_loss}
-                      onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, stop_loss: e.target.value })
+                      }
                       placeholder="Enter SL price"
                     />
                   </div>
@@ -289,7 +331,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                   step="any"
                   disabled={formData.status === "open"}
                   value={formData.exit_price}
-                  onChange={(e) => setFormData({ ...formData, exit_price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, exit_price: e.target.value })
+                  }
                   className="mt-2"
                 />
               </div>
@@ -303,7 +347,10 @@ export function TradeForm({ userId }: TradeFormProps) {
                     aria-label="Enable Take Profit"
                     // disabled={formData.status === "open"}
                   />
-                  <Label htmlFor="withTP" className={formData.status === "open" ? "" : ""}>
+                  <Label
+                    htmlFor="withTP"
+                    className={formData.status === "open" ? "" : ""}
+                  >
                     Add Take Profit
                   </Label>
                 </div>
@@ -318,7 +365,12 @@ export function TradeForm({ userId }: TradeFormProps) {
                       inputMode="decimal"
                       step="any"
                       value={formData.take_profit}
-                      onChange={(e) => setFormData({ ...formData, take_profit: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          take_profit: e.target.value,
+                        })
+                      }
                       placeholder="Enter TP price"
                       disabled={formData.status === "open"}
                     />
@@ -337,7 +389,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                 type="date"
                 max={today}
                 value={formData.entry_date}
-                onChange={(e) => setFormData({ ...formData, entry_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, entry_date: e.target.value })
+                }
                 className="mt-2"
               />
             </div>
@@ -349,7 +403,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                 max={today}
                 disabled={formData.status === "open"}
                 value={formData.exit_date}
-                onChange={(e) => setFormData({ ...formData, exit_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, exit_date: e.target.value })
+                }
                 className="mt-2"
               />
             </div>
@@ -361,7 +417,9 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Input
               id="strategy_name"
               value={formData.strategy_name}
-              onChange={(e) => setFormData({ ...formData, strategy_name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, strategy_name: e.target.value })
+              }
               className="mt-2"
             />
           </div>
@@ -372,11 +430,13 @@ export function TradeForm({ userId }: TradeFormProps) {
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               className="mt-2"
             />
           </div>
-<div className="grid gap-2">
+          <div className="grid gap-2">
             <Label htmlFor="screenshot">Screenshot (Optional)</Label>
             <div className="flex flex-col gap-2">
               <Input
@@ -390,7 +450,9 @@ export function TradeForm({ userId }: TradeFormProps) {
                 <div className="flex items-start gap-3">
                   <div className="rounded-md overflow-hidden border border-border/50">
                     <img
-                      src={URL.createObjectURL(screenshot) || "/placeholder.svg"}
+                      src={
+                        URL.createObjectURL(screenshot) || "/placeholder.svg"
+                      }
                       alt="Screenshot preview"
                       className="h-24 w-36 object-cover"
                     />
@@ -419,5 +481,5 @@ export function TradeForm({ userId }: TradeFormProps) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

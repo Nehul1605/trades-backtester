@@ -22,16 +22,17 @@ export default function CalendarPage() {
   useEffect(() => {
     // TradingView Economic Calendar Widget
     const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+    script.src =
+      "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
     script.async = true;
     script.innerHTML = JSON.stringify({
-      "colorTheme": "dark",
-      "isTransparent": false,
-      "width": "100%",
-      "height": "100%",
-      "locale": "en",
-      "importanceFilter": "-1,0,1",
-      "currencyFilter": "USD,EUR,GBP,JPY,AUD,CAD,CHF"
+      colorTheme: "dark",
+      isTransparent: false,
+      width: "100%",
+      height: "100%",
+      locale: "en",
+      importanceFilter: "-1,0,1",
+      currencyFilter: "USD,EUR,GBP,JPY,AUD,CAD,CHF",
     });
 
     if (containerRef.current) {
@@ -53,7 +54,8 @@ export default function CalendarPage() {
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">Coming Soon</h1>
             <p className="text-muted-foreground text-sm">
-              We're building a professional economic calendar integration to help you track market-moving events directly within your journal.
+              We're building a professional economic calendar integration to
+              help you track market-moving events directly within your journal.
             </p>
           </div>
           <div className="pt-4">

@@ -21,7 +21,15 @@
  *   node scripts/setup-appwrite.mjs
  */
 
-import { Client, Databases, Storage, ID, Permission, Role, IndexType } from "node-appwrite";
+import {
+  Client,
+  Databases,
+  Storage,
+  ID,
+  Permission,
+  Role,
+  IndexType,
+} from "node-appwrite";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -44,19 +52,23 @@ function loadEnv(filePath) {
 loadEnv(resolve(process.cwd(), ".env.local"));
 loadEnv(resolve(process.cwd(), ".env"));
 
-const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
+const ENDPOINT =
+  process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
 const API_KEY = process.env.APPWRITE_API_KEY;
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID;
 
 if (!PROJECT_ID || !API_KEY || !DATABASE_ID) {
   console.error(
-    "❌  Missing env vars. Make sure NEXT_PUBLIC_APPWRITE_PROJECT_ID, APPWRITE_API_KEY, and APPWRITE_DATABASE_ID are set in .env.local"
+    "❌  Missing env vars. Make sure NEXT_PUBLIC_APPWRITE_PROJECT_ID, APPWRITE_API_KEY, and APPWRITE_DATABASE_ID are set in .env.local",
   );
   process.exit(1);
 }
 
-const client = new Client().setEndpoint(ENDPOINT).setProject(PROJECT_ID).setKey(API_KEY);
+const client = new Client()
+  .setEndpoint(ENDPOINT)
+  .setProject(PROJECT_ID)
+  .setKey(API_KEY);
 const databases = new Databases(client);
 const storage = new Storage(client);
 
@@ -101,7 +113,9 @@ async function waitForAttributes(dbId, colId) {
   let attempts = 0;
   while (attempts < 30) {
     const attrs = await databases.listAttributes(dbId, colId);
-    const processing = attrs.attributes.filter((a) => a.status === "processing");
+    const processing = attrs.attributes.filter(
+      (a) => a.status === "processing",
+    );
     if (processing.length === 0) return;
     await sleep(1000);
     attempts++;
@@ -141,7 +155,13 @@ async function setupTradesCollection() {
 
   // Enable document-level permissions so RLS-like behavior works
   try {
-    await databases.updateCollection(DATABASE_ID, TRADES_ID, "trades", undefined, true);
+    await databases.updateCollection(
+      DATABASE_ID,
+      TRADES_ID,
+      "trades",
+      undefined,
+      true,
+    );
   } catch {}
 
   // Attributes
@@ -163,16 +183,43 @@ async function setupTradesCollection() {
   await createFloatAttr(DATABASE_ID, TRADES_ID, "pnl_percentage", false);
   await createFloatAttr(DATABASE_ID, TRADES_ID, "stop_loss", false);
   await createFloatAttr(DATABASE_ID, TRADES_ID, "take_profit", false);
-  await createStringAttr(DATABASE_ID, TRADES_ID, "broker_account_id", 64, false);
+  await createStringAttr(
+    DATABASE_ID,
+    TRADES_ID,
+    "broker_account_id",
+    64,
+    false,
+  );
   await createStringAttr(DATABASE_ID, TRADES_ID, "external_id", 128, false);
 
   console.log("   ⏳ waiting for attributes to be ready...");
   await waitForAttributes(DATABASE_ID, TRADES_ID);
 
   // Indexes
-  await createIndex(DATABASE_ID, TRADES_ID, "idx_user_id", IndexType.Key, ["user_id"], ["ASC"]);
-  await createIndex(DATABASE_ID, TRADES_ID, "idx_entry_date", IndexType.Key, ["entry_date"], ["DESC"]);
-  await createIndex(DATABASE_ID, TRADES_ID, "idx_status", IndexType.Key, ["status"], ["ASC"]);
+  await createIndex(
+    DATABASE_ID,
+    TRADES_ID,
+    "idx_user_id",
+    IndexType.Key,
+    ["user_id"],
+    ["ASC"],
+  );
+  await createIndex(
+    DATABASE_ID,
+    TRADES_ID,
+    "idx_entry_date",
+    IndexType.Key,
+    ["entry_date"],
+    ["DESC"],
+  );
+  await createIndex(
+    DATABASE_ID,
+    TRADES_ID,
+    "idx_status",
+    IndexType.Key,
+    ["status"],
+    ["ASC"],
+  );
 
   console.log("   ✅ trades collection ready");
   return TRADES_ID;
@@ -203,7 +250,14 @@ async function setupUsersCollection() {
   console.log("   ⏳ waiting for attributes to be ready...");
   await waitForAttributes(DATABASE_ID, USERS_ID);
 
-  await createIndex(DATABASE_ID, USERS_ID, "idx_users_email", IndexType.Unique, ["email"], ["ASC"]);
+  await createIndex(
+    DATABASE_ID,
+    USERS_ID,
+    "idx_users_email",
+    IndexType.Unique,
+    ["email"],
+    ["ASC"],
+  );
 
   console.log("   ✅ users collection ready");
   return USERS_ID;
@@ -212,17 +266,23 @@ async function setupUsersCollection() {
 // ── Broker Accounts Collection ───────────────────────────────────────────────
 
 async function setupBrokerAccountsCollection() {
-  const BROKER_ID = process.env.APPWRITE_BROKER_ACCOUNTS_COLLECTION_ID || "broker_accounts";
+  const BROKER_ID =
+    process.env.APPWRITE_BROKER_ACCOUNTS_COLLECTION_ID || "broker_accounts";
 
   console.log("\n📦 Creating broker_accounts collection...");
 
   try {
-    await databases.createCollection(DATABASE_ID, BROKER_ID, "broker_accounts", [
-      Permission.create(Role.users()),
-      Permission.read(Role.users()),
-      Permission.update(Role.users()),
-      Permission.delete(Role.users()),
-    ]);
+    await databases.createCollection(
+      DATABASE_ID,
+      BROKER_ID,
+      "broker_accounts",
+      [
+        Permission.create(Role.users()),
+        Permission.read(Role.users()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
+      ],
+    );
     console.log("   ✓ collection created");
   } catch (e) {
     if (e.code === 409) console.log("   → collection already exists");
@@ -230,7 +290,13 @@ async function setupBrokerAccountsCollection() {
   }
 
   try {
-    await databases.updateCollection(DATABASE_ID, BROKER_ID, "broker_accounts", undefined, true);
+    await databases.updateCollection(
+      DATABASE_ID,
+      BROKER_ID,
+      "broker_accounts",
+      undefined,
+      true,
+    );
   } catch {}
 
   await createStringAttr(DATABASE_ID, BROKER_ID, "user_id", 64, true);
@@ -247,7 +313,14 @@ async function setupBrokerAccountsCollection() {
   console.log("   ⏳ waiting for attributes to be ready...");
   await waitForAttributes(DATABASE_ID, BROKER_ID);
 
-  await createIndex(DATABASE_ID, BROKER_ID, "idx_ba_user_id", IndexType.Key, ["user_id"], ["ASC"]);
+  await createIndex(
+    DATABASE_ID,
+    BROKER_ID,
+    "idx_ba_user_id",
+    IndexType.Key,
+    ["user_id"],
+    ["ASC"],
+  );
 
   console.log("   ✅ broker_accounts collection ready");
   return BROKER_ID;
@@ -256,7 +329,8 @@ async function setupBrokerAccountsCollection() {
 // ── Storage Bucket ───────────────────────────────────────────────────────────
 
 async function setupStorageBucket() {
-  const BUCKET_ID = process.env.APPWRITE_STORAGE_BUCKET_ID || "trade-screenshots";
+  const BUCKET_ID =
+    process.env.APPWRITE_STORAGE_BUCKET_ID || "trade-screenshots";
 
   console.log("\n🗄️  Creating trade-screenshots storage bucket...");
 
@@ -266,12 +340,12 @@ async function setupStorageBucket() {
       "trade-screenshots",
       [
         Permission.create(Role.users()),
-        Permission.read(Role.any()),     // public read for screenshot URLs
+        Permission.read(Role.any()), // public read for screenshot URLs
         Permission.update(Role.users()),
         Permission.delete(Role.users()),
       ],
-      false,  // fileSecurity
-      true,   // enabled
+      false, // fileSecurity
+      true, // enabled
       50000000, // 50 MB max file size (in bytes)
       ["image/png", "image/jpeg", "image/gif", "image/webp"], // allowed types
     );

@@ -55,7 +55,9 @@ export default function SignUpPage() {
         redirect: false,
       });
       if (signInResult?.error) {
-        setError("Account created but sign-in failed. Please sign in manually.");
+        setError(
+          "Account created but sign-in failed. Please sign in manually.",
+        );
       } else {
         window.location.href = "/dashboard";
       }

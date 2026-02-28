@@ -75,7 +75,9 @@ export async function createTrade(data: {
 
     return {};
   } catch (err: unknown) {
-    return { error: err instanceof Error ? err.message : "Failed to create trade" };
+    return {
+      error: err instanceof Error ? err.message : "Failed to create trade",
+    };
   }
 }
 
@@ -90,7 +92,9 @@ export async function deleteTrade(id: string): Promise<{ error?: string }> {
     );
     return {};
   } catch (err: unknown) {
-    return { error: err instanceof Error ? err.message : "Failed to delete trade" };
+    return {
+      error: err instanceof Error ? err.message : "Failed to delete trade",
+    };
   }
 }
 
@@ -109,7 +113,9 @@ export async function updateTrade(
     );
     return {};
   } catch (err: unknown) {
-    return { error: err instanceof Error ? err.message : "Failed to update trade" };
+    return {
+      error: err instanceof Error ? err.message : "Failed to update trade",
+    };
   }
 }
 
@@ -215,7 +221,11 @@ export async function keepAliveCheck(): Promise<boolean> {
  * Recalculate P&L for all closed trades and fix any mismatches.
  * Returns the number of trades that were corrected.
  */
-export async function syncAllTradesPnl(): Promise<{ fixed: number; total: number; error?: string }> {
+export async function syncAllTradesPnl(): Promise<{
+  fixed: number;
+  total: number;
+  error?: string;
+}> {
   try {
     const { databases } = await createAdminClient();
 
@@ -274,6 +284,10 @@ export async function syncAllTradesPnl(): Promise<{ fixed: number; total: number
 
     return { fixed, total: allClosed.length };
   } catch (err: unknown) {
-    return { fixed: 0, total: 0, error: err instanceof Error ? err.message : "Sync failed" };
+    return {
+      fixed: 0,
+      total: 0,
+      error: err instanceof Error ? err.message : "Sync failed",
+    };
   }
 }
