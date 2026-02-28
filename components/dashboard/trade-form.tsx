@@ -12,7 +12,7 @@ import SymbolCombobox, { type SymbolOption } from "@/components/inputs/symbol-co
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Upload } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createTrade, uploadTradeScreenshot } from "@/lib/appwrite/actions"
 import { computePnlUSD } from "@/lib/pnl"
 
 interface TradeFormProps {
@@ -44,13 +44,20 @@ export function TradeForm({ userId }: TradeFormProps) {
   const [withSL, setWithSL] = useState(false)
   const [withTP, setWithTP] = useState(false)
 
+  const today = useMemo(() => {
+    const d = new Date();
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }, [])
+
   const [formData, setFormData] = useState({
     symbol: "",
     entry_price: "",
     exit_price: "",
     quantity: "",
     trade_type: "long",
-    entry_date: "",
+    entry_date: today,
     exit_date: "",
     status: "open",
     strategy_name: "",
@@ -59,13 +66,13 @@ export function TradeForm({ userId }: TradeFormProps) {
     take_profit: "", // optional
   })
 
-  const today = useMemo(() => new Date().toISOString().split("T")[0], [])
-
   useEffect(() => {
     if (formData.status === "open") {
       if (formData.exit_price || formData.exit_date) {
         setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }))
       }
+    } else if (formData.status === "closed" && !formData.exit_date) {
+      setFormData((prev) => ({ ...prev, exit_date: new Date().toISOString().split("T")[0] }))
     }
   }, [formData.status])
 
@@ -75,8 +82,6 @@ export function TradeForm({ userId }: TradeFormProps) {
     setError(null)
 
     try {
-      const supabase = createClient()
-
       // Calculate P&L if trade is closed using precise engine
       let pnl = null
       let pnl_percentage = null
@@ -96,23 +101,23 @@ export function TradeForm({ userId }: TradeFormProps) {
       // Upload screenshot if provided
       let screenshot_url = null
       if (screenshot) {
-        const fileExt = screenshot.name.split(".").pop()
-        const fileName = `${userId}/${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from("trade-screenshots")
-          .upload(fileName, screenshot, { upsert: true, contentType: screenshot.type })
-
-        if (uploadError) {
-          console.error("Screenshot upload error:", uploadError)
-        } else {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("trade-screenshots").getPublicUrl(fileName)
-          screenshot_url = publicUrl
-        }
+        const fd = new FormData()
+        fd.append("file", screenshot)
+        fd.append("userId", userId)
+        screenshot_url = await uploadTradeScreenshot(fd)
       }
 
-      const { error: insertError } = await supabase.from("trades").insert({
+      // Store full ISO timestamp (date picked + current time)
+      const toTimestamp = (dateStr: string): string | null => {
+        if (!dateStr) return null;
+        if (dateStr.includes("T")) return new Date(dateStr).toISOString();
+        // date-only: combine with current time
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const now = new Date();
+        return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+      }
+
+      const result = await createTrade({
         user_id: userId,
         symbol: formData.symbol.toUpperCase(),
         entry_price_text: formData.entry_price,
@@ -121,8 +126,8 @@ export function TradeForm({ userId }: TradeFormProps) {
         exit_price: formData.exit_price ? Number.parseFloat(formData.exit_price) : null,
         quantity: Number.parseFloat(formData.quantity),
         trade_type: formData.trade_type,
-        entry_date: formData.entry_date,
-        exit_date: formData.exit_date || null,
+        entry_date: toTimestamp(formData.entry_date)!,
+        exit_date: toTimestamp(formData.exit_date),
         status: formData.status,
         strategy_name: formData.strategy_name || null,
         notes: formData.notes || null,
@@ -131,7 +136,7 @@ export function TradeForm({ userId }: TradeFormProps) {
         pnl_percentage,
       })
 
-      if (insertError) throw insertError
+      if (result.error) throw new Error(result.error)
 
       // Reset form
       setFormData({
@@ -140,11 +145,13 @@ export function TradeForm({ userId }: TradeFormProps) {
         exit_price: "",
         quantity: "",
         trade_type: "long",
-        entry_date: "",
+        entry_date: today,
         exit_date: "",
         status: "open",
         strategy_name: "",
         notes: "",
+        stop_loss: "",
+        take_profit: "",
       })
       setScreenshot(null)
 

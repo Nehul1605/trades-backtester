@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrokerAccounts } from "@/lib/appwrite/actions";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { Button } from "@/components/ui/button";
@@ -39,13 +40,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 
 export default function IntegrationsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, status } = useSession();
   const [isSyncing, setIsSyncing] = useState(false);
   const [isConnectedExness, setIsConnectedExness] = useState(false);
   const [isConnectedMT5, setIsConnectedMT5] = useState(false);
@@ -57,23 +57,18 @@ export default function IntegrationsPage() {
 
   useEffect(() => {
     const checkUserAndAccounts = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (status === "loading") return;
+      if (status === "unauthenticated" || !session?.user?.id) {
         router.push("/auth/login");
         return;
       }
-      setUser(user);
 
       // Fetch real account states from DB
-      const { data: accounts } = await supabase
-        .from('broker_accounts')
-        .select('*')
-        .eq('user_id', user.id);
+      const accounts = await getBrokerAccounts(session.user.id);
 
-      if (accounts) {
+      if (accounts && accounts.length > 0) {
         const stats: any = {};
-        accounts.forEach(acc => {
+        accounts.forEach((acc: any) => {
           if (acc.broker_type === 'exness') {
             setIsConnectedExness(acc.status === 'connected');
             setExnessData(prev => ({ ...prev, login: acc.account_id, server: acc.server }));
@@ -88,7 +83,7 @@ export default function IntegrationsPage() {
       }
     };
     checkUserAndAccounts();
-  }, [router]);
+  }, [status, session, router]);
 
   const handleConnect = async (type: "MT5" | "Exness") => {
     toast({
@@ -118,11 +113,11 @@ export default function IntegrationsPage() {
     if (localStorage.getItem("isConnectedMT5") === "true") setIsConnectedMT5(true);
   }, []);
 
-  if (!user) return null;
+  if (status !== "authenticated") return null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <DashboardHeader user={user} />
+      <DashboardHeader />
       <main className="flex-1 p-6 space-y-8 max-w-7xl mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">

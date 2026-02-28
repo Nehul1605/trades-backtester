@@ -5,7 +5,7 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![Appwrite](https://img.shields.io/badge/Appwrite-Backend-F02E65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
 ---
@@ -19,7 +19,7 @@
 - **📊 Advanced Analytics**: Detailed performance charts, P&L tracking, and win-rate statistics.
 - **📝 Trading Journal**: Log trades with entry/exit prices, symbols, quantities, and strategy notes.
 - **🧪 Backtesting**: Test strategies against historical data (status: `open` or `closed` trades).
-- **🔐 Secure Authentication**: Powered by Supabase Auth for secure user management.
+- **🔐 Secure Authentication**: Powered by Appwrite Auth for secure user management.
 - **🎨 Modern UI**: Built with Next.js and Tailwind CSS, featuring a beautiful dark mode interface.
 
 ---
@@ -28,7 +28,7 @@
 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
-- **Database**: Supabase (PostgreSQL)
+- **Database**: Appwrite (Document DB)
 - **Styling**: Tailwind CSS & Shadcn/ui
 - **Icons**: Lucide React
 - **State Management**: React Hooks
@@ -47,7 +47,7 @@ trades-backtester/
 │   ├── analytics/        # Charts and stats components
 │   ├── dashboard/        # Trade forms and lists
 │   └── ui/               # Shadcn/ui primitive components
-├── lib/                  # Utilities and Supabase client
+├── lib/                  # Utilities and Appwrite client
 └── scripts/              # Database migration SQL scripts
 ```
 
@@ -61,7 +61,7 @@ Follow these steps to set up the project locally.
 
 - Node.js (v18+)
 - pnpm (recommended) or npm
-- A Supabase account
+- An Appwrite Cloud account (or self-hosted Appwrite instance)
 
 ### Installation
 
@@ -82,19 +82,26 @@ Follow these steps to set up the project locally.
 
 3.  **Environment Setup:**
 
-    Create a `.env` file in the root directory and add your Supabase credentials:
+    Create a `.env.local` file in the root directory and add your Appwrite credentials:
 
     ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+    APPWRITE_API_KEY=your_api_key
+    APPWRITE_DATABASE_ID=your_database_id
+    APPWRITE_TRADES_COLLECTION_ID=your_trades_collection_id
+    APPWRITE_BROKER_ACCOUNTS_COLLECTION_ID=your_broker_accounts_collection_id
+    APPWRITE_STORAGE_BUCKET_ID=your_bucket_id
     ```
 
-4.  **Database Setup:**
+4.  **Appwrite Setup:**
 
-    Run the SQL scripts located in the `scripts/` folder in your Supabase SQL Editor to set up the tables and policies.
-    - `001_create_trades_table.sql`
-    - `002_create_profiles_table.sql`
-    - (Run others in sequence)
+    In the Appwrite Console, create:
+    - A **Database** and note its ID
+    - A **trades** collection with the required attributes (see `scripts/` for schema reference)
+    - A **broker_accounts** collection
+    - A **Storage bucket** called `trade-screenshots`
+    - An **API Key** with appropriate scopes
 
 5.  **Run the development server:**
 

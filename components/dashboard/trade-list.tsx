@@ -20,7 +20,7 @@ import {
   Target,
   Info,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { deleteTrade, updateTrade } from "@/lib/appwrite/actions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -92,11 +92,10 @@ export function TradeList({ trades }: TradeListProps) {
     if (!confirm("Are you sure you want to delete this trade?")) return;
 
     setDeletingId(id);
-    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("trades").delete().eq("id", id);
-      if (error) throw error;
+      const result = await deleteTrade(id);
+      if (result.error) throw new Error(result.error);
       router.refresh();
     } catch (err) {
       console.error("Failed to delete trade:", err);
@@ -106,10 +105,23 @@ export function TradeList({ trades }: TradeListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
     });
   };
 
@@ -293,6 +305,14 @@ export function TradeList({ trades }: TradeListProps) {
                               </span>
                               <span className="font-mono text-emerald-500 font-bold uppercase tracking-tight">
                                 {trade.status}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                Entry Time
+                              </span>
+                              <span className="font-mono font-bold">
+                                {formatDateTime(trade.entry_date)}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
@@ -545,7 +565,7 @@ export function TradeList({ trades }: TradeListProps) {
                                 Entry Date
                               </span>
                               <span className="font-mono font-bold">
-                                {formatDate(trade.entry_date)}
+                                {formatDateTime(trade.entry_date)}
                               </span>
                             </div>
                             <div className="flex justify-between text-xs">
@@ -554,7 +574,7 @@ export function TradeList({ trades }: TradeListProps) {
                               </span>
                               <span className="font-mono font-bold">
                                 {trade.exit_date
-                                  ? formatDate(trade.exit_date)
+                                  ? formatDateTime(trade.exit_date)
                                   : "—"}
                               </span>
                             </div>
@@ -668,10 +688,13 @@ function CloseTradeButton({
 }) {
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
-  const [exitDate, setExitDate] = useState<string>("");
+  const [exitDate, setExitDate] = useState<string>(() => {
+    const d = new Date();
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  });
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
-  const today = new Date().toISOString().split("T")[0];
 
   const handleClose = async () => {
     setSaving(true);
@@ -684,19 +707,24 @@ function CloseTradeButton({
         tradeType: (trade.trade_type as "long" | "short") || "long",
       });
 
-      const { error } = await supabase
-        .from("trades")
-        .update({
-          status: "closed",
-          exit_price_text: exitPrice,
-          exit_price: Number.parseFloat(exitPrice),
-          exit_date: exitDate || null,
-          pnl,
-          pnl_percentage: pnlPct,
-        })
-        .eq("id", trade.id);
+      const toTimestamp = (dateStr: string): string | null => {
+        if (!dateStr) return null;
+        if (dateStr.includes("T")) return new Date(dateStr).toISOString();
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const now = new Date();
+        return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+      };
 
-      if (error) throw error;
+      const result = await updateTrade(trade.id, {
+        status: "closed",
+        exit_price_text: exitPrice,
+        exit_price: Number.parseFloat(exitPrice),
+        exit_date: toTimestamp(exitDate),
+        pnl,
+        pnl_percentage: pnlPct,
+      });
+
+      if (result.error) throw new Error(result.error);
       setOpen(false);
       onClosed();
     } catch (e) {
@@ -734,7 +762,6 @@ function CloseTradeButton({
             <Input
               id="exit_date"
               type="date"
-              max={today}
               value={exitDate}
               onChange={(e) => setExitDate(e.target.value)}
             />

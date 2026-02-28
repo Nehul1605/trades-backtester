@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import type { User } from "@supabase/supabase-js";
 import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,20 +11,13 @@ import Link from "next/link";
 export default function CalendarPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const { status } = useSession();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/auth/login");
-      } else {
-        setUser(user);
-      }
-    };
-    checkUser();
-  }, [router]);
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     // TradingView Economic Calendar Widget
@@ -48,11 +40,11 @@ export default function CalendarPage() {
     }
   }, []);
 
-  if (!user) return null;
+  if (status !== "authenticated") return null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <DashboardHeader user={user} />
+      <DashboardHeader />
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md space-y-6">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
