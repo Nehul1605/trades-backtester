@@ -51,79 +51,65 @@ export function StatsCards({ trades }: StatsCardsProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group hover:border-primary/50 transition-all duration-300">
-        <div className={`absolute top-0 left-0 w-1 h-full ${totalPnL >= 0 ? "bg-emerald-500" : "bg-rose-500"} opacity-50`} />
+      <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total P&L</CardTitle>
-          <div className="p-1.5 rounded-md bg-background/50 border border-border">
-            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
+          <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div
-            className={`text-3xl font-black tracking-tighter ${totalPnL >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+            className={`text-2xl font-bold font-mono ${totalPnL >= 0 ? "text-profit" : "text-loss"}`}
           >
             {formatCurrency(totalPnL)}
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase">
-              {closedTrades.length} Trades
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group hover:border-primary/50 transition-all duration-300">
-        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-50" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Win Rate</CardTitle>
-          <div className="p-1.5 rounded-md bg-background/50 border border-border">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-black tracking-tighter text-foreground">
-            {winRate.toFixed(1)}%
-          </div>
-          <div className="flex items-center gap-1.5 mt-2">
-            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase">{winningTrades.length}W</span>
-            <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded uppercase">{losingTrades.length}L</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group hover:border-primary/50 transition-all duration-300">
-        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-50" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Avg Win</CardTitle>
-          <div className="p-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-black tracking-tighter text-emerald-500">
-            {formatCurrency(avgWin)}
-          </div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2">
-            Best Performance
+          <p className="text-xs text-muted-foreground mt-1">
+            {closedTrades.length} closed trades
           </p>
         </CardContent>
       </Card>
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group hover:border-primary/50 transition-all duration-300">
-        <div className="absolute top-0 left-0 w-1 h-full bg-rose-500 opacity-50" />
+      <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Avg Loss</CardTitle>
-          <div className="p-1.5 rounded-md bg-rose-500/10 border border-rose-500/20">
-            <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
-          </div>
+          <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+          <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-black tracking-tighter text-rose-500">
+          <div className="text-2xl font-bold font-mono">
+            {winRate.toFixed(1)}%
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            <span className="text-profit">{winningTrades.length}W</span> /{" "}
+            <span className="text-loss">{losingTrades.length}L</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Avg Win</CardTitle>
+          <TrendingUp className="h-4 w-4 text-profit" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold font-mono text-profit">
+            {formatCurrency(avgWin)}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {winningTrades.length} winning trades
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Avg Loss</CardTitle>
+          <TrendingDown className="h-4 w-4 text-loss" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold font-mono text-loss">
             {formatCurrency(avgLoss)}
           </div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2">
-            Drawdown Metric
+          <p className="text-xs text-muted-foreground mt-1">
+            {losingTrades.length} losing trades
           </p>
         </CardContent>
       </Card>
