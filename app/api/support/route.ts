@@ -18,21 +18,22 @@ export async function POST(req: Request) {
       return new NextResponse("Missing fields", { status: 400 });
     }
 
-    const supportEmail = process.env.SUPPORT_EMAIL || "support@tradetrackerpro.com";
+    const supportEmail =
+      process.env.SUPPORT_EMAIL || "support@tradetrackerpro.com";
     const userName = session.user.name || "Unknown User";
     const userEmail = session.user.email || email || "No Email Provided";
 
-    console.log("DEBUG: Attempting to send email via Resend", { 
-      to: supportEmail, 
+    console.log("DEBUG: Attempting to send email via Resend", {
+      to: supportEmail,
       from: "Support Ticket <onboarding@resend.dev>",
-      subject: `[SUPPORT TICKET] ${subject}`
+      subject: `[SUPPORT TICKET] ${subject}`,
     });
 
     // Send the email using Resend
     if (process.env.RESEND_API_KEY) {
       try {
         const response = await resend.emails.send({
-          from: "Support Ticket <onboarding@resend.dev>", 
+          from: "Support Ticket <onboarding@resend.dev>",
           to: supportEmail,
           replyTo: userEmail,
           subject: `[SUPPORT TICKET] ${subject}`,
@@ -47,24 +48,32 @@ export async function POST(req: Request) {
           
   Timestamp: ${new Date().toLocaleString()}`,
         });
-        
+
         console.log("DEBUG: Resend API success response:", response);
       } catch (resendError: any) {
         console.error("DEBUG: Resend API failure:", resendError);
-        return new NextResponse(JSON.stringify({ error: resendError.message }), { status: 500 });
+        return new NextResponse(
+          JSON.stringify({ error: resendError.message }),
+          { status: 500 },
+        );
       }
     } else {
-      console.warn("DEBUG: RESEND_API_KEY is missing from environment variables");
+      console.warn(
+        "DEBUG: RESEND_API_KEY is missing from environment variables",
+      );
       return new NextResponse("Email service misconfigured", { status: 500 });
     }
 
-    console.log("Support Query Received and Forwarded:", { userName, userEmail, subject });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Support ticket received by the site administration." 
+    console.log("Support Query Received and Forwarded:", {
+      userName,
+      userEmail,
+      subject,
     });
 
+    return NextResponse.json({
+      success: true,
+      message: "Support ticket received by the site administration.",
+    });
   } catch (error) {
     console.error("Support API Error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

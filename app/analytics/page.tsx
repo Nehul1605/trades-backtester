@@ -27,7 +27,12 @@ export default async function AnalyticsPage() {
     let calculatedPnl = doc.pnl;
     let calculatedPnlPct = doc.pnl_percentage;
 
-    if ((!doc.pnl || doc.pnl === 0) && doc.entry_price && doc.exit_price && doc.quantity) {
+    if (
+      (!doc.pnl || doc.pnl === 0) &&
+      doc.entry_price &&
+      doc.exit_price &&
+      doc.quantity
+    ) {
       const { pnl, pnlPct } = computePnlUSD({
         symbol: doc.symbol,
         entryPrice: doc.entry_price,
@@ -68,9 +73,12 @@ export default async function AnalyticsPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Performance Analytics</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Performance Analytics
+            </h1>
             <p className="text-muted-foreground mt-2">
-              In-depth breakdown of your trading strategies and execution metrics.
+              In-depth breakdown of your trading strategies and execution
+              metrics.
             </p>
           </div>
 

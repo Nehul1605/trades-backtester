@@ -1,11 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, TrendingUp, TrendingDown, Info, Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Calculator,
+  TrendingUp,
+  TrendingDown,
+  Info,
+  Search,
+} from "lucide-react";
 import SymbolCombobox, {
   type SymbolOption,
 } from "@/components/inputs/symbol-combobox";
@@ -32,7 +50,7 @@ export function PLCalculator() {
   const [entryPrice, setEntryPrice] = useState<string>("");
   const [exitPrice, setExitPrice] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
-  
+
   const [result, setResult] = useState<{
     pnl: number;
     pnlPercent: number;
@@ -87,7 +105,10 @@ export function PLCalculator() {
           </div>
           <div className="space-y-2">
             <Label>Direction</Label>
-            <Select value={direction} onValueChange={(v) => setDirection(v as "long" | "short")}>
+            <Select
+              value={direction}
+              onValueChange={(v) => setDirection(v as "long" | "short")}
+            >
               <SelectTrigger className="bg-background">
                 <SelectValue />
               </SelectTrigger>
@@ -136,50 +157,81 @@ export function PLCalculator() {
         </div>
 
         {result ? (
-          <div className={`p-6 rounded-xl border-2 transition-all ${
-            result.pnl >= 0 
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
-              : "bg-rose-500/10 border-rose-500/20 text-rose-500"
-          }`}>
+          <div
+            className={`p-6 rounded-xl border-2 transition-all ${
+              result.pnl >= 0
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium opacity-80 uppercase tracking-wider">Estimated P&L</p>
+                <p className="text-sm font-medium opacity-80 uppercase tracking-wider">
+                  Estimated P&L
+                </p>
                 <h3 className="text-3xl font-bold font-mono">
-                  {result.pnl >= 0 ? "+" : ""}{result.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {result.pnl >= 0 ? "+" : ""}
+                  {result.pnl.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </h3>
               </div>
               <div className="text-right space-y-1">
-                <p className="text-sm font-medium opacity-80 uppercase tracking-wider">Percentage</p>
+                <p className="text-sm font-medium opacity-80 uppercase tracking-wider">
+                  Percentage
+                </p>
                 <div className="flex items-center justify-end gap-1 text-xl font-bold">
-                  {result.pnl >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                  {result.pnl >= 0 ? (
+                    <TrendingUp className="w-5 h-5" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5" />
+                  )}
                   {result.pnlPercent.toFixed(2)}%
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-4 pt-4 border-t border-current/10 grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] uppercase opacity-60">Position Size</p>
-                <p className="font-semibold">${(parseFloat(entryPrice) * parseFloat(quantity)).toLocaleString()}</p>
+                <p className="text-[10px] uppercase opacity-60">
+                  Position Size
+                </p>
+                <p className="font-semibold">
+                  $
+                  {(
+                    parseFloat(entryPrice) * parseFloat(quantity)
+                  ).toLocaleString()}
+                </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase opacity-60">Target Result</p>
-                <p className="font-semibold">${(parseFloat(exitPrice) * parseFloat(quantity)).toLocaleString()}</p>
+                <p className="text-[10px] uppercase opacity-60">
+                  Target Result
+                </p>
+                <p className="font-semibold">
+                  $
+                  {(
+                    parseFloat(exitPrice) * parseFloat(quantity)
+                  ).toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
         ) : (
           <div className="p-12 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-accent/20">
             <Info className="w-8 h-8 mb-2 opacity-20" />
-            <p className="text-sm italic">Enter values above to calculate results</p>
+            <p className="text-sm italic">
+              Enter values above to calculate results
+            </p>
           </div>
         )}
 
         <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-200 text-[11px]">
           <Info className="w-4 h-4 shrink-0 mt-0.5 text-orange-500" />
           <p>
-            Note: This is a raw calculation. Fees, slippage, and spread are not included in the estimation. 
-            For Forex, pip value calculations will be added in the next update.
+            Note: This is a raw calculation. Fees, slippage, and spread are not
+            included in the estimation. For Forex, pip value calculations will
+            be added in the next update.
           </p>
         </div>
       </CardContent>

@@ -15,7 +15,7 @@ export default async function PLCalculatorPage() {
       <DashboardHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
         <div className="w-full">
-            <PLCalculator />
+          <PLCalculator />
         </div>
       </main>
     </div>

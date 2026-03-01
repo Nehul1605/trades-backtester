@@ -20,9 +20,14 @@ export default async function JournalPage() {
   // Map Appwrite documents to the shape the TraderStats component expects
   const trades = tradeDocs.map((doc: any) => {
     let calculatedPnl = doc.pnl;
-    
+
     // Compute P&L if missing but prices exist
-    if ((!doc.pnl || doc.pnl === 0) && doc.entry_price && doc.exit_price && doc.quantity) {
+    if (
+      (!doc.pnl || doc.pnl === 0) &&
+      doc.entry_price &&
+      doc.exit_price &&
+      doc.quantity
+    ) {
       const { pnl } = computePnlUSD({
         symbol: doc.symbol,
         entryPrice: doc.entry_price,
@@ -49,12 +54,14 @@ export default async function JournalPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase tracking-widest">Trader's Hub</h1>
+            <h1 className="text-3xl font-bold tracking-tight uppercase tracking-widest">
+              Trader's Hub
+            </h1>
             <p className="text-muted-foreground mt-2 uppercase text-[10px] font-bold tracking-wider">
               High-fidelity performance metrics and execution insights.
             </p>
           </div>
-          
+
           <TraderStats initialTrades={trades} />
         </div>
       </main>
