@@ -8,14 +8,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 interface Trade {
@@ -30,33 +29,36 @@ interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ trades }: PerformanceChartProps) {
-  // Aggregate P&L by day
-  const dailyPnL = trades
+  const closedTrades = trades
     .filter((t) => t.status === "closed" && t.pnl !== null)
-    .reduce((acc: Record<string, number>, trade) => {
-      const date = new Date(trade.entry_date).toLocaleDateString("en-US", {
+    .sort(
+      (a, b) =>
+        new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime(),
+    );
+
+  let cumulativePnL = 0;
+  const chartData = closedTrades.map((trade) => {
+    cumulativePnL += trade.pnl || 0;
+    return {
+      date: new Date(trade.entry_date).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-      });
-      acc[date] = (acc[date] || 0) + (trade.pnl || 0);
-      return acc;
-    }, {});
-
-  const chartData = Object.entries(dailyPnL)
-    .map(([date, pnl]) => ({ date, pnl }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      }),
+      pnl: cumulativePnL,
+    };
+  });
 
   if (chartData.length === 0) {
     return (
-      <Card className="border-border bg-card/50 backdrop-blur-sm">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Daily Net P&L</CardTitle>
+          <CardTitle>Cumulative P&L</CardTitle>
           <CardDescription>
-            Histogram of daily closed trade results
+            Track your profit and loss over time
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-75 text-muted-foreground text-sm border-2 border-dashed border-border/50 rounded-xl">
+          <div className="flex items-center justify-center h-75 text-muted-foreground text-sm">
             No closed trades to display
           </div>
         </CardContent>
@@ -65,69 +67,55 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
   }
 
   return (
-    <Card className="border-border bg-card/50 backdrop-blur-sm">
+    <Card className="border-border bg-card">
       <CardHeader>
-        <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Daily Net P&L</CardTitle>
-        <CardDescription>Histogram of daily closed trade results</CardDescription>
+        <CardTitle>Cumulative P&L</CardTitle>
+        <CardDescription>Track your profit and loss over time</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData}>
+            <defs>
+              <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
             <CartesianGrid
-              vertical={false}
               strokeDasharray="3 3"
               stroke="#1e293b"
-              opacity={0.3}
+              opacity={0.5}
             />
             <XAxis
               dataKey="date"
-              stroke="#64748b"
-              fontSize={10}
-              fontWeight={600}
+              stroke="#94a3b8"
+              fontSize={11}
               tickLine={false}
               axisLine={false}
-              dy={10}
             />
             <YAxis
-              stroke="#64748b"
-              fontSize={10}
-              fontWeight={600}
+              stroke="#94a3b8"
+              fontSize={11}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value}`}
             />
             <Tooltip
-              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
               contentStyle={{
-                backgroundColor: "#0f172a",
+                backgroundColor: "#111827",
                 border: "1px solid #1e293b",
-                borderRadius: "12px",
-                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                padding: "8px 12px",
+                borderRadius: "8px",
+                color: "#e2e8f0",
               }}
-              itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-              labelStyle={{ color: "#94a3b8", fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase' }}
-              formatter={(value: number) => [
-                <span style={{ color: value >= 0 ? "#10b981" : "#f43f5e" }}>
-                  {value >= 0 ? "+" : ""}${value.toLocaleString()}
-                </span>,
-                "Daily P&L"
-              ]}
+              labelStyle={{ color: "#94a3b8" }}
             />
-            <Bar 
-              dataKey="pnl" 
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            >
-              {chartData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={entry.pnl >= 0 ? "#10b981" : "#f43f5e"}
-                  fillOpacity={0.8}
-                />
-              ))}
-            </Bar>
-          </BarChart>
+            <Area
+              type="monotone"
+              dataKey="pnl"
+              stroke="#3b82f6"
+              fill="url(#colorPnl)"
+              strokeWidth={2}
+            />
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
