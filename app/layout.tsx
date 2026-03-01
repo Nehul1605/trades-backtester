@@ -26,8 +26,10 @@ export default async function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <Suspense fallback={null}>{children}</Suspense>Provider>
-        <Analytics />
+            <Suspense fallback={null}>{children}</Suspense>
+            <Toaster />
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

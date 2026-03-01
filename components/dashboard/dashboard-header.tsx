@@ -13,12 +13,13 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
 export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const sidebarContext = useSidebar();
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -31,7 +32,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
       <div className="flex h-14 items-center justify-between px-6">
         <div className="flex items-center gap-4">
-          <SidebarTrigger />
+          {sidebarContext && <SidebarTrigger />}
           <div className="h-6 w-px bg-border hidden md:block" />
           <h1 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest leading-none">
             {pathname.split("/").filter(Boolean).pop() || "Dashboard"}
