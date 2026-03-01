@@ -28,6 +28,13 @@ export function DashboardHeader() {
 
   const email = session?.user?.email ?? "";
 
+  const navItems = [
+    { href: "/dashboard", label: "Journal", icon: Home },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/calendar", label: "Calendar", icon: Calendar, badge: "Soon" },
+    { href: "/integrations", label: "Connect", icon: Link2 },
+  ];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
       <div className="flex h-14 items-center justify-between px-6">
@@ -39,18 +46,20 @@ export function DashboardHeader() {
           </h1>
         </div>
 
-        {/* Right: Consolidated Actions */}
-        <div className="flex items-center gap-4">
+        {/* Right: User + Actions */}
+        <div className="flex items-center gap-3">
           <ModeToggle />
+          <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
+            {email}
+          </span>
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={handleSignOut}
-            className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
-            title="Sign Out"
+            className="text-muted-foreground hover:text-foreground"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="sr-only">Sign Out</span>
+            <LogOut className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </div>

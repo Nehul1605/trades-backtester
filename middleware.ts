@@ -9,6 +9,8 @@ const publicPaths = [
   "/auth/error",
   "/api/auth",
   "/api/keep-alive",
+  "/_next",
+  "/favicon.ico",
 ];
 
 export function middleware(request: NextRequest) {
@@ -22,7 +24,9 @@ export function middleware(request: NextRequest) {
   // Check for Auth.js v5 session token
   const token =
     request.cookies.get("__Secure-authjs.session-token") ??
-    request.cookies.get("authjs.session-token");
+    request.cookies.get("authjs.session-token") ??
+    request.cookies.get("__Secure-next-auth.session-token") ??
+    request.cookies.get("next-auth.session-token");
 
   if (!token?.value) {
     const loginUrl = new URL("/auth/login", request.url);
