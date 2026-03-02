@@ -8,8 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
   CartesianGrid,
   XAxis,
   YAxis,
