@@ -133,40 +133,6 @@ export function StatsCards({ trades }: StatsCardsProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">
-            {winRate.toFixed(1)}%
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            <span className="text-profit">{winningTrades.length}W</span> /{" "}
-            <span className="text-loss">{losingTrades.length}L</span>
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border bg-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg Win</CardTitle>
-          <TrendingUp className="h-4 w-4 text-profit" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold font-mono text-profit">
-            {formatCurrency(avgWin)}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {winningTrades.length} winning trades
-          </p>
-        </CardContent>
-      </Card>
-
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Avg Loss
-          </CardTitle>
-          <div className="p-1.5 rounded-md bg-rose-500/10 border border-rose-500/20">
-            <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
-          </div>
-        </CardHeader>
-        <CardContent>
           <div className="text-3xl font-black tracking-tighter text-rose-500">
             {formatCurrency(avgLoss)}
           </div>
