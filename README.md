@@ -36,34 +36,6 @@
 
 ## 🛠️ Tech Stack
 
-<<<<<<< HEAD
-### 📈 1. High-Fidelity Analytics (Trader's Hub)
-
-- **Professional P&L Calendar**: A massive, interactive heat-map of your monthly performance. Instantly identify your greenest days and largest drawdowns.
-- **Real-time Stats Cards**: Track Total P&L, Win Rate (%), Profit Factor, and Average R:R with zero latency.
-- **Strategy Breakdown**: Unified table view of all executions with smart P&L calculations (computed automatically if entry/exit prices are provided).
-
-### 📔 2. Professional Journaling
-
-- **Execution Insights**: Log every trade with SL/TP levels, strategy tagging, and custom psychology notes.
-- **Screenshot Integration**: Securely upload and store your chart setups via Appwrite Storage to document your technical edge.
-- **Symbol Intelligence**: Built-in `SymbolCombobox` supporting major Forex, Crypto, Stocks, and Indices.
-
-### 📅 3. Interactive Economic Calendar
-
-- **Global Macro Events**: A full-screen, integrated TradingView Economic Calendar to keep you ahead of NFP, FOMC, and other high-impact news events.
-
-### 🧪 4. Tools & Intelligence
-
-- **P&L Calculator**: Real-time position size and profit estimator for Long/Short setups.
-- **Live Market (Beta)**: Institutional-grade terminal for real-time order flow (Coming Soon/Waitlist Active).
-- **AI Insights**: Pattern recognition and psychological edge analysis powered by machine learning (Coming Soon/Waitlist Active).
-
-### 🛠️ 5. Utility & Support
-
-- **Integrated Support Center**: Direct line to the dev team via an in-app ticket system powered by Resend API.
-- **Theme Engine**: Full Dark/Light mode support with the sleek "Midnight Blue" institutional palette.
-=======
 ### Frontend
 
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
@@ -77,7 +49,6 @@
 - **BaaS**: [Appwrite](https://appwrite.io/) (Database, Auth, Storage)
 - **Authentication**: [NextAuth.js](https://next-auth.js.org/) with Appwrite integration
 - **Database**: Appwrite Document Store (SQL migrations included)
->>>>>>> main
 
 ---
 
@@ -85,42 +56,26 @@
 
 ```bash
 trades-backtester/
-<<<<<<< HEAD
 ├── app/
 │   ├── analytics/
-│   ├── api/
+│   ├── auth/
 │   ├── calendar/
 │   ├── dashboard/
 │   └── integrations/
 ├── components/
-├── hooks/
+│   ├── analytics/
+│   ├── dashboard/
+│   └── ui/
 ├── lib/
+│   ├── appwrite/
+│   └── pnl/
 └── scripts/
-=======
-├── app/                  
-│   ├── analytics/        
-│   ├── auth/             
-│   ├── calendar/         
-│   ├── dashboard/        
-│   └── integrations/      
-├── components/           
-│   ├── analytics/        
-│   ├── dashboard/        
-│   └── ui/               
-├── lib/                  
-│   ├── appwrite/         
-│   └── pnl/              
-└── scripts/              
->>>>>>> main
 ```
 
 ---
 
 ## ⚡ Getting Started
 
-<<<<<<< HEAD
-1. **Clone & Install**
-=======
 ### Prerequisites
 
 - **Node.js**: v18 or higher
@@ -130,7 +85,6 @@ trades-backtester/
 ### Installation
 
 1. **Clone the repository**
->>>>>>> main
 
    ```bash
    git clone https://github.com/your-username/trades-backtester.git
@@ -146,21 +100,35 @@ trades-backtester/
 3. **Configure Environment**
    Create a `.env.local` and populate the following:
 
-<<<<<<< HEAD
-3. **Environment Config**
+   ```bash
+   # Appwrite
+   NEXT_PUBLIC_APPWRITE_ENDPOINT=
+   NEXT_PUBLIC_APPWRITE_PROJECT=
+   APPWRITE_API_KEY=
+
+   # NextAuth
+   NEXTAUTH_SECRET=
+   NEXTAUTH_URL=
+
+   # Resend
+   RESEND_API_KEY=
+   ```
+
    Create `.env.local`:
 
 =======
->>>>>>> main
-   ```env
-   NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-   NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
-   APPWRITE_API_KEY=your_api_key
-   APPWRITE_DATABASE_ID=your_database_id
-   APPWRITE_TRADES_COLLECTION_ID=your_trades_collection_id
-   APPWRITE_BROKER_ACCOUNTS_COLLECTION_ID=your_broker_accounts_collection_id
-   APPWRITE_STORAGE_BUCKET_ID=your_bucket_id
-   ```
+
+> > > > > > > main
+
+```env
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+APPWRITE_API_KEY=your_api_key
+APPWRITE_DATABASE_ID=your_database_id
+APPWRITE_TRADES_COLLECTION_ID=your_trades_collection_id
+APPWRITE_BROKER_ACCOUNTS_COLLECTION_ID=your_broker_accounts_collection_id
+APPWRITE_STORAGE_BUCKET_ID=your_bucket_id
+```
 
 4. **Initialize Database**
    Run the migration scripts found in `/scripts` to set up your Appwrite collections with the required attributes and permissions.
@@ -186,8 +154,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 <p align="center">
 Built with ❤️ for the Trading Community
 </p>
-
-    
 
 5.  **Run the development server:**
 

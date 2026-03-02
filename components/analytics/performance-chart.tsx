@@ -52,13 +52,9 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
     return (
       <Card className="border-border bg-card">
         <CardHeader>
-<<<<<<< HEAD
           <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
             Daily Net P&L
           </CardTitle>
-=======
-          <CardTitle>Cumulative P&L</CardTitle>
->>>>>>> main
           <CardDescription>
             Track your profit and loss over time
           </CardDescription>
@@ -75,22 +71,9 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader>
-<<<<<<< HEAD
         <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
           Daily Net P&L
         </CardTitle>
-        <CardDescription>
-          Histogram of daily closed trade results
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-          >
-=======
-        <CardTitle>Cumulative P&L</CardTitle>
         <CardDescription>Track your profit and loss over time</CardDescription>
       </CardHeader>
       <CardContent>
@@ -102,7 +85,6 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
               </linearGradient>
             </defs>
->>>>>>> main
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="#1e293b"
@@ -122,42 +104,12 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
               axisLine={false}
             />
             <Tooltip
-<<<<<<< HEAD
-              cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
-=======
->>>>>>> main
               contentStyle={{
                 backgroundColor: "#111827",
                 border: "1px solid #1e293b",
                 borderRadius: "8px",
                 color: "#e2e8f0",
               }}
-<<<<<<< HEAD
-              itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-              labelStyle={{
-                color: "#94a3b8",
-                fontSize: "10px",
-                marginBottom: "4px",
-                textTransform: "uppercase",
-              }}
-              formatter={(value: number) => [
-                <span style={{ color: value >= 0 ? "#10b981" : "#f43f5e" }}>
-                  {value >= 0 ? "+" : ""}${value.toLocaleString()}
-                </span>,
-                "Daily P&L",
-              ]}
-            />
-            <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={40}>
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.pnl >= 0 ? "#10b981" : "#f43f5e"}
-                  fillOpacity={0.8}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-=======
               labelStyle={{ color: "#94a3b8" }}
             />
             <Area
@@ -168,7 +120,6 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
               strokeWidth={2}
             />
           </AreaChart>
->>>>>>> main
         </ResponsiveContainer>
       </CardContent>
     </Card>
