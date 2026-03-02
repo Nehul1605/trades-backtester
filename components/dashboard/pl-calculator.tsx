@@ -27,6 +27,7 @@ import {
 import SymbolCombobox, {
   type SymbolOption,
 } from "@/components/inputs/symbol-combobox";
+import { computePnlUSD } from "@/lib/pnl";
 
 const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "ETHUSD", label: "ETHUSD" },
@@ -62,20 +63,20 @@ export function PLCalculator() {
     const exit = parseFloat(exitPrice);
     const qty = parseFloat(quantity);
 
-    if (!isNaN(entry) && !isNaN(exit) && !isNaN(qty)) {
-      let pnl = 0;
-      if (direction === "long") {
-        pnl = (exit - entry) * qty;
-      } else {
-        pnl = (entry - exit) * qty;
-      }
+    if (!isNaN(entry) && !isNaN(exit) && !isNaN(qty) && symbol) {
+      const { pnl, pnlPct: pnlPercent } = computePnlUSD({
+        symbol,
+        entryPrice: entry,
+        exitPrice: exit,
+        quantity: qty,
+        tradeType: direction,
+      });
 
-      const pnlPercent = (pnl / (entry * qty)) * 100;
       setResult({ pnl, pnlPercent });
     } else {
       setResult(null);
     }
-  }, [direction, entryPrice, exitPrice, quantity]);
+  }, [direction, entryPrice, exitPrice, quantity, symbol]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto border-border bg-card/50 backdrop-blur-sm">
@@ -226,12 +227,11 @@ export function PLCalculator() {
           </div>
         )}
 
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-200 text-[11px]">
-          <Info className="w-4 h-4 shrink-0 mt-0.5 text-orange-500" />
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-200 text-[11px]">
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
           <p>
-            Note: This is a raw calculation. Fees, slippage, and spread are not
-            included in the estimation. For Forex, pip value calculations will
-            be added in the next update.
+            Note: This calculation uses asset-specific contract sizes and pip
+            values. Fees, slippage, and spread are not included.
           </p>
         </div>
       </CardContent>
