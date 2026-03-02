@@ -8,10 +8,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+<<<<<<< HEAD
   Area,
   AreaChart,
   Bar,
   BarChart,
+=======
+  Bar,
+  BarChart,
+  Cell,
+>>>>>>> 2b9560df31c5f28bdaff37bdb5950831302aa795
   CartesianGrid,
   Cell,
   XAxis,
