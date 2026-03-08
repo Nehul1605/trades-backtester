@@ -1,32 +1,26 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Activity,
-  LogOut,
-  BarChart3,
-  Home,
-  Calendar,
-  Link2,
-} from "lucide-react";
+import { Activity, LogOut, BarChart3, Home, Calendar, Link2 } from "lucide-react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { ModeToggle } from "@/components/mode-toggle";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  user: User;
+}
+
+export function DashboardHeader({ user }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const sidebarContext = useSidebar();
 
   const handleSignOut = async () => {
-    await signOut({ redirect: false });
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/auth/login");
   };
-
-  const email = session?.user?.email ?? "";
 
   const navItems = [
     { href: "/dashboard", label: "Journal", icon: Home },
@@ -38,19 +32,51 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
       <div className="flex h-14 items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          {sidebarContext && <SidebarTrigger />}
-          <div className="h-6 w-px bg-border hidden md:block" />
-          <h1 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest leading-none">
-            {pathname.split("/").filter(Boolean).pop() || "Dashboard"}
-          </h1>
+        {/* Left: Logo + Nav */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
+              <Activity className="w-4 h-4" />
+            </div>
+            <span className="text-base font-bold hidden sm:inline">
+              TradeTracker<span className="text-primary">Pro</span>
+            </span>
+          </Link>
+
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                  {item.badge && (
+                    <span className="ml-1 text-[8px] font-bold uppercase px-1 py-0 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
         {/* Right: User + Actions */}
         <div className="flex items-center gap-3">
           <ModeToggle />
           <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
-            {email}
+            {user.email}
           </span>
           <Button
             variant="ghost"
