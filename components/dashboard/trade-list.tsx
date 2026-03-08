@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, ExternalLink, History, ChevronDown, ChevronUp, LayoutList, Calendar, Target, Info } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { deleteTrade, updateTrade } from "@/lib/appwrite/actions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -82,10 +82,9 @@ export function TradeList({ trades }: TradeListProps) {
     if (!confirm("Are you sure you want to delete this trade?")) return;
 
     setDeletingId(id);
-    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("trades").delete().eq("id", id);
+      const { error } = await deleteTrade(id);
       if (error) throw error;
       router.refresh();
     } catch (err) {
@@ -494,7 +493,6 @@ function CloseTradeButton({
   const [exitPrice, setExitPrice] = useState<string>("");
   const [exitDate, setExitDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
   const today = new Date().toISOString().split("T")[0];
 
   const handleClose = async () => {
@@ -508,17 +506,14 @@ function CloseTradeButton({
         tradeType: (trade.trade_type as "long" | "short") || "long",
       });
 
-      const { error } = await supabase
-        .from("trades")
-        .update({
-          status: "closed",
-          exit_price_text: exitPrice,
-          exit_price: Number.parseFloat(exitPrice),
-          exit_date: exitDate || null,
-          pnl,
-          pnl_percentage: pnlPct,
-        })
-        .eq("id", trade.id);
+      const { error } = await updateTrade(trade.id, {
+        status: "closed",
+        exit_price_text: exitPrice,
+        exit_price: Number.parseFloat(exitPrice),
+        exit_date: exitDate || null,
+        pnl,
+        pnl_percentage: pnlPct,
+      });
 
       if (error) throw error;
       setOpen(false);

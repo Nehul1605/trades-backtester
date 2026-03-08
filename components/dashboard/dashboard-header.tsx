@@ -3,13 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, BarChart3, Home, Calendar, Link2 } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import { ModeToggle } from "@/components/mode-toggle";
 
 interface DashboardHeaderProps {
-  user: User;
+  user: any;
 }
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
@@ -17,9 +16,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
   const pathname = usePathname();
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    await signOut({ callbackUrl: "/auth/login", redirect: true });
   };
 
   const navItems = [
