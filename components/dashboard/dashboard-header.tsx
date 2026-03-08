@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Activity, LogOut, BarChart3, Home, Calendar, Link2 } from "lucide-react";
+import {
+  Activity,
+  LogOut,
+  BarChart3,
+  Home,
+  Calendar,
+  Link2,
+} from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
