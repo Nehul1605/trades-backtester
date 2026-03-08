@@ -10,15 +10,13 @@ import {
   Link2,
 } from "lucide-react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
 
-interface DashboardHeaderProps {
-  user: any;
-}
-
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader() {
+  const { data: session } = useSession();
+  const user = session?.user;
   const router = useRouter();
   const pathname = usePathname();
 
@@ -79,9 +77,11 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         {/* Right: User + Actions */}
         <div className="flex items-center gap-3">
           <ModeToggle />
-          <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
-            {user.email}
-          </span>
+          {user?.email && (
+            <span className="text-sm text-muted-foreground hidden md:inline truncate max-w-45">
+              {user.email}
+            </span>
+          )}
           <Button
             variant="ghost"
             size="sm"
