@@ -106,24 +106,24 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        {/* User Profile Section */}
-        <div className="px-4 pt-6 pb-2">
+      <SidebarContent className="scrollbar-none">
+        {/* User Profile Section - Simple for Dashboard */}
+        <div className="px-4 py-4">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 border border-border/40 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none">
-            <Avatar className="h-9 w-9 border-2 border-primary/20 shrink-0">
+            <Avatar className="h-9 w-9 border border-primary/20 shrink-0">
               <AvatarImage src={user.avatar} />
-              <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
-                {user.name[0]}
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                {user.name?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col gap-0 overflow-hidden group-data-[collapsible=icon]:hidden">
+            <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xs truncate text-foreground">
-                  {user.name.toUpperCase()}
+                <span className="font-semibold text-xs truncate text-foreground">
+                  {user.name}
                 </span>
                 <Badge
                   variant="secondary"
-                  className="text-[9px] h-3.5 px-1 leading-none bg-primary/10 text-primary border-none font-black uppercase"
+                  className="text-[9px] h-3.5 px-1 leading-none bg-primary/10 text-primary border-none font-bold uppercase"
                 >
                   FREE
                 </Badge>
