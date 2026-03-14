@@ -53,7 +53,7 @@ export function AppSidebar() {
       label: "Main Menu",
       items: [
         { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-        { title: "Trades", url: "/trades", icon: History },
+        { title: "Trade Histroy", url: "/trades", icon: History },
         { title: "Trader's Stats", url: "/journal", icon: LayoutGrid },
       ],
     },

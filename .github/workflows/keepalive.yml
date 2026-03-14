@@ -1,0 +1,13 @@
+name: Keep Appwrite Alive
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"   # runs every 12 hours
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend
+        run: curl https://www.tradetrackerpro.in/
