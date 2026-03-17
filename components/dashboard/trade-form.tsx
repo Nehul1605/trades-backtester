@@ -24,10 +24,12 @@ import SymbolCombobox, {
   type SymbolOption,
 } from "@/components/inputs/symbol-combobox";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createTrade, uploadTradeScreenshot } from "@/lib/appwrite/actions";
 import { computePnlUSD } from "@/lib/pnl";
+import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 interface TradeFormProps {
   userId: string;
@@ -51,7 +53,9 @@ const SYMBOL_OPTIONS: SymbolOption[] = [
 
 export function TradeForm({ userId }: TradeFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [screenshot, setScreenshot] = useState<File | null>(null);
 
@@ -168,24 +172,33 @@ export function TradeForm({ userId }: TradeFormProps) {
 
       if (result.error) throw new Error(result.error);
 
-      // Reset form
-      setFormData({
-        symbol: "",
-        entry_price: "",
-        exit_price: "",
-        quantity: "",
-        trade_type: "long",
-        entry_date: today,
-        exit_date: "",
-        status: "open",
-        strategy_name: "",
-        notes: "",
-        stop_loss: "",
-        take_profit: "",
+      // Show success animation
+      setIsSuccess(true);
+      toast({
+        title: "Trade Added",
+        description: `Successfully added ${formData.symbol.toUpperCase()} trade.`,
       });
-      setScreenshot(null);
 
-      router.refresh();
+      // Reset form after a brief delay so user sees animation
+      setTimeout(() => {
+        setFormData({
+          symbol: "",
+          entry_price: "",
+          exit_price: "",
+          quantity: "",
+          trade_type: "long",
+          entry_date: today,
+          exit_date: "",
+          status: "open",
+          strategy_name: "",
+          notes: "",
+          stop_loss: "",
+          take_profit: "",
+        });
+        setScreenshot(null);
+        setIsSuccess(false);
+        router.refresh();
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add trade");
     } finally {
@@ -472,12 +485,36 @@ export function TradeForm({ userId }: TradeFormProps) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Adding Trade..." : "Add Trade"}
-          </Button>
-
-          {/* Error message */}
-          {error ? <p className="text-red-600 text-sm mt-2">{error}</p> : null}
+          <div className="relative h-10 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {!isSuccess ? (
+                <motion.div
+                  key="add-button"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full"
+                >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Adding Trade..." : "Add Trade"}
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="success-indicator"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="w-full h-full flex items-center justify-center bg-green-500 rounded-md text-white font-medium"
+                >
+                  <CheckCircle2 className="w-5 h-5 mr-2 animate-in zoom-in duration-300" />
+                  Trade Added Successfully!
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </form>
       </CardContent>
     </Card>
