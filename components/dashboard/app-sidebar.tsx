@@ -91,11 +91,14 @@ export function AppSidebar() {
     <Sidebar
       variant="sidebar"
       collapsible="icon"
-      className="border-r border-border bg-card"
+      className="border-r border-border bg-sidebar"
     >
-      <SidebarHeader className="h-14 flex items-center px-4 border-b border-border/50">
-        <Link href="/dashboard" className="flex items-center gap-3 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+      <SidebarHeader className="h-14 flex items-center px-4 border-b border-border/50 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-3 px-2 group-data-[collapsible=icon]:px-0"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
             <Activity className="h-4 w-4" />
           </div>
           <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
@@ -108,8 +111,8 @@ export function AppSidebar() {
 
       <SidebarContent className="scrollbar-none">
         {/* User Profile Section - Simple for Dashboard */}
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 border border-border/40 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none">
+        <div className="px-4 py-4 group-data-[collapsible=icon]:px-2">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 border border-border/40 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:justify-center">
             <Avatar className="h-9 w-9 border border-primary/20 shrink-0">
               <AvatarImage src={user.avatar} />
               <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
@@ -137,11 +140,11 @@ export function AppSidebar() {
 
         {navGroups.map((group) => (
           <SidebarGroup key={group.label} className="py-2">
-            <SidebarGroupLabel className="px-5 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 h-8">
+            <SidebarGroupLabel className="px-5 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 h-8 group-data-[collapsible=icon]:invisible">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5 px-2">
+              <SidebarMenu className="gap-0.5 px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
                 {group.items.map((item) => {
                   const isActive = pathname === item.url;
                   return (
@@ -151,7 +154,7 @@ export function AppSidebar() {
                         isActive={isActive}
                         tooltip={item.title}
                         className={cn(
-                          "h-10 px-3 transition-all duration-200 rounded-lg",
+                          "h-10 px-3 transition-all duration-200 rounded-lg group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center",
                           isActive
                             ? "bg-primary text-primary-foreground font-bold shadow-sm shadow-primary/20"
                             : "hover:bg-accent/50 text-muted-foreground hover:text-foreground font-medium",
@@ -159,7 +162,7 @@ export function AppSidebar() {
                       >
                         <Link
                           href={item.url}
-                          className="flex items-center gap-3"
+                          className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                         >
                           <item.icon
                             className={cn(

@@ -14,10 +14,10 @@ export default async function DashboardPage() {
   const userId = session.user.id;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-full flex-col bg-background">
       <PnlSyncProvider />
       <DashboardHeader />
-      <main className="flex-1 p-4 md:p-6 lg:p-8">
+      <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
         <div className="mx-auto max-w-7xl space-y-6">
           <div>
             <h1 className="text-2xl font-bold">Trading Journal</h1>

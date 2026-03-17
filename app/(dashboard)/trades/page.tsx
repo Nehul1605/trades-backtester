@@ -40,9 +40,9 @@ export default async function TradesPage() {
   }));
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-full flex-col bg-background">
       <DashboardHeader />
-      <main className="flex-1 p-4 md:p-6 lg:p-8">
+      <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
         <div className="mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-3 duration-500">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Trade History</h1>
