@@ -12,11 +12,6 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: "TradeTracker Pro - Strategy Backtesting Platform",
   description: "Professional trading journal and strategy backtesting platform",
-  icons: {
-    icon: "/placeholder-logo.svg",
-    shortcut: "/placeholder-logo.svg",
-    apple: "/placeholder-logo.svg",
-  },
 };
 
 export default async function RootLayout({

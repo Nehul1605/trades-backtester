@@ -629,11 +629,11 @@ function CloseTradeButton({
   trade: Trade;
   onClosed: () => void;
 }) {
+  const today = new Date().toISOString().split("T")[0];
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
-  const [exitDate, setExitDate] = useState<string>("");
+  const [exitDate, setExitDate] = useState<string>(today);
   const [saving, setSaving] = useState(false);
-  const today = new Date().toISOString().split("T")[0];
 
   const handleClose = async () => {
     setSaving(true);
