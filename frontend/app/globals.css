@@ -1,0 +1,199 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Professional Trading Palette — Blue & White
+ * Primary: #3b82f6 (blue)  Accent: #60a5fa (light blue)
+ * Profit: #22c55e  Loss: #ef4444
+ */
+
+:root {
+  --background: #faf9f6;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+  --primary: #b08f62;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f2eb;
+  --secondary-foreground: #1c1917;
+  --muted: #f5f2eb;
+  --muted-foreground: #78716c;
+  --accent: #fcfbf9;
+  --accent-foreground: #b08f62;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #b08f62;
+
+  --chart-1: #b08f62;
+  --chart-2: #b91c1c;
+  --chart-3: #d4af37;
+  --chart-4: #10b981;
+  --chart-5: #a855f7;
+
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #b08f62;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f2eb;
+  --sidebar-accent-foreground: #b08f62;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #b08f62;
+}
+
+.dark {
+  /* Luxury Dark — Deep obsidian with champagne gold accents */
+  --background: #070708;
+  --foreground: #f2f2f7;
+  --card: #0d0d0f;
+  --card-foreground: #f2f2f7;
+  --popover: #0d0d0f;
+  --popover-foreground: #f2f2f7;
+
+  --primary: #c5a880;
+  --primary-foreground: #070708;
+
+  --secondary: #161619;
+  --secondary-foreground: #f2f2f7;
+
+  --muted: #161619;
+  --muted-foreground: #9a9a9f;
+
+  --accent: #1c1c20;
+  --accent-foreground: #c5a880;
+
+  --destructive: #991b1b;
+  --destructive-foreground: #f2f2f7;
+
+  --border: #1f1f24;
+  --input: #1f1f24;
+  --ring: #c5a880;
+
+  --chart-1: #c5a880;
+  --chart-2: #991b1b;
+  --chart-3: #8c7853;
+  --chart-4: #10b981;
+  --chart-5: #d4af37;
+
+  --sidebar: #0d0d0f;
+  --sidebar-foreground: #f2f2f7;
+  --sidebar-primary: #c5a880;
+  --sidebar-primary-foreground: #070708;
+  --sidebar-accent: #161619;
+  --sidebar-accent-foreground: #c5a880;
+  --sidebar-border: #1f1f24;
+  --sidebar-ring: #c5a880;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
+
+/* Trading-specific utility classes */
+@layer utilities {
+  .text-profit {
+    color: #10b981;
+  }
+  .text-loss {
+    color: #ef4444;
+  }
+  .bg-profit {
+    background-color: #10b981;
+  }
+  .bg-loss {
+    background-color: #ef4444;
+  }
+  .bg-profit\/10 {
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+  .bg-loss\/10 {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+  .border-profit\/20 {
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+  .border-loss\/20 {
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+  .glow-profit {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  }
+  .glow-loss {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+  }
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #c5a880 0%, #e5d5be 50%, #b39268 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #c5a880 0%, #e5d5be 50%, #b39268 100%);
+  }
+  .gold-glow {
+    box-shadow: 0 0 25px rgba(197, 168, 128, 0.2);
+  }
+  .gold-glow-subtle {
+    box-shadow: 0 0 15px rgba(197, 168, 128, 0.1);
+  }
+  .trading-grid {
+    background-image:
+      linear-gradient(to right, rgba(197, 168, 128, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(197, 168, 128, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+}
