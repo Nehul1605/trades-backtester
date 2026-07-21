@@ -695,9 +695,9 @@ export default async function HomePage() {
               </h4>
               <ul className="space-y-2.5">
                 {[
-                  { l: "Dashboard", h: "/dashboard" },
-                  { l: "Trade Journal", h: "/dashboard" },
-                  { l: "Live Market", h: "/market" },
+                  { l: "Dashboard Console", h: "/dashboard" },
+                  { l: "Prop Consistency", h: "/consistency-calculator" },
+                  { l: "Live Forex Market", h: "/market" },
                   { l: "P&L Calculator", h: "/pl-calculator" },
                 ].map((link) => (
                   <li key={link.l}>
@@ -719,14 +719,14 @@ export default async function HomePage() {
               </h4>
               <ul className="space-y-2.5">
                 {[
-                  { l: "About", h: "#" },
-                  { l: "Affiliate Program", h: "/integrations" },
-                  { l: "Contact Us", h: "/help" },
+                  { l: "Core Features", h: "#features" },
+                  { l: "How It Works", h: "#how-it-works" },
+                  { l: "Trader Reviews", h: "#reviews" },
                 ].map((link) => (
                   <li key={link.l}>
                     <Link
                       href={link.h}
-                      className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                      className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
                     >
                       {link.l}
                     </Link>
@@ -750,7 +750,7 @@ export default async function HomePage() {
                   <li key={link.l}>
                     <Link
                       href={link.h}
-                      className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                      className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
                     >
                       {link.l}
                     </Link>
