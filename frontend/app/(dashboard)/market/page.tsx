@@ -22,6 +22,8 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LiveMarketStage } from "@/components/live-market/LiveMarketStage";
 import { CoHostModal } from "@/components/live-market/CoHostModal";
+import { CreateSessionModal } from "@/components/live-market/CreateSessionModal";
+
 const formatIST = (dateVal: any) => {
   if (!dateVal) return null;
   try {
