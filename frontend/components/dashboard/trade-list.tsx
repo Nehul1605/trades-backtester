@@ -19,6 +19,7 @@ import {
   Calendar,
   Target,
   Info,
+  Download,
 } from "lucide-react";
 import { deleteTrade, updateTrade, getBrokerAccounts } from "@/lib/appwrite/actions";
 import { useRouter } from "next/navigation";
@@ -117,6 +118,57 @@ export function TradeList({ trades }: TradeListProps) {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleExportCSV = () => {
+    if (closedTrades.length === 0) return;
+
+    // CSV Headers
+    const headers = [
+      "Asset/Symbol",
+      "Type",
+      "Lots/Quantity",
+      "Entry Price",
+      "Exit Price",
+      "Stop Loss (SL)",
+      "Take Profit (TP)",
+      "Opened Date",
+      "Closed Date",
+      "P&L ($)",
+      "P&L (%)",
+      "Notes"
+    ];
+
+    // Map rows
+    const rows = closedTrades.map((t) => [
+      t.symbol,
+      t.trade_type.toUpperCase(),
+      t.quantity,
+      t.entry_price_text || t.entry_price,
+      t.exit_price_text || t.exit_price || "—",
+      t.stop_loss || "—",
+      t.take_profit || "—",
+      new Date(t.entry_date).toISOString().split("T")[0],
+      t.exit_date ? new Date(t.exit_date).toISOString().split("T")[0] : "—",
+      t.pnl || 0,
+      t.pnl_percentage ? t.pnl_percentage.toFixed(2) : "0.00",
+      `"${(t.notes || "").replace(/"/g, '""')}"` // escape quotes
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `closed_trades_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatDate = (dateString: string) => {
@@ -293,12 +345,25 @@ export function TradeList({ trades }: TradeListProps) {
               <History className="w-4 h-4 text-primary" />
               Settle Ledger History
             </h4>
-            <Badge
-              variant="outline"
-              className="bg-secondary/30 px-3 py-0.5 text-[9px] font-black"
-            >
-              {closedTrades.length} CLOSED
-            </Badge>
+            <div className="flex items-center gap-2">
+              {closedTrades.length > 0 && (
+                <Button
+                  onClick={handleExportCSV}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5 bg-accent/20 border-primary/20 text-primary hover:border-primary/50 hover:bg-accent/40 text-[9px] font-black uppercase tracking-wider rounded-md flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export CSV
+                </Button>
+              )}
+              <Badge
+                variant="outline"
+                className="bg-secondary/30 px-3 py-0.5 text-[9px] font-black"
+              >
+                {closedTrades.length} CLOSED
+              </Badge>
+            </div>
           </div>
 
           {closedTrades.length === 0 ? (

@@ -78,6 +78,7 @@ export function TradeTypeDistribution({ trades }: TradeTypeDistributionProps) {
               outerRadius={80}
               fill="#3b82f6"
               dataKey="value"
+              style={{ pointerEvents: "none" }}
             >
               {data.map((_, index) => (
                 <Cell

@@ -18,6 +18,7 @@ import {
   Calculator,
   LayoutGrid,
   ShieldCheck,
+  Percent,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -101,8 +102,7 @@ export function AppSidebar() {
       label: "Tools & Intelligence",
       items: [
         { title: "P&L Calculator", url: "/pl-calculator", icon: Calculator },
-        { title: "AI Insights", url: "/ai-report", icon: Brain, badge: "PRO" },
-        { title: "Broker Connect", url: "/integrations", icon: Link2 },
+        { title: "Prop Consistency", url: "/consistency-calculator", icon: Percent },
       ],
     },
     {
@@ -220,12 +220,7 @@ export function AppSidebar() {
                           className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                         >
                           <item.icon
-                            className={cn(
-                              "h-4 w-4 shrink-0",
-                              isActive
-                                ? "text-primary-foreground"
-                                : "text-muted-foreground",
-                            )}
+                            className="h-4 w-4 shrink-0 transition-colors"
                           />
                           <span className="group-data-[collapsible=icon]:hidden text-[13px] tracking-tight">
                             {item.title}

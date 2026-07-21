@@ -28,6 +28,7 @@ import {
   ArrowDownRight,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -210,6 +211,38 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
     };
   }, [filteredTrades]);
 
+  const handleExportStats = () => {
+    const data = [
+      ["Metric", "Value"],
+      ["Total Closed Trades", stats.total],
+      ["Winning Trades", stats.wins.length],
+      ["Losing Trades", stats.losses.length],
+      ["Net Profit ($)", stats.netPnL.toFixed(2)],
+      ["Win Rate (%)", stats.winRate.toFixed(2) + "%"],
+      ["Profit Factor", stats.profitFactor.toFixed(2)],
+      ["Average Win ($)", stats.avgWin.toFixed(2)],
+      ["Average Loss ($)", stats.avgLoss.toFixed(2)],
+      ["Risk/Reward Ratio", stats.rrRatio.toFixed(2)],
+      ["Largest Win ($)", stats.bestTrade.toFixed(2)],
+      ["Largest Loss ($)", stats.worstTrade.toFixed(2)],
+      ["Max Winning Streak", stats.maxWinStreak],
+      ["Max Losing Streak", stats.maxLossStreak],
+      ["Long Trades Win Rate (%)", stats.longWinRate.toFixed(2) + "%"],
+      ["Short Trades Win Rate (%)", stats.shortWinRate.toFixed(2) + "%"]
+    ];
+
+    const csvContent = data.map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `trader_stats_${period}_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Time Period Selector */}
@@ -252,11 +285,24 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-background/50 border border-border">
-          <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            Stats Overview
-          </span>
+        <div className="flex items-center gap-2">
+          {stats.total > 0 && (
+            <Button
+              onClick={handleExportStats}
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 bg-accent/20 border-primary/20 text-primary hover:border-primary/50 hover:bg-accent/40 text-[10px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export Stats
+            </Button>
+          )}
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-background/50 border border-border">
+            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Stats Overview
+            </span>
+          </div>
         </div>
       </div>
 
