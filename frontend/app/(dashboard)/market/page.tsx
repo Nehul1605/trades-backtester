@@ -22,7 +22,23 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LiveMarketStage } from "@/components/live-market/LiveMarketStage";
 import { CoHostModal } from "@/components/live-market/CoHostModal";
-import { CreateSessionModal } from "@/components/live-market/CreateSessionModal";
+const formatIST = (dateVal: any) => {
+  if (!dateVal) return null;
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }) + " IST";
+  } catch (e) {
+    return null;
+  }
+};
 
 export default function LiveMarketPage() {
   const { data: session, status: authStatus } = useSession();
@@ -341,20 +357,10 @@ export default function LiveMarketPage() {
                     {sess.description || "Live market session for chart analysis and strategy."}
                   </p>
 
-                  {sess.scheduledAt && (
+                  {formatIST(sess.scheduledAt) && (
                     <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-semibold mb-3">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>
-                        {new Date(sess.scheduledAt).toLocaleString("en-IN", {
-                          timeZone: "Asia/Kolkata",
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}{" "}
-                        IST
-                      </span>
+                      <span>{formatIST(sess.scheduledAt)}</span>
                     </div>
                   )}
 

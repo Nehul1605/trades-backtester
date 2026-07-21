@@ -35,7 +35,25 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+const formatIST = (dateVal: any) => {
+  if (!dateVal) return null;
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    return (
+      d.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }) + " IST"
+    );
+  } catch (e) {
+    return null;
+  }
+};
 
 interface LiveMarketStageProps {
   sessionData: any;
@@ -194,18 +212,10 @@ export function LiveMarketStage({
                     {sessionData.category}
                   </span>
                 )}
-                {sessionData?.scheduledAt && (
+                {formatIST(sessionData?.scheduledAt) && (
                   <span className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
                     <Clock className="w-3 h-3 text-amber-400" />
-                    {new Date(sessionData.scheduledAt).toLocaleString("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}{" "}
-                    IST
+                    {formatIST(sessionData.scheduledAt)}
                   </span>
                 )}
               </p>
