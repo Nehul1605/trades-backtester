@@ -26,6 +26,7 @@ import {
   Play,
   UserCheck,
   Radio,
+  Clock,
   Maximize2,
   Volume2,
   VolumeX,
