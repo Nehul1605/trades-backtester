@@ -94,7 +94,6 @@ export function AppSidebar() {
           title: "Economic Calendar",
           url: "/calendar",
           icon: Calendar,
-          badge: "Soon",
         },
       ],
     },
