@@ -50,6 +50,7 @@ import {
 } from "recharts";
 import { TradeTypeDistribution } from "../analytics/trade-type-distribution";
 import { StrategyBreakdown } from "../analytics/strategy-breakdown";
+import { AnalyticsPeriodChart } from "../analytics/analytics-period-chart";
 
 interface AccountWorkspaceProps {
   account: any;
@@ -254,32 +255,32 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
             left:
               activeTab === "overview"
                 ? "4px"
-                : activeTab === "trades"
+                : activeTab === "add-trade"
                 ? "16.66%"
-                : activeTab === "calendar"
+                : activeTab === "trades"
                 ? "33.33%"
-                : activeTab === "stats"
+                : activeTab === "calendar"
                 ? "50%"
-                : activeTab === "analytics"
+                : activeTab === "stats"
                 ? "66.66%"
                 : "83.33%",
             right:
               activeTab === "overview"
                 ? "83.33%"
-                : activeTab === "trades"
+                : activeTab === "add-trade"
                 ? "66.66%"
-                : activeTab === "calendar"
+                : activeTab === "trades"
                 ? "50%"
-                : activeTab === "stats"
+                : activeTab === "calendar"
                 ? "33.33%"
-                : activeTab === "analytics"
+                : activeTab === "stats"
                 ? "16.66%"
                 : "4px",
           }}
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
         />
 
-        {(["overview", "trades", "calendar", "stats", "analytics", "add-trade"] as TabType[]).map((tab) => (
+        {(["overview", "add-trade", "trades", "calendar", "stats", "analytics"] as TabType[]).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -291,15 +292,15 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
           >
             {tab === "overview"
               ? "Overview"
+              : tab === "add-trade"
+              ? "Journal Trade"
               : tab === "trades"
               ? "Trades"
               : tab === "calendar"
               ? "Calendar"
               : tab === "stats"
               ? "Stats"
-              : tab === "analytics"
-              ? "Analytics"
-              : "Journal Trade"}
+              : "Analytics"}
           </button>
         ))}
       </div>
@@ -474,77 +475,11 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
           {/* TAB 4: VISUAL PERFORMANCE ANALYTICS */}
           {activeTab === "analytics" && (
             <div className="grid gap-6">
-              {/* Row 1: Area chart line + weekday pnl */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="bg-card/20 border border-border/40">
-                  <CardHeader>
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                      Growth Distribution Grid
-                    </CardTitle>
-                    <CardDescription className="text-[10px] uppercase text-muted-foreground">
-                      Projections of balance curves trade-by-trade
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={equityCurveData} margin={{ left: -10, right: 10 }}>
-                        <defs>
-                          <linearGradient id="equityGradAnalytics" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#c5a880" stopOpacity={0.25}/>
-                            <stop offset="95%" stopColor="#c5a880" stopOpacity={0.0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
-                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} />
-                        <YAxis stroke="#94a3b8" fontSize={9} domain={equityYDomain} tickFormatter={(val) => `$${val.toLocaleString()}`} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine y={initialBalance} stroke="#c5a880" strokeDasharray="3 3" opacity={0.35} label={{ value: "Initial Balance", fill: "#c5a880", fontSize: 8, position: "top" }} />
-                        <Area type="monotone" dataKey="equity" stroke="#c5a880" strokeWidth={2.5} fillOpacity={1} fill="url(#equityGradAnalytics)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Weekday Performance comparison bar chart */}
-                <Card className="bg-card/20 border border-border/40">
-                  <CardHeader>
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                      Performance by Weekday
-                    </CardTitle>
-                    <CardDescription className="text-[10px] uppercase text-muted-foreground">
-                      Comparison of Net P&L generated on Mon-Fri
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={weekdayPnLData} margin={{ left: -10, right: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
-                        <XAxis dataKey="day" stroke="#94a3b8" fontSize={9} />
-                        <YAxis stroke="#94a3b8" fontSize={9} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: "#111827", borderColor: "#1e293b" }}
-                          labelClassName="text-[10px] text-muted-foreground uppercase font-bold"
-                          formatter={(value: number) => [
-                            <span className={value >= 0 ? "text-emerald-500" : "text-destructive"}>
-                              ${value.toLocaleString()}
-                            </span>,
-                            "P&L"
-                          ]}
-                        />
-                        <Bar dataKey="pnl" maxBarSize={40} radius={[4, 4, 0, 0]}>
-                          {weekdayPnLData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={entry.pnl >= 0 ? "#10b981" : "#f43f5e"}
-                              fillOpacity={0.8}
-                            />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Row 1: Dynamic period metric analytics */}
+              <AnalyticsPeriodChart
+                closedTrades={closedTrades}
+                initialBalance={initialBalance}
+              />
 
               {/* Row 2: Strategy Breakdown + Buy/Sell ratios */}
               <div className="grid gap-6 lg:grid-cols-2">

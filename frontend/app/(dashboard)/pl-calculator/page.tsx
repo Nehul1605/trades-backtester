@@ -11,13 +11,11 @@ export default async function PLCalculatorPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       <DashboardHeader />
-      <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
-        <div className="w-full">
-          <PLCalculator />
-        </div>
-      </main>
+      <div className="w-full">
+        <PLCalculator />
+      </div>
     </div>
   );
 }
