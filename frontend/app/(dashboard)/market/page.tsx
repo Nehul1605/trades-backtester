@@ -1,439 +1,400 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { LiveKitRoom } from "@livekit/components-react";
 import {
-  TrendingUp,
-  Wifi,
-  Zap,
-  Globe,
-  ArrowRight,
-  Activity,
-  BarChart2,
-  Lock,
-  Loader2,
-  CheckCircle2,
-  User,
-  Mail,
-  Trophy,
-  History,
+  Radio,
+  Plus,
+  Tv,
+  Calendar,
+  Users,
+  Shield,
   Clock,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { LiveMarketStage } from "@/components/live-market/LiveMarketStage";
+import { CoHostModal } from "@/components/live-market/CoHostModal";
+import { CreateSessionModal } from "@/components/live-market/CreateSessionModal";
 
-const SYMBOL_OPTIONS = [
-  { value: "ETHUSD", label: "ETHUSD" },
-  { value: "BTCUSD", label: "BTCUSD" },
-  { value: "APPLE", label: "APPLE" },
-  { value: "XAUUSD", label: "XAUUSD (Gold)" },
-  { value: "XAGUSD", label: "XAGUSD (Silver)" },
-  { value: "DE30", label: "DE30" },
-  { value: "USTECH", label: "USTECH" },
-  { value: "US30", label: "US30" },
-  { value: "EURUSD", label: "EURUSD" },
-  { value: "GBPUSD", label: "GBPUSD" },
-  { value: "USDJPY", label: "USDJPY" },
-  { value: "DXY", label: "DXY" },
-  { value: "USOIL", label: "USOIL" },
-];
+export default function LiveMarketPage() {
+  const { data: session, status: authStatus } = useSession();
 
-export default function MarketComingSoon() {
-  const { data: session } = useSession();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [activeSession, setActiveSession] = useState<any | null>(null);
+  const [livekitToken, setLivekitToken] = useState<string | null>(null);
+  const [isHostOrCoHost, setIsHostOrCoHost] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [livekitUrl, setLivekitUrl] = useState<string>("");
 
-  const [mostTraded, setMostTraded] = useState("");
-  const [mostLovedSession, setMostLovedSession] = useState("");
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [connectingLivekit, setConnectingLivekit] = useState(false);
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCoHostModalOpen, setIsCoHostModalOpen] = useState(false);
+
+  const userToken = (session?.user as any)?.accessToken;
+
+  // Fetch all sessions from Express backend (filters out ended sessions)
+  const fetchSessions = useCallback(async () => {
+    if (!userToken) return [];
+    try {
+      setLoadingSessions(true);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const activeOnly = data.filter((s: any) => s.status !== "ended");
+        setSessions(activeOnly);
+
+        // Auto-select the first live session if none selected
+        if (activeOnly.length === 0) {
+          setActiveSession(null);
+          setLivekitToken(null);
+        } else if (!activeSession) {
+          const live = activeOnly.find((s: any) => s.status === "live") || activeOnly[0];
+          setActiveSession(live);
+        }
+        return activeOnly;
+      }
+    } catch (err) {
+      console.error("Failed to fetch live market sessions:", err);
+      toast.error("Failed to load live sessions");
+    } finally {
+      setLoadingSessions(false);
+    }
+    return [];
+  }, [userToken, activeSession]);
 
   useEffect(() => {
-    async function fetchStats() {
-      if (!session?.user?.id || !isOpen) return;
-      try {
-        const res = await fetch(`/api/sync-pnl?userId=${session.user.id}`);
-        if (res.ok) {
-          const trades = await res.json();
-          if (trades.length > 0) {
-            // Calculate most traded instrument
-            const symbols = trades.map((t: any) => t.symbol?.toUpperCase());
-            const counts: any = {};
-            let max = 0;
-            let fav = "";
-            symbols.forEach((s: string) => {
-              if (!s) return;
-              counts[s] = (counts[s] || 0) + 1;
-              if (counts[s] > max) {
-                max = counts[s];
-                fav = s;
-              }
-            });
-            // Match with SYMBOL_OPTIONS if possible
-            const matched = SYMBOL_OPTIONS.find((o) => o.value === fav);
-            if (matched) setMostTraded(matched.value);
-
-            // Calculate most loved session
-            const sessions = trades.map((t: any) => {
-              const entryDate = t.entry_date || t.$createdAt;
-              const hour = new Date(entryDate).getUTCHours();
-              if (hour >= 0 && hour < 8) return "asian";
-              if (hour >= 8 && hour < 16) return "london";
-              return "newyork";
-            });
-            const sCounts: any = {};
-            let sMax = 0;
-            let sFav = "";
-            sessions.forEach((s: string) => {
-              sCounts[s] = (sCounts[s] || 0) + 1;
-              if (sCounts[s] > sMax) {
-                sMax = sCounts[s];
-                sFav = s;
-              }
-            });
-            setMostLovedSession(sFav);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch stats", e);
-      }
+    if (authStatus === "authenticated" && userToken) {
+      fetchSessions();
     }
-    fetchStats();
-  }, [session, isOpen]);
+  }, [authStatus, userToken]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const data = {
-      name: formData.get("name"),
-      email: session?.user?.email || "",
-      experience: formData.get("experience"),
-      instrument: formData.get("instrument"),
-      session: formData.get("session"),
-    };
+  // Connect to LiveKit when active session is selected
+  const joinSession = async (sess: any) => {
+    if (!userToken || !sess?._id) return;
+    setActiveSession(sess);
+    setConnectingLivekit(true);
+    setLivekitToken(null);
 
     try {
-      const response = await fetch("/api/support", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          subject: `WAITLIST JOINED: Live Market`,
-          message: `
-            New Waitlist Entry for Live Market!
-            
-            Name: ${data.name}
-            Email: ${data.email}
-            Trading Experience: ${data.experience}
-            Preferred Instrument: ${data.instrument}
-            Preferred Session: ${data.session}
-          `,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${sess._id}/token`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
 
-      if (!response.ok) throw new Error("Failed to join waitlist");
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to fetch stream token");
+      }
 
-      setIsSuccess(true);
-      toast.success("Successfully joined the waitlist!");
-
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSuccess(false);
-      }, 3000);
-    } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+      const data = await res.json();
+      setLivekitToken(data.token);
+      setIsHostOrCoHost(data.isHostOrCoHost);
+      setIsHost(data.isHost);
+      setLivekitUrl(
+        data.livekitUrl ||
+          process.env.NEXT_PUBLIC_LIVEKIT_URL ||
+          "wss://demo.livekit.cloud"
+      );
+    } catch (err: any) {
+      console.error("Error joining live stream:", err);
+      toast.error(err.message || "Failed to join live stream");
     } finally {
-      setIsSubmitting(false);
+      setConnectingLivekit(false);
     }
+  };
+
+  useEffect(() => {
+    if (activeSession && userToken && !livekitToken && !connectingLivekit) {
+      joinSession(activeSession);
+    }
+  }, [activeSession, userToken]);
+
+  // Start Stream API
+  const handleStartStream = async () => {
+    if (!activeSession?._id || !userToken) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${activeSession._id}/start`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+      if (res.ok) {
+        const updated = await res.json();
+        setActiveSession(updated);
+        toast.success("Stream Started! You are live.");
+        fetchSessions();
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to start stream");
+      }
+    } catch (err) {
+      toast.error("Failed to start live stream");
+    }
+  };
+
+  // End Stream API
+  const handleEndStream = async () => {
+    if (!activeSession?._id || !userToken) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${activeSession._id}/end`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+      if (res.ok) {
+        setActiveSession(null);
+        setLivekitToken(null);
+        toast.info("Session Ended");
+        const remaining = await fetchSessions();
+        if (remaining && remaining.length > 0) {
+          joinSession(remaining[0]);
+        }
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to end stream");
+      }
+    } catch (err) {
+      toast.error("Failed to end live stream");
+    }
+  };
+
+
+  if (authStatus === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 overflow-hidden relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-75 h-150 bg-primary/5 rounded-full blur-[120px] -z-10" />
-      <div className="absolute top-1/4 right-1/4 w-75 h-75 bg-emerald-500/5 rounded-full blur-[100px] -z-10" />
-
-      <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/50 border border-border/50 mb-8 animate-pulse">
-        <Wifi className="w-3.5 h-3.5 text-primary" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-          Establishing Connection
-        </span>
-      </div>
-
-      <div className="text-center max-w-2xl space-y-6">
-        <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase italic">
-          Live <span className="text-primary not-italic">Market</span>
-        </h1>
-        <p className="text-muted-foreground text-sm md:text-base font-medium max-w-md mx-auto leading-relaxed">
-          We're engineering an institutional-grade terminal for real-time order
-          flow and multi-asset coverage.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 w-full max-w-4xl">
-        {[
-          {
-            icon: Zap,
-            title: "Micro-Latency",
-            desc: "Ultra-fast websocket feeds for zero-delay pricing.",
-          },
-          {
-            icon: Globe,
-            title: "Global Coverage",
-            desc: "Stocks, Crypto, and Forex in a single unified view.",
-          },
-          {
-            icon: BarChart2,
-            title: "Advanced DOM",
-            desc: "Depth of Market tools to track liquidity pockets.",
-          },
-        ].map((feature, i) => (
-          <Card
-            key={i}
-            className="bg-card/40 border-border/50 backdrop-blur-sm p-6 flex flex-col items-center text-center group hover:border-primary/50 transition-all duration-500"
-          >
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <feature.icon className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="font-bold text-sm uppercase tracking-tight mb-2">
-              {feature.title}
-            </h3>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {feature.desc}
-            </p>
-          </Card>
-        ))}
-      </div>
-
-      <div className="mt-16 flex flex-col items-center gap-4">
-        <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-          <Lock className="w-3 h-3" /> Encrypted Beta Access Only
+    <div className="flex flex-col gap-6 p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Radio className="w-5 h-5 text-primary animate-pulse" />
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight italic">
+              Live <span className="text-primary not-italic">Market</span>
+            </h1>
+          </div>
+          <p className="text-xs md:text-sm text-muted-foreground font-medium">
+            Ultra-low-latency WebRTC live stream, chart sharing, and order flow breakdown.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button
-                size="lg"
-                className="rounded-full px-8 font-black uppercase tracking-widest text-xs group"
-              >
-                Join Waitlist
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-112.5 bg-card border-border/50 backdrop-blur-xl">
-              {isSuccess ? (
-                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="h-16 w-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-2">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                  </div>
-                  <h2 className="text-xl font-black uppercase tracking-tight">
-                    You're on the list!
-                  </h2>
-                  <p className="text-sm text-muted-foreground font-medium uppercase tracking-tighter italic">
-                    We'll reach out once the terminal is ready for you.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <DialogHeader className="space-y-3">
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
-                      <Activity className="w-6 h-6 text-primary" />
-                      Join <span className="text-primary italic">
-                        Live
-                      </span>{" "}
-                      Beta
-                    </DialogTitle>
-                    <DialogDescription className="text-xs uppercase font-bold text-muted-foreground tracking-widest">
-                      Complete your trader profile for priority access
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="wl-market-name"
-                          className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60"
-                        >
-                          <User className="w-3 h-3 text-primary" /> Full Name
-                        </Label>
-                        <Input
-                          id="wl-market-name"
-                          name="name"
-                          required
-                          readOnly
-                          value={session?.user?.name || ""}
-                          className="bg-muted/30 border-border/50 h-10 text-xs font-bold tracking-tighter opacity-70 cursor-not-allowed"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="wl-market-email"
-                          className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60"
-                        >
-                          <Mail className="w-3 h-3 text-primary" /> Email
-                        </Label>
-                        <Input
-                          id="wl-market-email"
-                          name="email"
-                          type="email"
-                          readOnly
-                          value={session?.user?.email || ""}
-                          className="bg-muted/30 border-border/50 h-10 text-xs font-bold tracking-tighter opacity-70 cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="wl-market-exp"
-                        className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60"
-                      >
-                        <Trophy className="w-3 h-3 text-primary" /> Experience
-                      </Label>
-                      <Select name="experience" required>
-                        <SelectTrigger className="bg-muted/30 border-border/50 h-10 text-xs font-bold tracking-tighter">
-                          <SelectValue placeholder="Experience Level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem
-                            value="beginner"
-                            className="text-xs font-bold lowercase italic"
-                          >
-                            Beginner (&lt; 1 Year)
-                          </SelectItem>
-                          <SelectItem
-                            value="intermediate"
-                            className="text-xs font-bold"
-                          >
-                            Intermediate (1-3 Years)
-                          </SelectItem>
-                          <SelectItem value="pro" className="text-xs font-bold">
-                            Professional (3+ Years)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="wl-market-instrument"
-                          className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60"
-                        >
-                          <History className="w-3 h-3 text-primary" /> Most
-                          Traded Instrument
-                        </Label>
-                        <Select
-                          name="instrument"
-                          required
-                          key={mostTraded}
-                          defaultValue={mostTraded}
-                        >
-                          <SelectTrigger className="bg-muted/30 border-border/50 h-10 text-xs font-bold tracking-tighter">
-                            <SelectValue placeholder="symbol" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SYMBOL_OPTIONS.map((opt) => (
-                              <SelectItem
-                                key={opt.value}
-                                value={opt.value}
-                                className="text-xs font-bold"
-                              >
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="wl-market-session"
-                          className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60"
-                        >
-                          <Clock className="w-3 h-3 text-primary" /> Most Loved
-                          Session
-                        </Label>
-                        <Select
-                          name="session"
-                          required
-                          key={mostLovedSession}
-                          defaultValue={mostLovedSession}
-                        >
-                          <SelectTrigger className="bg-muted/30 border-border/50 h-10 text-xs font-bold uppercase tracking-tighter">
-                            <SelectValue placeholder="session" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              value="asian"
-                              className="text-xs font-bold"
-                            >
-                              Asian
-                            </SelectItem>
-                            <SelectItem
-                              value="london"
-                              className="text-xs font-bold"
-                            >
-                              London
-                            </SelectItem>
-                            <SelectItem
-                              value="newyork"
-                              className="text-xs font-bold"
-                            >
-                              New York
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full h-12 rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-primary/20"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                          Joining...
-                        </>
-                      ) : (
-                        "Request Beta Access"
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
+
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            size="lg"
-            asChild
-            className="rounded-full px-8 font-black uppercase tracking-widest text-xs"
+            size="sm"
+            onClick={fetchSessions}
+            className="rounded-full text-xs font-bold gap-1.5"
           >
-            <Link href="/dashboard">Back Home</Link>
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </Button>
+
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            size="sm"
+            className="rounded-full px-5 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2"
+          >
+            <Plus className="w-4 h-4" /> Go Live / Schedule
           </Button>
         </div>
       </div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size:[24px_24px] mask-[radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] -z-20" />
+
+      {/* MAIN CONTENT: ACTIVE STAGE OR LOADING STATE */}
+      {activeSession && livekitToken ? (
+        <LiveKitRoom
+          serverUrl={livekitUrl}
+          token={livekitToken}
+          connect={true}
+          video={false} // Managed interactively by host inside controls toolbar
+          audio={false}
+          data-lk-theme="default"
+          className="w-full"
+        >
+          <LiveMarketStage
+            sessionData={activeSession}
+            isHostOrCoHost={isHostOrCoHost}
+            isHost={isHost}
+            onStartStream={handleStartStream}
+            onEndStream={handleEndStream}
+            onOpenCoHostModal={() => setIsCoHostModalOpen(true)}
+          />
+        </LiveKitRoom>
+      ) : connectingLivekit ? (
+        <Card className="w-full h-[500px] bg-card/40 border-border/50 flex flex-col items-center justify-center text-center p-8 space-y-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+            Connecting to LiveKit WebRTC Server...
+          </p>
+        </Card>
+      ) : (
+        /* NO SESSION SELECTED / SETUP PROMPT */
+        <Card className="w-full h-[350px] bg-card/40 border-border/50 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8 space-y-4">
+          <Tv className="w-12 h-12 text-primary/60" />
+          <h3 className="text-xl font-bold uppercase tracking-tight">
+            No Active Stream Selected
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-md">
+            Select a live market stream from the directory below or create your own room to start broadcasting.
+          </p>
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            size="sm"
+            className="rounded-full px-6 font-bold uppercase text-xs"
+          >
+            Create First Session
+          </Button>
+        </Card>
+      )}
+
+      {/* SESSIONS DIRECTORY & UPCOMING ROOMS */}
+      <div className="mt-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" /> Active & Scheduled Sessions
+          </h3>
+          <Badge variant="outline" className="text-[11px]">
+            {sessions.length} Session{sessions.length !== 1 ? "s" : ""}
+          </Badge>
+        </div>
+
+        {loadingSessions ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          </div>
+        ) : sessions.filter((s) => s.status !== "ended").length === 0 ? (
+          <Card className="p-8 text-center bg-card/30 border-border/40 text-muted-foreground text-xs">
+            No market sessions scheduled. Be the first to start a live stream!
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sessions
+              .filter((sess) => sess.status !== "ended")
+              .map((sess) => {
+                const isSelected = activeSession?._id === sess._id;
+                const isLive = sess.status === "live";
+
+                return (
+                  <Card
+                    key={sess._id}
+                    onClick={() => joinSession(sess)}
+                    className={`p-5 bg-card/50 border transition-all cursor-pointer group hover:border-primary/50 relative overflow-hidden ${
+                      isSelected ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">
+                          {sess.category || "Market Analysis"}
+                        </span>
+                        <h4 className="font-bold text-sm uppercase tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {sess.title}
+                        </h4>
+                      </div>
+
+                      {isLive ? (
+                        <Badge className="bg-red-500/20 text-red-500 border-red-500/40 text-[10px] font-bold uppercase animate-pulse shrink-0">
+                          LIVE
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/40 text-[10px] font-bold uppercase shrink-0">
+                          SCHEDULED
+                        </Badge>
+                      )}
+                    </div>
+
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3 min-h-[2.5rem]">
+                    {sess.description || "Live market session for chart analysis and strategy."}
+                  </p>
+
+                  {sess.scheduledAt && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-semibold mb-3">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>
+                        {new Date(sess.scheduledAt).toLocaleString("en-IN", {
+                          timeZone: "Asia/Kolkata",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}{" "}
+                        IST
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/30 pt-3">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                      <span>Host: {sess.host?.name || "Trader"}</span>
+                    </div>
+
+                    {sess.coHosts?.length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                        <Shield className="w-3 h-3" /> {sess.coHosts.length} Co-Host
+                      </span>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODALS */}
+      <CreateSessionModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSessionCreated={(newSess) => {
+          fetchSessions();
+          joinSession(newSess);
+        }}
+      />
+
+      <CoHostModal
+        isOpen={isCoHostModalOpen}
+        onClose={() => setIsCoHostModalOpen(false)}
+        sessionData={activeSession}
+        onCoHostUpdated={() => {
+          if (activeSession) joinSession(activeSession);
+        }}
+      />
     </div>
   );
 }

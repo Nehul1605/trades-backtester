@@ -10,6 +10,7 @@ import tradeRoutes from "./routes/tradeRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import verificationRoutes from "./routes/verificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import liveSessionRoutes from "./routes/liveSessionRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -49,6 +50,8 @@ app.use("/api/trades", tradeRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/verification", verificationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/live-sessions", liveSessionRoutes);
+
 
 // Base route check
 app.get("/", (req, res) => {
