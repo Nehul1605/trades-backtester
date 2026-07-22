@@ -169,7 +169,7 @@ export function LiveMarketStage({
 
   // Toggle Microhpone
   const toggleMic = async () => {
-    if (!isHostOrCoHost) return;
+    if (!isHostOrCoHost && !isMicOn) return;
     try {
       const nextState = !isMicOn;
       await localParticipant.setMicrophoneEnabled(nextState);
@@ -412,6 +412,19 @@ export function LiveMarketStage({
                 </Button>
               )}
             </div>
+          ) : isMicOn ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={toggleMic}
+                disabled={!isLive}
+                className="rounded-full px-4 text-xs font-bold gap-2 animate-pulse bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Mic className="w-4 h-4" />
+                Mic Active (Click to Mute)
+              </Button>
+            </div>
           ) : (
             /* VIEWERS CONTROLS */
             <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
@@ -620,8 +633,8 @@ export function LiveMarketStage({
                     <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" title="Microphone Muted" />
                   )}
 
-                  {/* Remote Mute Action Trigger (Only visible to Host on remote participants who can talk) */}
-                  {isHost && !p.isLocal && (p.isCoHost || p.isHost) && (
+                  {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
+                  {isHost && !p.isLocal && (
                     <Button
                       variant="ghost"
                       size="icon"
