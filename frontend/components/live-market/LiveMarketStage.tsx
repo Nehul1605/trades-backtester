@@ -238,12 +238,12 @@ export function LiveMarketStage({
   }, []);
 
   return (
-    <div ref={stageRef} className="flex flex-col lg:flex-row gap-4 w-full h-[780px] bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 overflow-hidden relative shadow-2xl">
+    <div ref={stageRef} className="flex flex-col lg:flex-row gap-4 w-full lg:h-[780px] h-auto bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 lg:overflow-hidden overflow-visible relative shadow-2xl">
       {/* AUTOMATIC WEBRTC ROOM AUDIO RENDERER (MICROPHONE VOICE + SCREEN SHARE AUDIO) */}
       <RoomAudioRenderer volume={isMuted ? 0 : 1} />
 
       {/* LEFT: MAIN STREAMING & VIDEO STAGE */}
-      <div className="flex-1 flex flex-col justify-between h-full bg-background/80 rounded-xl border border-border/40 overflow-hidden relative">
+      <div className="flex-1 flex flex-col justify-between lg:h-full h-[400px] sm:h-[480px] bg-background/80 rounded-xl border border-border/40 overflow-hidden relative">
         {/* TOP BAR OVERLAY */}
         <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-b from-background/90 to-transparent z-10">
           <div className="flex items-center gap-3">
@@ -497,7 +497,7 @@ export function LiveMarketStage({
 
       {/* RIGHT: LIVE CHAT & AUDIENCE PANEL */}
       {showChat && (
-        <div className="w-full lg:w-80 h-full bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
+        <div className="w-full lg:w-80 lg:h-full h-[350px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
           <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-card/40">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
@@ -547,7 +547,7 @@ export function LiveMarketStage({
 
       {/* RIGHT: PARTICIPANTS & MODERATION PANEL */}
       {showParticipants && (
-        <div className="w-full lg:w-80 h-full bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
+        <div className="w-full lg:w-80 lg:h-full h-[350px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
           <div className="px-4 py-3 border-b border-border/40 bg-card/40 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
