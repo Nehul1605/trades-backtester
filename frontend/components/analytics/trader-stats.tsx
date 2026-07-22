@@ -33,7 +33,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { getBrokerAccounts } from "@/lib/appwrite/actions";
+import { getBrokerAccounts } from "@/lib/actions";
 
 interface Trade {
   id: string;

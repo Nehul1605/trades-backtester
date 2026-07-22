@@ -1,5 +1,5 @@
 import express from "express";
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import LiveSession from "../models/LiveSession.js";
 import User from "../models/User.js";
 import protect from "../middleware/auth.js";
@@ -36,7 +36,7 @@ const isHostOrCoHostUser = async (session, userId) => {
 router.get("/", protect, async (req, res) => {
   try {
     const { includeEnded } = req.query;
-    const filter = includeEnded === "true" ? {} : { status: { $in: ["scheduled", "live"] } };
+    const filter = includeEnded === "true" ? {} : { status: "live" };
 
     const sessions = await LiveSession.find(filter)
       .populate("host", "name email role")
@@ -95,6 +95,13 @@ router.post("/", protect, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Only admin or broadcaster can create live sessions
+    if (user.role !== "admin" && user.role !== "broadcaster") {
+      return res.status(403).json({
+        error: "Forbidden: Only authorized broadcasters can create live sessions",
+      });
+    }
+
     const roomName = `room-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     const session = new LiveSession({
@@ -103,9 +110,10 @@ router.post("/", protect, async (req, res) => {
       category: category || "General Market Analysis",
       host: req.userId,
       coHosts: [],
-      status: "scheduled",
+      status: "live",
       roomName,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
+      scheduledAt: new Date(),
+      startedAt: new Date(),
     });
 
     await session.save();
@@ -245,6 +253,18 @@ router.post("/:id/end", protect, async (req, res) => {
     session.status = "ended";
     session.endedAt = new Date();
     await session.save();
+
+    // Force-disconnect all participants by destroying the LiveKit room
+    try {
+      const livekitHost = (process.env.LIVEKIT_URL || "wss://demo.livekit.cloud").replace("wss://", "https://");
+      const apiKey = process.env.LIVEKIT_API_KEY || "devkey";
+      const apiSecret = process.env.LIVEKIT_API_SECRET || "secretsecretsecretsecretsecretsecretsecretsecret";
+      const roomService = new RoomServiceClient(livekitHost, apiKey, apiSecret);
+      await roomService.deleteRoom(session.roomName);
+      console.log(`LiveKit room ${session.roomName} destroyed — all participants ejected.`);
+    } catch (livekitErr) {
+      console.error("Failed to destroy LiveKit room (participants may not be ejected):", livekitErr);
+    }
 
     const updated = await LiveSession.findById(session._id)
       .populate("host", "name email role")

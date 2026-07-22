@@ -26,7 +26,7 @@ import SymbolCombobox, {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Upload, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { createTrade, uploadTradeScreenshot, getBrokerAccounts } from "@/lib/appwrite/actions";
+import { createTrade, uploadTradeScreenshot, getBrokerAccounts } from "@/lib/actions";
 import { computePnlUSD } from "@/lib/pnl";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";

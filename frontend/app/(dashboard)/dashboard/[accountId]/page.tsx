@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getBrokerAccountById, getTradesForAccount } from "@/lib/appwrite/actions";
+import { getBrokerAccountById, getTradesForAccount } from "@/lib/actions";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { AccountWorkspace } from "@/components/dashboard/account-workspace";
 

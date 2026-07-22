@@ -513,6 +513,44 @@ export async function rejectVerificationRequest(
   }
 }
 
+export async function searchUsers(query: string): Promise<any[]> {
+  const authHeader = await getAuthHeader();
+  const res = await fetch(`${BACKEND_URL}/api/admin/users/search?q=${encodeURIComponent(query)}`, {
+    method: "GET",
+    headers: authHeader,
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `Failed to search users (HTTP ${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function updateUserRole(id: string, role: string): Promise<{ error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/role`, {
+      method: "PATCH",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to update user role" };
+    }
+    return result;
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to update user role",
+    };
+  }
+}
+
 // ─── Storage actions ──────────────────────────────────────────────────────────
 
 export async function uploadTradeScreenshot(

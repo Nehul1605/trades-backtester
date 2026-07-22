@@ -27,7 +27,7 @@ import {
   Activity,
   Award,
 } from "lucide-react";
-import { deleteTrade, topUpAccount } from "@/lib/appwrite/actions";
+import { deleteTrade, topUpAccount } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";

@@ -39,7 +39,7 @@ import {
   getBrokerAccounts,
   createBrokerAccount,
   topUpAccount,
-} from "@/lib/appwrite/actions";
+} from "@/lib/actions";
 import SpotlightCard from "@/components/SpotlightCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";

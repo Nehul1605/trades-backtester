@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { LiveMeetingWrapper } from "@/components/live-market/LiveMeetingWrapper";
 
 export default async function DashboardLayout({
   children,
@@ -32,7 +33,9 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex flex-col min-h-screen">
-          <Suspense fallback={null}>{children}</Suspense>
+          <LiveMeetingWrapper>
+            <Suspense fallback={null}>{children}</Suspense>
+          </LiveMeetingWrapper>
         </SidebarInset>
       </div>
     </SidebarProvider>

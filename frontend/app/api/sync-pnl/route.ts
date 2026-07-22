@@ -1,4 +1,4 @@
-import { syncAllTradesPnl } from "@/lib/appwrite/actions";
+import { syncAllTradesPnl } from "@/lib/actions";
 import { auth } from "@/auth";
 
 export async function GET(req: Request) {

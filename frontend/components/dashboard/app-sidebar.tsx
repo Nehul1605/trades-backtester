@@ -56,8 +56,10 @@ export function AppSidebar() {
   const isAdmin = (session?.user as any)?.role === "admin";
 
   const [viewMode, setViewMode] = React.useState<"admin" | "user">("admin");
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("adminViewMode") as "admin" | "user";
       if (saved) setViewMode(saved);
@@ -168,7 +170,7 @@ export function AppSidebar() {
           </div>
 
           {/* Toggle view mode inside sidebar */}
-          {isAdmin && (
+          {mounted && isAdmin && (
             <div className="mt-3 group-data-[collapsible=icon]:hidden">
               <Button
                 variant="outline"

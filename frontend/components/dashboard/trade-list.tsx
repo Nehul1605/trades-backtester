@@ -21,7 +21,7 @@ import {
   Info,
   Download,
 } from "lucide-react";
-import { deleteTrade, updateTrade, getBrokerAccounts } from "@/lib/appwrite/actions";
+import { deleteTrade, updateTrade, getBrokerAccounts } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {

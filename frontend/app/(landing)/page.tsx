@@ -653,58 +653,52 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border/30 bg-card/30">
-        <div className="container mx-auto px-6">
-          {/* Main footer grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 py-12">
-            {/* Brand column */}
-            <div className="col-span-2 md:col-span-2 pr-4">
-              <div className="mb-3">
-                <div className="relative h-10 w-48 overflow-hidden rounded-lg">
+      <footer className="border-t border-border/30 bg-background">
+        <div className="container mx-auto px-6 max-w-6xl">
+
+          {/* ── Footer Grid ── */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 py-14">
+
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1 space-y-3">
+              <Link href="/" className="inline-block">
+                <div className="relative h-9 w-44 overflow-hidden">
                   <img
                     src="/logo.png"
-                    className="h-10 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none"
-                    alt="TradeTracker Pro Logo"
+                    className="h-9 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none"
+                    alt="TradeTracker Pro"
                   />
                 </div>
-              </div>
-              <p className="text-sm text-muted-foreground/70 leading-relaxed max-w-72 mb-4">
-                A professional trade journaling and backtesting platform built for forex and gold traders. Track your executions, analyze your edge, and grow with data — not guesswork.
+              </Link>
+              <p className="text-[12px] text-muted-foreground/50 leading-relaxed">
+                Professional trade journaling and analytics for forex & gold traders.
               </p>
-              <div className="flex items-center gap-3">
-                {[
-                  { label: "X", href: "#" },
-                  { label: "Instagram", href: "#" },
-                  { label: "Telegram", href: "#" },
-                ].map((social) => (
-                  <Link
-                    key={social.label}
-                    href={social.href}
-                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-2.5 py-1.5 rounded-md border border-border/30 hover:border-primary/20"
-                  >
-                    {social.label}
-                  </Link>
-                ))}
-              </div>
+              <a
+                href="mailto:tradetrackerpro.in@gmail.com"
+                className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors"
+              >
+                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+                tradetrackerpro.in@gmail.com
+              </a>
             </div>
 
             {/* Platform */}
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-wider text-foreground/80 mb-3">
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
                 Platform
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {[
-                  { l: "Dashboard Console", h: "/dashboard" },
-                  { l: "Prop Consistency", h: "/consistency-calculator" },
-                  { l: "Live Forex Market", h: "/market" },
+                  { l: "Dashboard", h: "/dashboard" },
+                  { l: "Live Market", h: "/market" },
+                  { l: "Calendar", h: "/calendar" },
                   { l: "P&L Calculator", h: "/pl-calculator" },
+                  { l: "Consistency", h: "/consistency-calculator" },
                 ].map((link) => (
                   <li key={link.l}>
-                    <Link
-                      href={link.h}
-                      className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                    >
+                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
                       {link.l}
                     </Link>
                   </li>
@@ -714,20 +708,17 @@ export default async function HomePage() {
 
             {/* Company */}
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-wider text-foreground/80 mb-3">
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
                 Company
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {[
-                  { l: "Core Features", h: "#features" },
+                  { l: "Features", h: "#features" },
                   { l: "How It Works", h: "#how-it-works" },
-                  { l: "Trader Reviews", h: "#reviews" },
+                  { l: "Reviews", h: "#reviews" },
                 ].map((link) => (
                   <li key={link.l}>
-                    <Link
-                      href={link.h}
-                      className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                    >
+                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
                       {link.l}
                     </Link>
                   </li>
@@ -735,112 +726,63 @@ export default async function HomePage() {
               </ul>
             </div>
 
-            {/* Support & Legal */}
+            {/* Support */}
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-wider text-foreground/80 mb-3">
-                Support & Contact
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
+                Support
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {[
                   { l: "Help Center", h: "/help" },
-                  { l: "Account Settings", h: "/settings" },
-                  { l: "Economic Calendar", h: "/calendar" },
-                  { l: "Live Market", h: "/market" },
+                  { l: "Settings", h: "/settings" },
+                  { l: "Contact Us", h: "mailto:tradetrackerpro.in@gmail.com" },
                 ].map((link) => (
                   <li key={link.l}>
-                    <Link
-                      href={link.h}
-                      className="text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                    >
+                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
                       {link.l}
                     </Link>
                   </li>
                 ))}
               </ul>
-
-              <div className="mt-4 pt-3 border-t border-border/20">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-primary mb-1">
-                  Official Support Mail:
-                </p>
-                <a
-                  href="mailto:tradetrackerpro.in@gmail.com"
-                  className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors block break-all font-semibold"
-                >
-                  tradetrackerpro.in@gmail.com
-                </a>
-              </div>
             </div>
-          </div>
 
-          {/* Quick Footer Support Message Form Box */}
-          <div className="border-t border-border/20 py-6 bg-card/20 rounded-xl p-4 my-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Account */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Need Help or Have a Question?
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
+                Account
               </h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Send a quick support inquiry directly to <strong className="text-foreground">tradetrackerpro.in@gmail.com</strong>.
-              </p>
+              <ul className="space-y-2">
+                {[
+                  { l: "Sign In", h: "/auth/login" },
+                  { l: "Create Account", h: "/auth/sign-up" },
+                ].map((link) => (
+                  <li key={link.l}>
+                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
+                      {link.l}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const msgInput = form.querySelector('input[type="text"]') as HTMLInputElement;
-                if (!msgInput?.value.trim()) return;
-                try {
-                  const res = await fetch("/api/support", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      subject: "[FOOTER INQUIRY] General Support Request",
-                      message: msgInput.value.trim(),
-                    }),
-                  });
-                  if (res.ok) {
-                    alert("Support ticket sent successfully! We will get back to you shortly.");
-                    msgInput.value = "";
-                  } else {
-                    alert("Could not send support ticket. Please email tradetrackerpro.in@gmail.com directly.");
-                  }
-                } catch (err) {
-                  alert("Support ticket sent! We will reply via tradetrackerpro.in@gmail.com.");
-                }
-              }}
-              className="flex w-full md:w-auto items-center gap-2"
-            >
-              <input
-                type="text"
-                placeholder="Type your message or question..."
-                className="h-9 px-3 text-xs rounded-lg bg-background/80 border border-border/60 text-foreground focus:outline-none focus:border-primary w-full md:w-72"
-                required
-              />
-              <button
-                type="submit"
-                className="h-9 px-4 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 shrink-0"
-              >
-                Send
-              </button>
-            </form>
           </div>
 
-          {/* Disclaimer */}
-          <div className="border-t border-border/20 py-4">
-            <p className="text-xs text-muted-foreground/40 leading-relaxed max-w-5xl">
-              <span className="font-semibold text-muted-foreground/50">Risk Disclaimer:</span>{" "}
-              Trading forex, gold, and other financial instruments involves substantial risk and is not suitable for all investors. Past performance recorded in this journal does not guarantee future results. TradeTracker Pro is a journaling and analytics tool — it does not provide financial advice, trade signals, or investment recommendations.
+          {/* ── Risk Disclaimer ── */}
+          <div className="border-t border-border/15 py-4">
+            <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+              <span className="font-medium text-muted-foreground/45">Risk Disclaimer:</span>{" "}
+              Trading forex, gold, and financial instruments involves substantial risk and is not suitable for all investors. Past performance does not guarantee future results. TradeTracker Pro is a journaling and analytics tool — it does not provide financial advice, trade signals, or investment recommendations.
             </p>
           </div>
 
-          {/* Copyright bar */}
-          <div className="border-t border-border/20 py-4 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-muted-foreground/50">
-            <p>
+          {/* ── Bottom Bar ── */}
+          <div className="border-t border-border/15 py-5 flex flex-col md:flex-row justify-between items-center gap-3">
+            <p className="text-[11px] text-muted-foreground/40">
               &copy; {new Date().getFullYear()} TradeTracker Pro. All rights reserved.
             </p>
-            <p>
-              Made for traders, by traders.
-            </p>
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-500/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              All systems operational
+            </div>
           </div>
         </div>
       </footer>

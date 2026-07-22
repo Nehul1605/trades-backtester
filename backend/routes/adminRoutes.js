@@ -35,6 +35,33 @@ router.get("/verifications", protect, protectAdmin, async (req, res) => {
   }
 });
 
+// @desc    Search all users for role management
+// @route   GET /api/admin/users/search
+// @access  Admin/Owner
+router.get("/users/search", protect, protectAdmin, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length === 0) {
+      const users = await User.find()
+        .select("name email role status")
+        .limit(20);
+      return res.json(users);
+    }
+
+    const regex = new RegExp(q.trim(), "i");
+    const users = await User.find({
+      $or: [{ name: regex }, { email: regex }],
+    })
+      .select("name email role status")
+      .limit(30);
+
+    res.json(users);
+  } catch (error) {
+    console.error("Search users error:", error);
+    res.status(500).json({ error: "Failed to search users" });
+  }
+});
+
 // @desc    Approve verification request
 // @route   POST /api/admin/verifications/:id/approve
 // @access  Admin/Owner
@@ -81,6 +108,38 @@ router.post("/verifications/:id/reject", protect, protectAdmin, async (req, res)
   } catch (error) {
     console.error("Reject request error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// @desc    Update user role (e.g. set as broadcaster)
+// @route   PATCH /api/admin/users/:id/role
+// @access  Admin/Owner
+router.patch("/users/:id/role", protect, protectAdmin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    const validRoles = ["user", "broadcaster", "admin"];
+
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({
+        error: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
+      });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    targetUser.role = role;
+    await targetUser.save();
+
+    res.json({
+      message: `User ${targetUser.email} role updated to "${role}"`,
+      user: { _id: targetUser._id, email: targetUser.email, name: targetUser.name, role: targetUser.role },
+    });
+  } catch (error) {
+    console.error("Update user role error:", error);
+    res.status(500).json({ error: "Failed to update user role" });
   }
 });
 

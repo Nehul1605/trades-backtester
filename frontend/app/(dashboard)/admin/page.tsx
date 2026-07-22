@@ -2,7 +2,7 @@ import React from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { AdminDashboardClient } from "./admin-client";
-import { getAdminVerifications } from "@/lib/appwrite/actions";
+import { getAdminVerifications } from "@/lib/actions";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 
 export default async function AdminPage() {

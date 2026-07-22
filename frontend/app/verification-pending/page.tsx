@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Building, Hash, Send, LogOut, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { getVerificationStatus, submitVerificationRequest } from "@/lib/appwrite/actions";
+import { getVerificationStatus, submitVerificationRequest } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 

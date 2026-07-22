@@ -46,15 +46,6 @@ export function CreateSessionModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
-
-  // Default to current local time in ISO format for datetime-local
-  const getNowLocal = () => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
-  };
-
-  const [scheduledAt, setScheduledAt] = useState(getNowLocal());
   const [loading, setLoading] = useState(false);
 
   const token = (session?.user as any)?.accessToken;
@@ -81,24 +72,24 @@ export function CreateSessionModal({
             title: title.trim(),
             description: description.trim(),
             category,
-            scheduledAt: new Date(scheduledAt).toISOString(),
+            scheduledAt: new Date().toISOString(),
           }),
         }
       );
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to create live market session");
+        throw new Error(errData.error || "Failed to start live stream");
       }
 
       const newSession = await res.json();
-      toast.success("Live Market session scheduled successfully!");
+      toast.success("Live stream room started successfully!");
       setTitle("");
       setDescription("");
       onSessionCreated(newSession);
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to create session");
+      toast.error(err.message || "Failed to start live stream");
     } finally {
       setLoading(false);
     }
@@ -109,17 +100,17 @@ export function CreateSessionModal({
       <DialogContent className="sm:max-w-md bg-card/95 border-border/60 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
-            <Radio className="w-5 h-5 text-primary" /> Schedule Live Stream Session
+            <Radio className="w-5 h-5 text-primary" /> Start Live Stream
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Set up a live broadcast room scheduled in IST (Indian Standard Time).
+            Create an active broadcast room. All viewers will see your stream instantly.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 my-2">
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Session Title *
+              Stream Title *
             </Label>
             <Input
               value={title}
@@ -130,38 +121,22 @@ export function CreateSessionModal({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Market Category
-              </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="text-xs bg-background/60 border-border/50">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="text-xs">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>Start Time (IST)</span>
-                <span className="text-[10px] text-primary">UTC+5:30</span>
-              </Label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="text-xs bg-background/60 border-border/50"
-                required
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Market Category
+            </Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="text-xs bg-background/60 border-border/50">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat} className="text-xs">
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -193,7 +168,7 @@ export function CreateSessionModal({
               disabled={loading}
               className="text-xs font-bold uppercase bg-primary text-primary-foreground"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Schedule Room"}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go Live Now"}
             </Button>
           </div>
         </form>
