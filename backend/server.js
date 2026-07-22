@@ -53,6 +53,16 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/live-sessions", liveSessionRoutes);
 
 
+// UptimeRobot Keep-Alive & Health Endpoint
+app.get("/api/keep-alive", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "TradeTracker Pro Backend Server Active",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Base route check
 app.get("/", (req, res) => {
   res.json({ message: "TradeTracker Pro API is running..." });

@@ -1,17 +1,24 @@
-import { keepAliveCheck } from "@/lib/appwrite/actions";
+import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
+  try {
+    // Optionally ping Express backend to keep Render warm
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+    try {
+      await fetch(`${backendUrl}/api/keep-alive`, { cache: "no-store" }).catch(() => null);
+    } catch (e) {
+      // Ignore backend ping failures
+    }
 
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json(
+      {
+        status: "ok",
+        service: "TradeTracker Pro Frontend & Keep-Alive Service",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json({ status: "error", message: "Keep alive check failed" }, { status: 500 });
   }
-
-  const ok = await keepAliveCheck();
-
-  if (!ok) {
-    return new Response("Database error", { status: 500 });
-  }
-
-  return new Response("OK");
 }
