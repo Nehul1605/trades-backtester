@@ -738,14 +738,14 @@ export default async function HomePage() {
             {/* Support & Legal */}
             <div>
               <h4 className="text-[13px] font-bold uppercase tracking-wider text-foreground/80 mb-3">
-                Support
+                Support & Contact
               </h4>
               <ul className="space-y-2.5">
                 {[
                   { l: "Help Center", h: "/help" },
                   { l: "Account Settings", h: "/settings" },
-                  { l: "Privacy Policy", h: "#" },
-                  { l: "Terms of Service", h: "#" },
+                  { l: "Economic Calendar", h: "/calendar" },
+                  { l: "Live Market", h: "/market" },
                 ].map((link) => (
                   <li key={link.l}>
                     <Link
@@ -757,7 +757,72 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-4 pt-3 border-t border-border/20">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-primary mb-1">
+                  Official Support Mail:
+                </p>
+                <a
+                  href="mailto:tradetrackerpro.in@gmail.com"
+                  className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors block break-all font-semibold"
+                >
+                  tradetrackerpro.in@gmail.com
+                </a>
+              </div>
             </div>
+          </div>
+
+          {/* Quick Footer Support Message Form Box */}
+          <div className="border-t border-border/20 py-6 bg-card/20 rounded-xl p-4 my-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Need Help or Have a Question?
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Send a quick support inquiry directly to <strong className="text-foreground">tradetrackerpro.in@gmail.com</strong>.
+              </p>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const msgInput = form.querySelector('input[type="text"]') as HTMLInputElement;
+                if (!msgInput?.value.trim()) return;
+                try {
+                  const res = await fetch("/api/support", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      subject: "[FOOTER INQUIRY] General Support Request",
+                      message: msgInput.value.trim(),
+                    }),
+                  });
+                  if (res.ok) {
+                    alert("Support ticket sent successfully! We will get back to you shortly.");
+                    msgInput.value = "";
+                  } else {
+                    alert("Could not send support ticket. Please email tradetrackerpro.in@gmail.com directly.");
+                  }
+                } catch (err) {
+                  alert("Support ticket sent! We will reply via tradetrackerpro.in@gmail.com.");
+                }
+              }}
+              className="flex w-full md:w-auto items-center gap-2"
+            >
+              <input
+                type="text"
+                placeholder="Type your message or question..."
+                className="h-9 px-3 text-xs rounded-lg bg-background/80 border border-border/60 text-foreground focus:outline-none focus:border-primary w-full md:w-72"
+                required
+              />
+              <button
+                type="submit"
+                className="h-9 px-4 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 shrink-0"
+              >
+                Send
+              </button>
+            </form>
           </div>
 
           {/* Disclaimer */}

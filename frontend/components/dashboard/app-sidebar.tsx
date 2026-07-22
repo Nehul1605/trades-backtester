@@ -81,33 +81,24 @@ export function AppSidebar() {
 
   const navGroups = [
     {
-      label: "Main Menu",
+      label: "Core Platform",
       items: [
-        { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+        { title: "Dashboard Console", url: "/dashboard", icon: LayoutDashboard },
+        { title: "Live Market Stream", url: "/market", icon: TrendingUp },
+        { title: "Economic Calendar", url: "/calendar", icon: Calendar },
       ],
     },
     {
-      label: "Performance",
-      items: [
-        { title: "Live Market", url: "/market", icon: TrendingUp },
-        {
-          title: "Economic Calendar",
-          url: "/calendar",
-          icon: Calendar,
-        },
-      ],
-    },
-    {
-      label: "Tools & Intelligence",
+      label: "Trading Tools",
       items: [
         { title: "P&L Calculator", url: "/pl-calculator", icon: Calculator },
-        { title: "Prop Consistency", url: "/consistency-calculator", icon: Percent },
+        { title: "Consistency Calculator", url: "/consistency-calculator", icon: Percent },
       ],
     },
     {
-      label: "Preferences",
+      label: "Account & Support",
       items: [
-        { title: "Settings", url: "/settings", icon: Settings },
+        { title: "Account Settings", url: "/settings", icon: Settings },
         { title: "Help & Support", url: "/help", icon: HelpCircle },
       ],
     },
