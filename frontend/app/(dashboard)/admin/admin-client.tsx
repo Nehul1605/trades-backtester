@@ -476,6 +476,8 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                                   ? "bg-red-500/10 text-red-400 border-red-500/25"
                                   : u.role === "broadcaster"
                                   ? "bg-primary/10 text-primary border-primary/20"
+                                  : u.role === "member"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                                   : "bg-neutral-500/10 text-muted-foreground border-border/40"
                               }`}
                             >
@@ -495,6 +497,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                                     <SelectValue placeholder="Set Role" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-card">
+                                    <SelectItem value="member" className="text-xs">Member</SelectItem>
                                     <SelectItem value="user" className="text-xs">User (Audience)</SelectItem>
                                     <SelectItem value="broadcaster" className="text-xs">Broadcaster</SelectItem>
                                     <SelectItem value="admin" className="text-xs">Admin (Owner)</SelectItem>

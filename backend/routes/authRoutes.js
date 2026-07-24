@@ -65,9 +65,10 @@ router.post("/register", async (req, res) => {
     const password_hash = await bcrypt.hash(password, salt);
 
     const isAdminEmail = (e) => ["nehulgoyal18@gmail.com", "nehul2004@gmail.com"].includes(e?.toLowerCase());
+    const isDirectAccessEmail = (e) => ["amit@gmail.com", "naman@gmail..com", "naman@gmail.com"].includes(e?.toLowerCase());
     const isVerificationRequired = process.env.REQUIRE_REFERRAL_VERIFICATION !== "false";
-    const initialStatus = (isAdminEmail(email) || !isVerificationRequired) ? "approved" : "pending";
-    const initialRole = isAdminEmail(email) ? "admin" : "user";
+    const initialStatus = (isAdminEmail(email) || isDirectAccessEmail(email) || !isVerificationRequired) ? "approved" : "pending";
+    const initialRole = isAdminEmail(email) ? "admin" : (isDirectAccessEmail(email) ? "member" : "user");
 
     const user = await User.create({
       name,
@@ -117,8 +118,12 @@ router.post("/login", async (req, res) => {
     }
 
     const isAdminEmail = (e) => ["nehulgoyal18@gmail.com", "nehul2004@gmail.com"].includes(e?.toLowerCase());
+    const isDirectAccessEmail = (e) => ["amit@gmail.com", "naman@gmail..com", "naman@gmail.com"].includes(e?.toLowerCase());
     if (isAdminEmail(user.email) && (user.role !== "admin" || user.status !== "approved")) {
       user.role = "admin";
+      user.status = "approved";
+      await user.save();
+    } else if (isDirectAccessEmail(user.email) && user.status !== "approved") {
       user.status = "approved";
       await user.save();
     }
@@ -154,9 +159,10 @@ router.post("/google", async (req, res) => {
     let user = await User.findOne({ email });
 
     const isAdminEmail = (e) => ["nehulgoyal18@gmail.com", "nehul2004@gmail.com"].includes(e?.toLowerCase());
+    const isDirectAccessEmail = (e) => ["amit@gmail.com", "naman@gmail..com", "naman@gmail.com"].includes(e?.toLowerCase());
     const isVerificationRequired = process.env.REQUIRE_REFERRAL_VERIFICATION !== "false";
-    const initialStatus = (isAdminEmail(email) || !isVerificationRequired) ? "approved" : "pending";
-    const initialRole = isAdminEmail(email) ? "admin" : "user";
+    const initialStatus = (isAdminEmail(email) || isDirectAccessEmail(email) || !isVerificationRequired) ? "approved" : "pending";
+    const initialRole = isAdminEmail(email) ? "admin" : (isDirectAccessEmail(email) ? "member" : "user");
 
     if (!user) {
       user = await User.create({
@@ -169,6 +175,9 @@ router.post("/google", async (req, res) => {
       });
     } else if (isAdminEmail(email) && (user.role !== "admin" || user.status !== "approved")) {
       user.role = "admin";
+      user.status = "approved";
+      await user.save();
+    } else if (isDirectAccessEmail(email) && user.status !== "approved") {
       user.status = "approved";
       await user.save();
     }

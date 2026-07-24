@@ -117,7 +117,7 @@ router.post("/verifications/:id/reject", protect, protectAdmin, async (req, res)
 router.patch("/users/:id/role", protect, protectAdmin, async (req, res) => {
   try {
     const { role } = req.body;
-    const validRoles = ["user", "broadcaster", "admin"];
+    const validRoles = ["user", "broadcaster", "admin", "member"];
 
     if (!role || !validRoles.includes(role)) {
       return res.status(400).json({
