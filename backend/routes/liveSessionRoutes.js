@@ -1,5 +1,5 @@
 import express from "express";
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 import LiveSession from "../models/LiveSession.js";
 import User from "../models/User.js";
 import protect from "../middleware/auth.js";
@@ -181,8 +181,8 @@ router.post("/:id/token", protect, async (req, res) => {
       roomJoin: true,
       canPublish: true, // Everyone can publish camera and microphone
       canPublishSources: isHostOrCoHost
-        ? ["camera", "microphone", "screen_share", "screen_share_audio"]
-        : ["camera", "microphone"], // Restrict viewers from screen sharing
+        ? [TrackSource.CAMERA, TrackSource.MICROPHONE, TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO]
+        : [TrackSource.CAMERA, TrackSource.MICROPHONE], // Restrict viewers from screen sharing
       canPublishData: true, // Everyone can send chat messages
       canSubscribe: true, // Everyone can view stream
       roomAdmin: isHostOrCoHost,
@@ -336,8 +336,8 @@ router.post("/:id/cohosts", protect, async (req, res) => {
         permission: {
           canPublish: true,
           canPublishSources: isNowCoHost
-            ? ["camera", "microphone", "screen_share", "screen_share_audio"]
-            : ["camera", "microphone"],
+            ? [TrackSource.CAMERA, TrackSource.MICROPHONE, TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO]
+            : [TrackSource.CAMERA, TrackSource.MICROPHONE],
           canPublishData: true,
           canSubscribe: true,
         }
