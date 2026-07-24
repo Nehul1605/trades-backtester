@@ -12,6 +12,7 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { toast } from "sonner";
 import {
   Mic,
   MicOff,
@@ -169,7 +170,6 @@ export function LiveMarketStage({
 
   // Toggle Microhpone
   const toggleMic = async () => {
-    if (!isHostOrCoHost && !isMicOn) return;
     try {
       const nextState = !isMicOn;
       await localParticipant.setMicrophoneEnabled(nextState);
@@ -182,7 +182,6 @@ export function LiveMarketStage({
 
   // Toggle Camera
   const toggleCam = async () => {
-    if (!isHostOrCoHost) return;
     try {
       const nextState = !isCamOn;
       await localParticipant.setCameraEnabled(nextState);
@@ -412,24 +411,35 @@ export function LiveMarketStage({
                 </Button>
               )}
             </div>
-          ) : isMicOn ? (
+          ) : (
+            /* VIEWERS CONTROLS - Now with Mic and Camera options, but NO Screen Share */
             <div className="flex items-center gap-2">
               <Button
-                variant="default"
+                variant={isMicOn ? "default" : "destructive"}
                 size="sm"
                 onClick={toggleMic}
                 disabled={!isLive}
-                className="rounded-full px-4 text-xs font-bold gap-2 animate-pulse bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="rounded-full px-4 text-xs font-bold gap-2"
               >
-                <Mic className="w-4 h-4" />
-                Mic Active (Click to Mute)
+                {isMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                {isMicOn ? "Mic On" : "Muted"}
               </Button>
-            </div>
-          ) : (
-            /* VIEWERS CONTROLS */
-            <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-              <Shield className="w-4 h-4 text-primary" />
-              <span>Audience Mode (Viewing & Live Chat enabled)</span>
+
+              <Button
+                variant={isCamOn ? "default" : "secondary"}
+                size="sm"
+                onClick={toggleCam}
+                disabled={!isLive}
+                className="rounded-full px-4 text-xs font-bold gap-2"
+              >
+                {isCamOn ? <VideoIcon className="w-4 h-4 text-primary" /> : <VideoOff className="w-4 h-4" />}
+                {isCamOn ? "Camera On" : "Cam Off"}
+              </Button>
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium ml-2">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span>Audience Mode (Screen sharing disabled)</span>
+              </div>
             </div>
           )}
 

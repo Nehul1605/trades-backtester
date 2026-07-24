@@ -164,8 +164,18 @@ export function LiveMeetingProvider({
           setIsConnected(true);
         };
 
+        const handlePermissionsChanged = (arg1: any, arg2: any) => {
+          // Identify participant in arguments safely
+          const participant = arg1?.identity ? arg1 : (arg2?.identity ? arg2 : null);
+          if (participant && participant.identity === room.localParticipant.identity) {
+            const canShareScreen = participant.permissions?.canPublishSources?.includes("screen_share") || false;
+            setIsHostOrCoHost(canShareScreen || room.localParticipant.identity === sess.host.toString());
+          }
+        };
+
         room.on(RoomEvent.Disconnected, handleDisconnected);
         room.on(RoomEvent.Connected, handleConnected);
+        room.on(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged);
 
         setLivekitToken(data.token);
         setIsHostOrCoHost(data.isHostOrCoHost);

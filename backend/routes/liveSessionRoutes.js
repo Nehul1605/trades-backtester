@@ -179,7 +179,10 @@ router.post("/:id/token", protect, async (req, res) => {
     at.addGrant({
       room: session.roomName,
       roomJoin: true,
-      canPublish: isHostOrCoHost, // Only Host or CoHost can publish mic/camera/screenshare!
+      canPublish: true, // Everyone can publish camera and microphone
+      canPublishSources: isHostOrCoHost
+        ? ["camera", "microphone", "screen_share", "screen_share_audio"]
+        : ["camera", "microphone"], // Restrict viewers from screen sharing
       canPublishData: true, // Everyone can send chat messages
       canSubscribe: true, // Everyone can view stream
       roomAdmin: isHostOrCoHost,
@@ -320,6 +323,29 @@ router.post("/:id/cohosts", protect, async (req, res) => {
     }
 
     await session.save();
+
+    // Dynamically update participant permissions in the LiveKit room if active
+    try {
+      const livekitHost = (process.env.LIVEKIT_URL || "wss://demo.livekit.cloud").replace("wss://", "https://");
+      const apiKey = process.env.LIVEKIT_API_KEY || "devkey";
+      const apiSecret = process.env.LIVEKIT_API_SECRET || "secretsecretsecretsecretsecretsecretsecretsecret";
+      const roomService = new RoomServiceClient(livekitHost, apiKey, apiSecret);
+      
+      const isNowCoHost = action === "add";
+      await roomService.updateParticipant(session.roomName, coHostId.toString(), {
+        permission: {
+          canPublish: true,
+          canPublishSources: isNowCoHost
+            ? ["camera", "microphone", "screen_share", "screen_share_audio"]
+            : ["camera", "microphone"],
+          canPublishData: true,
+          canSubscribe: true,
+        }
+      });
+      console.log(`📡 Dynamically updated LiveKit participant ${coHostId} permissions. Co-Host: ${isNowCoHost}`);
+    } catch (lkErr) {
+      console.warn("⚠️ Failed to update LiveKit participant permissions dynamically (user may not be in room):", lkErr.message);
+    }
 
     const updated = await LiveSession.findById(session._id)
       .populate("host", "name email role")
