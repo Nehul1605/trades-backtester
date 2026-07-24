@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { getBrokerAccounts } from "@/lib/actions";
+import { getLocalDateString } from "@/lib/utils";
 
 interface Trade {
   id: string;
@@ -185,7 +186,7 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
         // Use entrance date, formatted to YYYY-MM-DD
         const dateObj = new Date(t.entry_date);
         if (isNaN(dateObj.getTime())) return acc; // Skip invalid dates
-        const date = dateObj.toISOString().split("T")[0];
+        const date = getLocalDateString(dateObj);
         acc[date] = (acc[date] || 0) + (Number(t.pnl) || 0);
         return acc;
       },

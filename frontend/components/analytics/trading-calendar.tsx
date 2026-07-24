@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CalendarDays, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getLocalDateString } from "@/lib/utils";
 
 interface Trade {
   id: string;
@@ -35,7 +35,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
     closedTrades.forEach((trade) => {
       const dateObj = new Date(trade.entry_date);
       if (isNaN(dateObj.getTime())) return;
-      const dateStr = dateObj.toISOString().split("T")[0];
+      const dateStr = getLocalDateString(dateObj);
 
       pnlMap[dateStr] = (pnlMap[dateStr] || 0) + (trade.pnl || 0);
       
@@ -66,7 +66,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
     // Populate calendar days
     for (let d = 1; d <= endOfMonth.getDate(); d++) {
       const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = getLocalDateString(date);
       const pnl = dailyStats.pnlMap[dateStr] || 0;
       const dayTrades = dailyStats.tradesMap[dateStr] || [];
 
@@ -84,7 +84,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
 
     for (let d = 1; d <= endOfMonth.getDate(); d++) {
       const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = getLocalDateString(date);
       const pnl = dailyStats.pnlMap[dateStr] || 0;
       currentWeekPnL += pnl;
 
@@ -192,7 +192,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
                     : "bg-muted/5 border-border/40 hover:border-primary/50 hover:bg-neutral-900/10 shadow-sm",
                   day && day.pnl > 0 ? "bg-emerald-500/[0.02] border-emerald-500/20" : "",
                   day && day.pnl < 0 ? "bg-rose-500/[0.02] border-rose-500/20" : "",
-                  day && day.date === new Date().toISOString().split("T")[0] ? "border-primary border-2 shadow-[0_0_15px_rgba(var(--primary),0.05)]" : ""
+                  day && day.date === getLocalDateString(new Date()) ? "border-primary border-2 shadow-[0_0_15px_rgba(var(--primary),0.05)]" : ""
                 )}
               >
                 {day && (

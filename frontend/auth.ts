@@ -44,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               token: data.token,
               status: data.status,
               role: data.role,
+              image: data.image || "",
             };
           }
           return null;
@@ -87,6 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             (user as any).token = data.token;
             (user as any).status = data.status;
             (user as any).role = data.role;
+            (user as any).image = data.image || "";
             return true;
           }
           return false;
@@ -103,10 +105,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accessToken = (user as any).token;
         token.status = (user as any).status;
         token.role = (user as any).role;
+        token.picture = (user as any).image || user.image || "";
       }
       if (trigger === "update" && session) {
         token.status = session.status ?? token.status;
         token.role = session.role ?? token.role;
+        if (session.name) token.name = session.name;
+        if (session.image !== undefined) token.picture = session.image;
       }
       return token;
     },
@@ -116,6 +121,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).accessToken = token.accessToken as string;
         (session.user as any).status = token.status as string;
         (session.user as any).role = token.role as string;
+        if (token.name) session.user.name = token.name as string;
+        if (token.picture !== undefined) session.user.image = token.picture as string;
       }
       return session;
     },

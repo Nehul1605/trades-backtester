@@ -21,7 +21,7 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { cn } from "@/lib/utils";
+import { cn, getLocalDateString } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
@@ -102,12 +102,30 @@ export function AnalyticsPeriodChart({
           equity: initialBalance,
         });
       }
+    } else if (period === "90d") {
+      // Group by Week (every 7 days, ~13 weeks)
+      const numWeeks = Math.ceil(90 / 7);
+      for (let i = 0; i < numWeeks; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i * 7);
+        const weekLabel = d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        dataPoints.push({
+          date: new Date(d),
+          label: weekLabel,
+          rawDateStr: getLocalDateString(d),
+          pnl: 0,
+          orders: 0,
+          volume: 0,
+          equity: initialBalance,
+        });
+      }
     } else {
-      // Group by Day (7, 30, 90 days)
-      const dayDiff = Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      for (let i = 0; i < dayDiff; i++) {
+      // Group by Day (7, 30 days)
+      const totalDays = period === "7d" ? 7 : 30;
+      for (let i = 0; i < totalDays; i++) {
         const d = new Date(startDate);
         d.setDate(d.getDate() + i);
         const dayLabel = d.toLocaleDateString("en-US", {
@@ -117,7 +135,7 @@ export function AnalyticsPeriodChart({
         dataPoints.push({
           date: new Date(d),
           label: dayLabel,
-          rawDateStr: d.toISOString().split("T")[0],
+          rawDateStr: getLocalDateString(d),
           pnl: 0,
           orders: 0,
           volume: 0,
@@ -145,8 +163,26 @@ export function AnalyticsPeriodChart({
           pt.orders += 1;
           pt.volume += volVal;
         }
+      } else if (period === "90d") {
+        // Find the week interval where tradeDate falls.
+        // Find the last dataPoint whose date is <= tradeDate
+        let matchedPt = null;
+        for (let i = dataPoints.length - 1; i >= 0; i--) {
+          const ptDate = new Date(dataPoints[i].date);
+          ptDate.setHours(0, 0, 0, 0);
+          if (tradeDate.getTime() >= ptDate.getTime()) {
+            matchedPt = dataPoints[i];
+            break;
+          }
+        }
+        if (matchedPt) {
+          matchedPt.pnl += pnlVal;
+          matchedPt.orders += 1;
+          matchedPt.volume += volVal;
+        }
       } else {
-        const tDateStr = tradeDate.toISOString().split("T")[0];
+        // Daily aggregation (7d and 30d)
+        const tDateStr = getLocalDateString(tradeDate);
         const pt = dataPoints.find((p) => p.rawDateStr === tDateStr);
         if (pt) {
           pt.pnl += pnlVal;
@@ -317,6 +353,7 @@ export function AnalyticsPeriodChart({
                 stroke="#94a3b8"
                 fontSize={9}
                 tickLine={false}
+                interval={period === "30d" ? 1 : 0}
               />
               <YAxis
                 stroke="#94a3b8"

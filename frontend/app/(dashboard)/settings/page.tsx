@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -34,9 +34,11 @@ import {
   Palette,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { updateUserProfile, uploadAvatar } from "@/lib/actions";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -60,6 +62,9 @@ export default function SettingsPage() {
   const { data: session, update } = useSession();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -68,6 +73,15 @@ export default function SettingsPage() {
       email: session?.user?.email || "",
     },
   });
+
+  useEffect(() => {
+    if (session?.user) {
+      form.reset({
+        name: session.user.name || "",
+        email: session.user.email || "",
+      });
+    }
+  }, [session, form]);
 
   const securityForm = useForm<z.infer<typeof securityFormSchema>>({
     resolver: zodResolver(securityFormSchema),
@@ -79,11 +93,62 @@ export default function SettingsPage() {
   });
 
   async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
-    toast({
-      title: "Settings Updated",
-      description: "Your profile information has been saved successfully.",
-      duration: 3000,
-    });
+    setUpdatingProfile(true);
+    try {
+      const { error } = await updateUserProfile({ name: values.name });
+      if (error) throw new Error(error);
+
+      await update({ name: values.name });
+
+      toast({
+        title: "Settings Updated",
+        description: "Your profile information has been saved successfully.",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Update Failed",
+        description: err.message || "Failed to update profile",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setUpdatingProfile(false);
+    }
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUpdatingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const url = await uploadAvatar(fd);
+      if (!url) throw new Error("Failed to upload avatar image");
+
+      const { error } = await updateUserProfile({ name: form.getValues("name"), image: url });
+      if (error) throw new Error(error);
+
+      await update({ image: url });
+
+      toast({
+        title: "Avatar Updated",
+        description: "Your profile picture has been updated successfully.",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Upload Failed",
+        description: err.message || "Failed to upload avatar",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setUpdatingAvatar(false);
+    }
   }
 
   async function onSecuritySubmit(values: z.infer<typeof securityFormSchema>) {
@@ -151,18 +216,34 @@ export default function SettingsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col items-center gap-4">
-                    <Avatar className="h-32 w-32 border-4 border-primary/20">
-                      <AvatarImage src={session?.user?.image || ""} />
-                      <AvatarFallback className="text-4xl bg-primary/10 text-primary font-black">
-                        {session?.user?.name?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative group">
+                      <Avatar className="h-32 w-32 border-4 border-primary/20">
+                        <AvatarImage src={session?.user?.image || ""} />
+                        <AvatarFallback className="text-4xl bg-primary/10 text-primary font-black">
+                          {session?.user?.name?.[0] || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      {updatingAvatar && (
+                        <div className="absolute inset-0 bg-background/70 rounded-full flex items-center justify-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] font-black uppercase tracking-widest h-8"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={updatingAvatar}
+                      className="text-[10px] font-black uppercase tracking-widest h-8 cursor-pointer"
                     >
-                      Update Avatar
+                      {updatingAvatar ? "Uploading..." : "Update Avatar"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -221,9 +302,13 @@ export default function SettingsPage() {
                         />
                         <Button
                           type="submit"
-                          className="w-full h-12 text-xs font-black uppercase tracking-widest mt-4"
+                          disabled={updatingProfile}
+                          className="w-full h-12 text-xs font-black uppercase tracking-widest mt-4 cursor-pointer"
                         >
-                          Save Changes
+                          {updatingProfile ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                          ) : null}
+                          {updatingProfile ? "Saving..." : "Save Changes"}
                         </Button>
                       </form>
                     </Form>

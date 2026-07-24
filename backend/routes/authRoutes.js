@@ -3,8 +3,43 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import protect from "../middleware/auth.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = express.Router();
+
+// Setup storage for profile avatars
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    const uploadDir = "uploads/";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename(req, file, cb) {
+    cb(
+      null,
+      `avatar_${req.userId}_${Date.now()}${path.extname(file.originalname)}`
+    );
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter(req, file, cb) {
+    const filetypes = /jpeg|jpg|png|gif|webp/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Images only! (png, jpg, jpeg, gif, webp)"));
+    }
+  },
+});
 
 // Generate Token helper
 const generateToken = (id) => {
@@ -51,6 +86,7 @@ router.post("/register", async (req, res) => {
         token: generateToken(user._id),
         status: user.status,
         role: user.role,
+        image: user.image || "",
       });
     } else {
       res.status(400).json({ error: "Invalid user data" });
@@ -97,6 +133,7 @@ router.post("/login", async (req, res) => {
         token: generateToken(user._id),
         status: user.status,
         role: user.role,
+        image: user.image || "",
       });
     } else {
       res.status(401).json({ error: "Invalid email or password" });
@@ -143,6 +180,7 @@ router.post("/google", async (req, res) => {
       token: generateToken(user._id),
       status: user.status,
       role: user.role,
+      image: user.image || "",
     });
   } catch (error) {
     console.error("Google auth backend error:", error);
@@ -164,6 +202,52 @@ router.get("/profile", protect, async (req, res) => {
   } catch (error) {
     console.error("Profile error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+router.put("/profile", protect, async (req, res) => {
+  const { name, image } = req.body;
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (name) user.name = name;
+    if (image !== undefined) user.image = image;
+
+    await user.save();
+
+    res.json({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      status: user.status,
+      role: user.role,
+      image: user.image || "",
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// @desc    Upload avatar
+// @route   POST /api/auth/upload-avatar
+// @access  Private
+router.post("/upload-avatar", protect, upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Please upload a file" });
+    }
+    const url = `/uploads/${req.file.filename}`;
+    res.json({ url });
+  } catch (error) {
+    console.error("Upload avatar error:", error);
+    res.status(500).json({ error: error.message || "Server error" });
   }
 });
 

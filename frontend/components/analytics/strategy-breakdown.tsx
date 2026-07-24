@@ -9,8 +9,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, Target, BarChart3, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  BarChart3,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Trade {
   id: string;
@@ -22,9 +31,11 @@ interface Trade {
 
 interface StrategyBreakdownProps {
   trades: Trade[];
+  accountId: string;
 }
 
-export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
+export function StrategyBreakdown({ trades, accountId }: StrategyBreakdownProps) {
+  const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(3);
   const closedTrades = trades.filter(
     (t) => t.status === "closed" && t.pnl !== null && t.strategy_name,
@@ -113,7 +124,11 @@ export function StrategyBreakdown({ trades }: StrategyBreakdownProps) {
       <CardContent className="px-5 pb-6">
         <div className="space-y-5">
           {strategies.map((strategy) => (
-            <div key={strategy.name} className="space-y-3 group cursor-default">
+            <div
+              key={strategy.name}
+              onClick={() => router.push(`/dashboard/${accountId}/strategy/${encodeURIComponent(strategy.name)}`)}
+              className="space-y-3 group cursor-pointer hover:bg-muted/5 p-2 -mx-2 rounded-xl transition-all"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className={`p-2 rounded-md ${strategy.totalPnL >= 0 ? "bg-profit/10" : "bg-loss/10"}`}>

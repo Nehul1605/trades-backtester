@@ -22,6 +22,7 @@ import {
   Download,
 } from "lucide-react";
 import { deleteTrade, updateTrade, getBrokerAccounts } from "@/lib/actions";
+import { TradeDetailPanel } from "./trade-detail-panel";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
@@ -35,7 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { computePnlUSD } from "@/lib/pnl";
-import { cn } from "@/lib/utils";
+import { cn, getLocalDateString } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -78,6 +79,8 @@ export function TradeList({ trades }: TradeListProps) {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(4);
   const [expandedTradeId, setExpandedTradeId] = useState<string | null>(null);
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterEndDate, setFilterEndDate] = useState<string>("");
 
   useEffect(() => {
     async function loadAccounts() {
@@ -95,7 +98,13 @@ export function TradeList({ trades }: TradeListProps) {
       filterAccount === "ALL" ||
       (filterAccount === "none" && !t.broker_account_id) ||
       t.broker_account_id === filterAccount;
-    return matchSymbol && matchAccount;
+
+    const tradeDateObj = new Date(t.entry_date);
+    const tradeDateStr = isNaN(tradeDateObj.getTime()) ? "" : getLocalDateString(tradeDateObj);
+    const matchStartDate = !filterStartDate || tradeDateStr >= filterStartDate;
+    const matchEndDate = !filterEndDate || tradeDateStr <= filterEndDate;
+
+    return matchSymbol && matchAccount && matchStartDate && matchEndDate;
   });
 
   const openTrades = filtered.filter((t) => t.status === "open");
@@ -219,8 +228,8 @@ export function TradeList({ trades }: TradeListProps) {
               {filtered.length} total trades recorded in ledger
             </CardDescription>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-48">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-40">
               <Select value={filterAccount} onValueChange={setFilterAccount}>
                 <SelectTrigger className="bg-secondary/50 border-primary/20 hover:border-primary/50 transition-all duration-200 text-xs h-9">
                   <SelectValue placeholder="Filter account" />
@@ -236,7 +245,7 @@ export function TradeList({ trades }: TradeListProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-44">
+            <div className="w-36">
               <Select value={filterSymbol} onValueChange={setFilterSymbol}>
                 <SelectTrigger className="bg-secondary/50 border-primary/20 hover:border-primary/50 transition-all duration-200 text-xs h-9">
                   <SelectValue placeholder="Filter symbol" />
@@ -251,6 +260,40 @@ export function TradeList({ trades }: TradeListProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="flex items-center gap-1.5 bg-secondary/50 border border-primary/20 hover:border-primary/40 focus-within:border-primary/50 rounded-lg px-2.5 h-9 text-xs transition-all">
+              <span className="text-[9px] uppercase font-black text-muted-foreground">From</span>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="bg-transparent border-0 outline-none text-foreground font-mono text-[10px] w-28 [color-scheme:dark]"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-secondary/50 border border-primary/20 hover:border-primary/40 focus-within:border-primary/50 rounded-lg px-2.5 h-9 text-xs transition-all">
+              <span className="text-[9px] uppercase font-black text-muted-foreground">To</span>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="bg-transparent border-0 outline-none text-foreground font-mono text-[10px] w-28 [color-scheme:dark]"
+              />
+            </div>
+
+            {(filterStartDate || filterEndDate) && (
+              <Button
+                onClick={() => {
+                  setFilterStartDate("");
+                  setFilterEndDate("");
+                }}
+                variant="ghost"
+                size="sm"
+                className="h-8 text-[10px] uppercase font-black text-muted-foreground hover:text-destructive hover:bg-transparent"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -282,7 +325,7 @@ export function TradeList({ trades }: TradeListProps) {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr className="bg-neutral-900/30 text-[9px] uppercase font-black text-muted-foreground/60 border-b border-border/30">
+                    <tr className="bg-neutral-900/30 text-[10px] uppercase font-extrabold text-foreground tracking-widest border-b border-border/30">
                       <th className="py-3 px-4">Asset</th>
                       <th className="py-3 px-4">Lots (Qty)</th>
                       <th className="py-3 px-4">Entry Price</th>
@@ -293,45 +336,65 @@ export function TradeList({ trades }: TradeListProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20 text-xs font-semibold">
-                    {openTrades.map((trade) => (
-                      <tr key={trade.id} className="hover:bg-neutral-900/10 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">{trade.symbol}</span>
-                            <Badge
-                              className={cn(
-                                "text-[8px] px-1 h-4 font-black uppercase border leading-none shrink-0",
-                                trade.trade_type === "long" 
-                                  ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" 
-                                  : "bg-red-500/5 text-red-500 border-red-500/20"
+                    {openTrades.flatMap((trade) => {
+                      const isExpanded = expandedTradeId === trade.id;
+                      return [
+                        <tr
+                          key={trade.id}
+                          className="hover:bg-neutral-900/10 transition-colors cursor-pointer"
+                          onClick={() => setExpandedTradeId(isExpanded ? null : trade.id)}
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                               )}
-                            >
-                              {trade.trade_type === "long" ? "LONG" : "SHORT"}
-                            </Badge>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
-                        <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
-                        <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
-                        <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{formatDate(trade.entry_date)}</td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                            <CloseTradeButton trade={trade} onClosed={() => router.refresh()} />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDelete(trade.id)}
-                              disabled={deletingId === trade.id}
-                              title="Delete Trade"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              <span className="font-bold text-foreground">{trade.symbol}</span>
+                              <Badge
+                                className={cn(
+                                  "text-[8px] px-1 h-4 font-black uppercase border leading-none shrink-0",
+                                  trade.trade_type === "long" 
+                                    ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" 
+                                    : "bg-red-500/5 text-red-500 border-red-500/20"
+                                )}
+                              >
+                                {trade.trade_type === "long" ? "LONG" : "SHORT"}
+                              </Badge>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
+                          <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
+                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
+                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{formatDate(trade.entry_date)}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                              <CloseTradeButton trade={trade} onClosed={() => router.refresh()} />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(trade.id)}
+                                disabled={deletingId === trade.id}
+                                title="Delete Trade"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>,
+                        isExpanded && (
+                          <TradeDetailPanel
+                            key={`${trade.id}-details`}
+                            trade={trade}
+                            colSpan={7}
+                            onUpdate={() => router.refresh()}
+                          />
+                        )
+                      ];
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -376,7 +439,7 @@ export function TradeList({ trades }: TradeListProps) {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left">
                     <thead>
-                      <tr className="bg-neutral-900/30 text-[9px] uppercase font-black text-muted-foreground/60 border-b border-border/30">
+                      <tr className="bg-neutral-900/30 text-[10px] uppercase font-extrabold text-foreground tracking-widest border-b border-border/30">
                         <th className="py-3 px-4">Asset</th>
                         <th className="py-3 px-4">Lots (Qty)</th>
                         <th className="py-3 px-4">Entry</th>
@@ -390,71 +453,91 @@ export function TradeList({ trades }: TradeListProps) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/20 text-xs font-semibold">
-                      {displayedClosedTrades.map((trade) => (
-                        <tr key={trade.id} className="hover:bg-neutral-900/10 transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground">{trade.symbol}</span>
-                              <Badge
-                                className={cn(
-                                  "text-[8px] px-1 h-4 font-black uppercase border leading-none shrink-0",
-                                  trade.trade_type === "long" 
-                                    ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" 
-                                    : "bg-red-500/5 text-red-500 border-red-500/20"
+                      {displayedClosedTrades.flatMap((trade) => {
+                        const isExpanded = expandedTradeId === trade.id;
+                        return [
+                          <tr
+                            key={trade.id}
+                            className="hover:bg-neutral-900/10 transition-colors cursor-pointer"
+                            onClick={() => setExpandedTradeId(isExpanded ? null : trade.id)}
+                          >
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? (
+                                  <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                 )}
-                              >
-                                {trade.trade_type === "long" ? "LONG" : "SHORT"}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
-                          <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
-                          <td className="py-3 px-4 font-mono text-foreground/80">{trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</td>
-                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
-                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
-                          <td className="py-3 px-4 text-muted-foreground/75 font-mono">{formatDate(trade.entry_date)}</td>
-                          <td className="py-3 px-4 text-muted-foreground/75 font-mono">{trade.exit_date ? formatDate(trade.exit_date) : "—"}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col gap-0.5 font-mono">
-                              <span className={cn("font-bold", (trade.pnl || 0) >= 0 ? "text-emerald-500" : "text-destructive")}>
-                                {(trade.pnl || 0) >= 0 ? "+" : ""}{trade.pnl ? formatCurrency(trade.pnl) : "—"}
-                              </span>
-                              {trade.pnl_percentage && (
-                                <span className={cn("text-[9px] font-semibold opacity-85", (trade.pnl_percentage || 0) >= 0 ? "text-emerald-500/90" : "text-destructive/90")}>
-                                  {(trade.pnl_percentage || 0) >= 0 ? "+" : ""}{trade.pnl_percentage.toFixed(2)}%
+                                <span className="font-bold text-foreground">{trade.symbol}</span>
+                                <Badge
+                                  className={cn(
+                                    "text-[8px] px-1 h-4 font-black uppercase border leading-none shrink-0",
+                                    trade.trade_type === "long" 
+                                      ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" 
+                                      : "bg-red-500/5 text-red-500 border-red-500/20"
+                                  )}
+                                >
+                                  {trade.trade_type === "long" ? "LONG" : "SHORT"}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
+                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
+                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</td>
+                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
+                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
+                            <td className="py-3 px-4 text-muted-foreground/75 font-mono">{formatDate(trade.entry_date)}</td>
+                            <td className="py-3 px-4 text-muted-foreground/75 font-mono">{trade.exit_date ? formatDate(trade.exit_date) : "—"}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-col gap-0.5 font-mono">
+                                <span className={cn("font-bold", (trade.pnl || 0) >= 0 ? "text-emerald-500" : "text-destructive")}>
+                                  {(trade.pnl || 0) >= 0 ? "+" : ""}{trade.pnl ? formatCurrency(trade.pnl) : "—"}
                                 </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              {trade.screenshot_url && (
+                                {trade.pnl_percentage && (
+                                  <span className={cn("text-[9px] font-semibold opacity-85", (trade.pnl_percentage || 0) >= 0 ? "text-emerald-500/90" : "text-destructive/90")}>
+                                    {(trade.pnl_percentage || 0) >= 0 ? "+" : ""}{trade.pnl_percentage.toFixed(2)}%
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                {trade.screenshot_url && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    asChild
+                                    title="View Screenshot"
+                                  >
+                                    <a href={trade.screenshot_url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  asChild
-                                  title="View Screenshot"
+                                  className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDelete(trade.id)}
+                                  disabled={deletingId === trade.id}
+                                  title="Delete Trade"
                                 >
-                                  <a href={trade.screenshot_url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </a>
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDelete(trade.id)}
-                                disabled={deletingId === trade.id}
-                                title="Delete Trade"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                              </div>
+                            </td>
+                          </tr>,
+                          isExpanded && (
+                            <TradeDetailPanel
+                              key={`${trade.id}-details`}
+                              trade={trade}
+                              colSpan={10}
+                              onUpdate={() => router.refresh()}
+                            />
+                          )
+                        ];
+                      })}
                     </tbody>
                   </table>
                 </div>

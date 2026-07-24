@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -61,8 +61,16 @@ type TabType = "overview" | "trades" | "calendar" | "stats" | "analytics" | "add
 
 export function AccountWorkspace({ account, initialTrades }: AccountWorkspaceProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["overview", "trades", "calendar", "stats", "analytics", "add-trade"].includes(tabParam)) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [searchParams]);
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [balance, setBalance] = useState(account.balance);
   const [equity, setEquity] = useState(account.equity);
@@ -484,7 +492,7 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
               {/* Row 2: Strategy Breakdown + Buy/Sell ratios */}
               <div className="grid gap-6 lg:grid-cols-2">
                 <TradeTypeDistribution trades={initialTrades} />
-                <StrategyBreakdown trades={initialTrades} />
+                <StrategyBreakdown trades={initialTrades} accountId={account.id} />
               </div>
             </div>
           )}

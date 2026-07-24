@@ -643,3 +643,58 @@ export async function syncAllTradesPnl(): Promise<{
     };
   }
 }
+
+export async function updateUserProfile(data: {
+  name: string;
+  image?: string;
+}): Promise<{ error?: string; user?: any }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
+      method: "PUT",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to update profile" };
+    }
+    return { user: result };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to update profile",
+    };
+  }
+}
+
+export async function uploadAvatar(formData: FormData): Promise<string | null> {
+  try {
+    const session = await auth();
+    const token = (session?.user as any)?.accessToken;
+    if (!token) return null;
+
+    const res = await fetch(`${BACKEND_URL}/api/auth/upload-avatar`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) return null;
+
+    const result = await res.json();
+    if (result.url) {
+      return `${BACKEND_URL}${result.url}`;
+    }
+    return null;
+  } catch (err) {
+    console.error("Avatar upload error:", err);
+    return null;
+  }
+}
+
