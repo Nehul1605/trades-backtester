@@ -52,7 +52,7 @@ export function LiveMeetingProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status: authStatus } = useSession();
+  const { data: session, status: authStatus, update: updateSession } = useSession();
   const pathname = usePathname();
 
   const [sessions, setSessions] = useState<any[]>([]);
@@ -66,14 +66,51 @@ export function LiveMeetingProvider({
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [connectingLivekit, setConnectingLivekit] = useState(false);
 
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [currentUserStatus, setCurrentUserStatus] = useState<string>("");
+
+  useEffect(() => {
+    if (session?.user) {
+      setCurrentUserRole((session.user as any).role || "user");
+      setCurrentUserStatus((session.user as any).status || "pending");
+    }
+  }, [session]);
+
   const roomRef = useRef<Room | null>(null);
   const userToken = (session?.user as any)?.accessToken;
-  const userRole = (session?.user as any)?.role;
-  const isBroadcaster = userRole === "admin" || userRole === "broadcaster";
+  const isBroadcaster = currentUserRole === "admin" || currentUserRole === "broadcaster";
+
+  // Sync user profile
+  const syncUserProfile = useCallback(async () => {
+    if (!userToken) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/profile`,
+        { headers: { Authorization: `Bearer ${userToken}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.role) {
+          setCurrentUserRole(data.role);
+          setCurrentUserStatus(data.status);
+          
+          if (data.role !== (session?.user as any)?.role || data.status !== (session?.user as any)?.status) {
+            await updateSession({
+              role: data.role,
+              status: data.status,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to sync user profile:", err);
+    }
+  }, [userToken, session, updateSession]);
 
   // Fetch sessions
   const fetchSessions = useCallback(async () => {
     if (!userToken) return [];
+    syncUserProfile();
     try {
       setLoadingSessions(true);
       const res = await fetch(
@@ -173,9 +210,22 @@ export function LiveMeetingProvider({
           }
         };
 
+        const handleParticipantConnected = (participant: any) => {
+          toast.success(`${participant.name || participant.identity} joined the live stream!`, {
+            description: "Say hello in the chat!",
+            icon: "👋",
+          });
+        };
+
+        const handleParticipantDisconnected = (participant: any) => {
+          toast.info(`${participant.name || participant.identity} left the live stream.`);
+        };
+
         room.on(RoomEvent.Disconnected, handleDisconnected);
         room.on(RoomEvent.Connected, handleConnected);
         room.on(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged);
+        room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
+        room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
         setLivekitToken(data.token);
         setIsHostOrCoHost(data.isHostOrCoHost);

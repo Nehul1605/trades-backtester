@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   useTracks,
   VideoTrack,
@@ -30,6 +30,7 @@ import {
   Minimize2,
   Volume2,
   VolumeX,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,11 +62,58 @@ export function LiveMarketStage({
   // Local state for media toggles
   const [isMicOn, setIsMicOn] = useState(false);
   const [isCamOn, setIsCamOn] = useState(false);
+  const [isMicLoading, setIsMicLoading] = useState(false);
+  const [isCamLoading, setIsCamLoading] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [showChat, setShowChat] = useState(true); // Default to chat open!
-  const [showParticipants, setShowParticipants] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [activeTab, setActiveTab] = useState<"chat" | "participants">("chat");
+
+  const toggleTab = (tab: "chat" | "participants") => {
+    if (!showSidebar) {
+      setShowSidebar(true);
+      setActiveTab(tab);
+    } else if (activeTab === tab) {
+      setShowSidebar(false);
+    } else {
+      setActiveTab(tab);
+    }
+  };
   const [chatMessage, setChatMessage] = useState("");
   const [messages, setMessages] = useState<Array<{ sender: string; text: string; time: string }>>([]);
+
+  const [refreshCounter, setRefreshCounter] = useState(0);
+
+  // Synchronize React states with actual track states of localParticipant on mount / changes
+  useEffect(() => {
+    if (localParticipant) {
+      setIsMicOn(localParticipant.isMicrophoneEnabled);
+      setIsCamOn(localParticipant.isCameraEnabled);
+      setIsScreenSharing(localParticipant.isScreenShareEnabled);
+    }
+  }, [localParticipant]);
+
+  useEffect(() => {
+    if (!room) return;
+    const triggerRefresh = () => {
+      setRefreshCounter((prev) => prev + 1);
+    };
+
+    room.on("trackMuted", triggerRefresh);
+    room.on("trackUnmuted", triggerRefresh);
+    room.on("trackSubscribed", triggerRefresh);
+    room.on("trackUnsubscribed", triggerRefresh);
+    room.on("participantConnected", triggerRefresh);
+    room.on("participantDisconnected", triggerRefresh);
+
+    return () => {
+      room.off("trackMuted", triggerRefresh);
+      room.off("trackUnmuted", triggerRefresh);
+      room.off("trackSubscribed", triggerRefresh);
+      room.off("trackUnsubscribed", triggerRefresh);
+      room.off("participantConnected", triggerRefresh);
+      room.off("participantDisconnected", triggerRefresh);
+    };
+  }, [room]);
 
   // Stream audio volume for viewers
   const [isMuted, setIsMuted] = useState(false);
@@ -77,7 +125,7 @@ export function LiveMarketStage({
   // Setup Data Channel for Live Chat
   const { send, message } = useDataChannel("chat");
 
-  const handleModerationCommand = async (cmd: any) => {
+  const handleModerationCommand = useCallback(async (cmd: any) => {
     // Only target local participant
     const target = cmd.targetIdentity;
     if (target === localParticipant.identity || target === "all") {
@@ -86,19 +134,37 @@ export function LiveMarketStage({
 
       try {
         if (cmd.action === "mute") {
+          if (!localParticipant.isMicrophoneEnabled) return;
           await localParticipant.setMicrophoneEnabled(false);
           setIsMicOn(false);
           toast.info("The host has muted your microphone.");
         } else if (cmd.action === "unmute") {
-          await localParticipant.setMicrophoneEnabled(true);
-          setIsMicOn(true);
-          toast.success("The host has unmuted your microphone.");
+          if (localParticipant.isMicrophoneEnabled) return;
+          toast("The host requested you to unmute your microphone.", {
+            action: {
+              label: "Unmute",
+              onClick: async () => {
+                if (isMicLoading) return;
+                setIsMicLoading(true);
+                try {
+                  await localParticipant.setMicrophoneEnabled(true);
+                  setIsMicOn(true);
+                  toast.success("Microphone Unmuted");
+                } catch (err: any) {
+                  toast.error("Failed to unmute: " + (err.message || err));
+                } finally {
+                  setIsMicLoading(false);
+                }
+              }
+            },
+            duration: 10000,
+          });
         }
       } catch (err: any) {
         console.error("Failed to run remote moderation command:", err);
       }
     }
-  };
+  }, [localParticipant, isHost, isMicLoading]);
 
   const sendModerationCommand = (action: "mute" | "unmute", targetIdentity: string) => {
     if (!isHostOrCoHost) return;
@@ -137,7 +203,7 @@ export function LiveMarketStage({
         console.error("Failed to parse message", err);
       }
     }
-  }, [message]);
+  }, [message, handleModerationCommand]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,6 +236,8 @@ export function LiveMarketStage({
 
   // Toggle Microhpone
   const toggleMic = async () => {
+    if (isMicLoading) return;
+    setIsMicLoading(true);
     try {
       const nextState = !isMicOn;
       await localParticipant.setMicrophoneEnabled(nextState);
@@ -177,11 +245,15 @@ export function LiveMarketStage({
       toast.success(nextState ? "Microphone Unmuted" : "Microphone Muted");
     } catch (err: any) {
       toast.error("Failed to toggle microphone: " + (err.message || err));
+    } finally {
+      setIsMicLoading(false);
     }
   };
 
   // Toggle Camera
   const toggleCam = async () => {
+    if (isCamLoading) return;
+    setIsCamLoading(true);
     try {
       const nextState = !isCamOn;
       await localParticipant.setCameraEnabled(nextState);
@@ -189,6 +261,8 @@ export function LiveMarketStage({
       toast.success(nextState ? "Camera Turned On" : "Camera Turned Off");
     } catch (err: any) {
       toast.error("Failed to toggle camera: " + (err.message || err));
+    } finally {
+      setIsCamLoading(false);
     }
   };
 
@@ -369,22 +443,34 @@ export function LiveMarketStage({
                 variant={isMicOn ? "default" : "destructive"}
                 size="sm"
                 onClick={toggleMic}
-                disabled={!isLive}
-                className="rounded-full px-4 text-xs font-bold gap-2"
+                disabled={!isLive || isMicLoading}
+                className="rounded-full px-4 text-xs font-bold gap-2 min-w-[100px]"
               >
-                {isMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                {isMicOn ? "Mic On" : "Muted"}
+                {isMicLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isMicOn ? (
+                  <Mic className="w-4 h-4" />
+                ) : (
+                  <MicOff className="w-4 h-4" />
+                )}
+                {isMicLoading ? "Muting..." : isMicOn ? "Mic On" : "Muted"}
               </Button>
 
               <Button
                 variant={isCamOn ? "default" : "secondary"}
                 size="sm"
                 onClick={toggleCam}
-                disabled={!isLive}
-                className="rounded-full px-4 text-xs font-bold gap-2"
+                disabled={!isLive || isCamLoading}
+                className="rounded-full px-4 text-xs font-bold gap-2 min-w-[110px]"
               >
-                {isCamOn ? <VideoIcon className="w-4 h-4 text-primary" /> : <VideoOff className="w-4 h-4" />}
-                {isCamOn ? "Camera On" : "Cam Off"}
+                {isCamLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isCamOn ? (
+                  <VideoIcon className="w-4 h-4 text-primary" />
+                ) : (
+                  <VideoOff className="w-4 h-4" />
+                )}
+                {isCamLoading ? "Loading..." : isCamOn ? "Camera On" : "Cam Off"}
               </Button>
 
               <Button
@@ -418,22 +504,34 @@ export function LiveMarketStage({
                 variant={isMicOn ? "default" : "destructive"}
                 size="sm"
                 onClick={toggleMic}
-                disabled={!isLive}
-                className="rounded-full px-4 text-xs font-bold gap-2"
+                disabled={!isLive || isMicLoading}
+                className="rounded-full px-4 text-xs font-bold gap-2 min-w-[100px]"
               >
-                {isMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                {isMicOn ? "Mic On" : "Muted"}
+                {isMicLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isMicOn ? (
+                  <Mic className="w-4 h-4" />
+                ) : (
+                  <MicOff className="w-4 h-4" />
+                )}
+                {isMicLoading ? "Muting..." : isMicOn ? "Mic On" : "Muted"}
               </Button>
 
               <Button
                 variant={isCamOn ? "default" : "secondary"}
                 size="sm"
                 onClick={toggleCam}
-                disabled={!isLive}
-                className="rounded-full px-4 text-xs font-bold gap-2"
+                disabled={!isLive || isCamLoading}
+                className="rounded-full px-4 text-xs font-bold gap-2 min-w-[110px]"
               >
-                {isCamOn ? <VideoIcon className="w-4 h-4 text-primary" /> : <VideoOff className="w-4 h-4" />}
-                {isCamOn ? "Camera On" : "Cam Off"}
+                {isCamLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isCamOn ? (
+                  <VideoIcon className="w-4 h-4 text-primary" />
+                ) : (
+                  <VideoOff className="w-4 h-4" />
+                )}
+                {isCamLoading ? "Loading..." : isCamOn ? "Camera On" : "Cam Off"}
               </Button>
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium ml-2">
@@ -468,12 +566,9 @@ export function LiveMarketStage({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                setShowParticipants(!showParticipants);
-                setShowChat(false);
-              }}
+              onClick={() => toggleTab("participants")}
               title="View Participants"
-              className={`rounded-full ${showParticipants ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+              className={`rounded-full ${showSidebar && activeTab === "participants" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
             >
               <Users className="w-4 h-4" />
             </Button>
@@ -481,12 +576,9 @@ export function LiveMarketStage({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                setShowChat(!showChat);
-                setShowParticipants(false);
-              }}
+              onClick={() => toggleTab("chat")}
               title="Toggle Live Chat"
-              className={`rounded-full ${showChat ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+              className={`rounded-full ${showSidebar && activeTab === "chat" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
             >
               <MessageSquare className="w-4 h-4" />
             </Button>
@@ -506,163 +598,173 @@ export function LiveMarketStage({
       </div>
 
       {/* RIGHT: LIVE CHAT & AUDIENCE PANEL */}
-      {showChat && (
-        <div className="w-full lg:w-80 lg:h-full h-[350px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
-          <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-card/40">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Live Market Chat</h4>
-            </div>
-            <Badge variant="outline" className="text-[10px] text-muted-foreground">
-              {messages.length} messages
-            </Badge>
+      {/* RIGHT SIDEBAR: LIVE CHAT & PARTICIPANTS */}
+      {showSidebar && (
+        <div className="w-full lg:w-80 lg:h-full h-[400px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
+          {/* TABS HEADER */}
+          <div className="flex border-b border-border/40 bg-card/20">
+            <button
+              onClick={() => setActiveTab("chat")}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
+                activeTab === "chat"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Chat ({messages.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("participants")}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
+                activeTab === "participants"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Users ({(remoteParticipants?.length || 0) + 1})</span>
+            </button>
           </div>
 
-          {/* CHAT MESSAGES STREAM */}
-          <ScrollArea className="flex-1 p-4 space-y-3">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center py-16 text-muted-foreground/60 space-y-2">
-                <MessageSquare className="w-8 h-8 stroke-1" />
-                <p className="text-xs">No messages yet. Say hi to the traders!</p>
-              </div>
-            ) : (
-              messages.map((msg, idx) => (
-                <div key={idx} className="mb-3 space-y-1">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="font-bold text-primary">{msg.sender}</span>
-                    <span className="text-muted-foreground/60">{msg.time}</span>
+          {/* TAB CONTENT: CHAT */}
+          {activeTab === "chat" && (
+            <div className="flex-1 flex flex-col justify-between overflow-hidden">
+              {/* CHAT MESSAGES STREAM */}
+              <ScrollArea className="flex-1 p-4 space-y-3">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center py-16 text-muted-foreground/60 space-y-2">
+                    <MessageSquare className="w-8 h-8 stroke-1 text-muted-foreground/45" />
+                    <p className="text-xs">No messages yet. Say hi to the traders!</p>
                   </div>
-                  <div className="bg-card border border-border/50 rounded-lg p-2.5 text-xs text-foreground leading-relaxed break-words">
-                    {msg.text}
-                  </div>
-                </div>
-              ))
-            )}
-          </ScrollArea>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <div key={idx} className="mb-3 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="font-bold text-primary">{msg.sender}</span>
+                        <span className="text-muted-foreground/60">{msg.time}</span>
+                      </div>
+                      <div className="bg-card border border-border/50 rounded-lg p-2.5 text-xs text-foreground leading-relaxed break-words">
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
 
-          {/* CHAT INPUT BOX */}
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-border/40 bg-card/20 flex gap-2">
-            <Input
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Send message..."
-              className="text-xs bg-background/80 border-border/60 focus-visible:ring-primary h-9 rounded-lg"
-            />
-            <Button type="submit" size="sm" className="h-9 px-3 text-xs font-bold uppercase bg-primary text-primary-foreground">
-              Send
-            </Button>
-          </form>
-        </div>
-      )}
-
-      {/* RIGHT: PARTICIPANTS & MODERATION PANEL */}
-      {showParticipants && (
-        <div className="w-full lg:w-80 lg:h-full h-[350px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
-          <div className="px-4 py-3 border-b border-border/40 bg-card/40 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Room Participants</h4>
-              </div>
-              <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                {remoteParticipants.length + 1} online
-              </Badge>
+              {/* CHAT INPUT BOX */}
+              <form onSubmit={handleSendMessage} className="p-3 border-t border-border/40 bg-card/20 flex gap-2">
+                <Input
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Send message..."
+                  className="text-xs bg-background/80 border-border/60 focus-visible:ring-primary h-9 rounded-lg"
+                />
+                <Button type="submit" size="sm" className="h-9 px-3 text-xs font-bold uppercase bg-primary text-primary-foreground">
+                  Send
+                </Button>
+              </form>
             </div>
+          )}
 
-            {/* MUTE/UNMUTE ALL - ONLY FOR HOST */}
-            {isHost && (
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => sendModerationCommand("mute", "all")}
-                  className="text-[10px] uppercase font-bold py-1 h-7 border-destructive/30 hover:bg-destructive/10 text-destructive-foreground flex items-center justify-center gap-1"
-                >
-                  <MicOff className="w-3 h-3 text-destructive" /> Mute All
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => sendModerationCommand("unmute", "all")}
-                  className="text-[10px] uppercase font-bold py-1 h-7 border-primary/30 hover:bg-primary/10 text-primary flex items-center justify-center gap-1"
-                >
-                  <Mic className="w-3 h-3 text-primary animate-pulse" /> Unmute All
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* PARTICIPANTS LIST */}
-          <ScrollArea className="flex-1 p-4 space-y-3">
-            {[
-              {
-                identity: localParticipant.identity,
-                name: localParticipant.name || "Host",
-                isHost: isHost,
-                isCoHost: isHostOrCoHost && !isHost,
-                isLocal: true,
-                isMicOn: isMicOn,
-              },
-              ...remoteParticipants.map((p) => {
-                const isCo = sessionData?.coHosts?.some(
-                  (ch: any) => ch.email === p.identity || ch._id === p.identity
-                );
-                return {
-                  identity: p.identity,
-                  name: p.name || p.identity,
-                  isHost: false,
-                  isCoHost: !!isCo,
-                  isLocal: false,
-                  isMicOn: p.isMicrophoneEnabled,
-                };
-              }),
-            ].map((p, idx) => (
-              <div
-                key={p.identity + idx}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-card/40 border border-border/40 hover:bg-card/75 transition-colors"
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Avatar className="h-7 w-7 border border-primary/20 shrink-0">
-                    <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
-                      {p.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="truncate flex flex-col leading-tight">
-                    <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-semibold">
-                      {p.isHost ? "Host" : p.isCoHost ? "Co-Host" : "Viewer"}
-                    </span>
-                  </div>
+          {/* TAB CONTENT: PARTICIPANTS */}
+          {activeTab === "participants" && (
+            <div className="flex-1 flex flex-col justify-between overflow-hidden">
+              {/* MUTE/UNMUTE ALL - ONLY FOR HOST */}
+              {isHost && (
+                <div className="px-4 py-3 border-b border-border/40 bg-card/10 flex gap-2">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => sendModerationCommand("mute", "all")}
+                    className="flex-1 text-[10px] uppercase font-bold py-1 h-7 border-destructive/30 hover:bg-destructive/10 text-destructive-foreground flex items-center justify-center gap-1"
+                  >
+                    <MicOff className="w-3 h-3 text-destructive" /> Mute All
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => sendModerationCommand("unmute", "all")}
+                    className="flex-1 text-[10px] uppercase font-bold py-1 h-7 border-primary/30 hover:bg-primary/10 text-primary flex items-center justify-center gap-1"
+                  >
+                    <Mic className="w-3 h-3 text-primary animate-pulse" /> Unmute All
+                  </Button>
                 </div>
+              )}
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Status Indicator */}
-                  {p.isMicOn ? (
-                    <Mic className="w-3.5 h-3.5 text-primary animate-pulse" title="Microphone Active" />
-                  ) : (
-                    <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" title="Microphone Muted" />
-                  )}
+              {/* PARTICIPANTS LIST */}
+              <ScrollArea className="flex-1 p-4 space-y-3">
+                {[
+                  {
+                    identity: localParticipant.identity,
+                    name: localParticipant.name || "Host",
+                    isHost: isHost,
+                    isCoHost: isHostOrCoHost && !isHost,
+                    isLocal: true,
+                    isMicOn: isMicOn,
+                  },
+                  ...remoteParticipants.map((p) => {
+                    const isCo = sessionData?.coHosts?.some(
+                      (ch: any) => ch.email === p.identity || ch._id === p.identity
+                    );
+                    return {
+                      identity: p.identity,
+                      name: p.name || p.identity,
+                      isHost: false,
+                      isCoHost: !!isCo,
+                      isLocal: false,
+                      isMicOn: p.isMicrophoneEnabled,
+                    };
+                  }),
+                ].map((p, idx) => (
+                  <div
+                    key={p.identity + idx}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-card/40 border border-border/40 hover:bg-card/75 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Avatar className="h-7 w-7 border border-primary/20 shrink-0">
+                        <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
+                          {p.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="truncate flex flex-col leading-tight">
+                        <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-semibold">
+                          {p.isHost ? "Host" : p.isCoHost ? "Co-Host" : "Viewer"}
+                        </span>
+                      </div>
+                    </div>
 
-                  {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
-                  {isHost && !p.isLocal && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => sendModerationCommand(p.isMicOn ? "mute" : "unmute", p.identity)}
-                      title={p.isMicOn ? "Mute user microphone" : "Unmute user microphone"}
-                      className="h-6 w-6 rounded-full hover:bg-neutral-800/80 text-muted-foreground hover:text-foreground"
-                    >
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Status Indicator */}
                       {p.isMicOn ? (
-                        <MicOff className="w-3 h-3 text-destructive" />
+                        <Mic className="w-3.5 h-3.5 text-primary animate-pulse" title="Microphone Active" />
                       ) : (
-                        <Mic className="w-3 h-3 text-primary" />
+                        <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" title="Microphone Muted" />
                       )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </ScrollArea>
+
+                      {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
+                      {isHost && !p.isLocal && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => sendModerationCommand(p.isMicOn ? "mute" : "unmute", p.identity)}
+                          title={p.isMicOn ? "Mute user microphone" : "Unmute user microphone"}
+                          className="h-6 w-6 rounded-full hover:bg-neutral-800/80 text-muted-foreground hover:text-foreground"
+                        >
+                          {p.isMicOn ? (
+                            <MicOff className="w-3 h-3 text-destructive" />
+                          ) : (
+                            <Mic className="w-3 h-3 text-primary" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          )}
         </div>
       )}
     </div>

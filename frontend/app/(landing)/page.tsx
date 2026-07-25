@@ -29,9 +29,16 @@ import {
   UserCheck,
   Clock,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 /* ─────────────────────── Mock Preview Components ─────────────────────── */
 
@@ -604,6 +611,162 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── FAQ Section ── */}
+      <section id="faq" className="py-20 md:py-24 border-t border-border/30">
+        <div className="container mx-auto px-6 max-w-4xl">
+          <div className="text-center max-w-xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-3.5 py-1 text-[11px] font-bold text-primary uppercase tracking-widest mb-3">
+              <HelpCircle className="w-3.5 h-3.5" /> F.A.Q.
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
+              Everything you need to know about the ultimate free trade journal and how it compares to platforms like TradeZella.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto border border-border/30 rounded-xl bg-card/30 p-2 sm:p-4 backdrop-blur-xs">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="what-is-trade-journal" className="border-border/30 px-2 sm:px-4">
+                <AccordionTrigger className="text-[14px] sm:text-[15px] font-semibold text-foreground hover:no-underline hover:text-primary transition-colors py-4">
+                  What is a trade journal and how does trade journaling help?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[13px] sm:text-sm leading-relaxed pb-4">
+                  A trade journal (also known as a trading log or tracker) is a comprehensive record of all your executed trades. 
+                  Trade journaling is the practice of logging details like entry/exit prices, strategies, risk levels, and visual charts. 
+                  By consistently keeping a trade journal, you can analyze your trading behaviors, refine your strategies, and 
+                  eliminate bad trading habits, which is the fastest way to build long-term profitability.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="is-it-free" className="border-border/30 px-2 sm:px-4">
+                <AccordionTrigger className="text-[14px] sm:text-[15px] font-semibold text-foreground hover:no-underline hover:text-primary transition-colors py-4">
+                  Is TradeTracker Pro a free trade journal?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[13px] sm:text-sm leading-relaxed pb-4">
+                  Yes! TradeTracker Pro is a 100% free trade journal. We believe professional-grade trading logs, strategy 
+                  backtesting software, and calendar analytics should be accessible to every disciplined trader. You can create 
+                  multiple workspaces for different broker accounts, track unlimited trades, and upload chart screenshots without paying 
+                  monthly subscriptions.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="vs-tradezella" className="border-border/30 px-2 sm:px-4">
+                <AccordionTrigger className="text-[14px] sm:text-[15px] font-semibold text-foreground hover:no-underline hover:text-primary transition-colors py-4">
+                  How does TradeTracker Pro compare to TradeZella or Excel?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[13px] sm:text-sm leading-relaxed pb-4">
+                  Unlike traditional Excel/Spreadsheet trading logs, TradeTracker Pro offers automated calculations, beautiful day-wise 
+                  equity curves, and dynamic calendar heatmaps without requiring complex formulas or manual data setups. 
+                  Compared to expensive alternatives like TradeZella or TraderSync (which can cost $30–$50/month), TradeTracker Pro 
+                  provides a cleaner, ultra-responsive developer-grade workspace, multiple sub-account tracking, and client-side compressed 
+                  screenshot hosting completely free of charge.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="what-markets" className="border-border/30 px-2 sm:px-4">
+                <AccordionTrigger className="text-[14px] sm:text-[15px] font-semibold text-foreground hover:no-underline hover:text-primary transition-colors py-4">
+                  What assets and markets can I track?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[13px] sm:text-sm leading-relaxed pb-4">
+                  Our trading journal is designed to support a wide range of asset classes. You can easily track and backtest strategies 
+                  for Forex currency pairs (such as EURUSD, GBPJPY), Gold (XAUUSD) and commodity instruments, major global Indices (like US30, NAS100), 
+                  Cryptocurrencies, and stocks.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="getting-started" className="border-0 px-2 sm:px-4">
+                <AccordionTrigger className="text-[14px] sm:text-[15px] font-semibold text-foreground hover:no-underline hover:text-primary transition-colors py-4">
+                  How long does it take to start tracking?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[13px] sm:text-sm leading-relaxed pb-4">
+                  Signing up takes less than 3 minutes. Simply create an account, verify your setup through our partner broker options 
+                  to unlock full platform features, build your first trading workspace, and begin journaling. No credit card is ever required.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </div>
+
+        {/* Structured Schema Markup for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://www.tradetrackerpro.in/#software",
+                  "name": "TradeTracker Pro",
+                  "url": "https://www.tradetrackerpro.in",
+                  "operatingSystem": "All",
+                  "applicationCategory": "BusinessApplication",
+                  "offers": {
+                    "@type": "Offer",
+                    "price": "0.00",
+                    "priceCurrency": "USD"
+                  },
+                  "description": "The best free trade journal and strategy backtesting software. TradeTracker Pro helps forex, gold, stock, and crypto traders log trades, track metrics, and boost profitability.",
+                  "aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": "4.9",
+                    "reviewCount": "154"
+                  }
+                },
+                {
+                  "@type": "FAQPage",
+                  "@id": "https://www.tradetrackerpro.in/#faq",
+                  "mainEntity": [
+                    {
+                      "@type": "Question",
+                      "name": "What is a trade journal and how does trade journaling help?",
+                      "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "A trade journal (also known as a trading log or tracker) is a comprehensive record of all your executed trades. Trade journaling is the practice of logging details like entry/exit prices, strategies, risk levels, and visual charts. By consistently keeping a trade journal, you can analyze your trading behaviors, refine your strategies, and eliminate bad trading habits, which is the fastest way to build long-term profitability."
+                      }
+                    },
+                    {
+                      "@type": "Question",
+                      "name": "Is TradeTracker Pro a free trade journal?",
+                      "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes! TradeTracker Pro is a 100% free trade journal. We believe professional-grade trading logs, strategy backtesting software, and calendar analytics should be accessible to every disciplined trader. You can create multiple workspaces for different broker accounts, track unlimited trades, and upload chart screenshots without paying monthly subscriptions."
+                      }
+                    },
+                    {
+                      "@type": "Question",
+                      "name": "How does TradeTracker Pro compare to TradeZella or Excel?",
+                      "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Unlike traditional Excel/Spreadsheet trading logs, TradeTracker Pro offers automated calculations, beautiful day-wise equity curves, and dynamic calendar heatmaps without requiring complex formulas or manual data setups. Compared to expensive alternatives like TradeZella or TraderSync (which can cost $30–$50/month), TradeTracker Pro provides a cleaner, ultra-responsive developer-grade workspace, multiple sub-account tracking, and client-side compressed screenshot hosting completely free of charge."
+                      }
+                    },
+                    {
+                      "@type": "Question",
+                      "name": "What assets and markets can I track?",
+                      "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Our trading journal is designed to support a wide range of asset classes. You can easily track and backtest strategies for Forex currency pairs (such as EURUSD, GBPJPY), Gold (XAUUSD) and commodity instruments, major global Indices (like US30, NAS100), Cryptocurrencies, and stocks."
+                      }
+                    },
+                    {
+                      "@type": "Question",
+                      "name": "How long does it take to start tracking?",
+                      "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Signing up takes less than 3 minutes. Simply create an account, verify your setup through our partner broker options to unlock full platform features, build your first trading workspace, and begin journaling. No credit card is ever required."
+                      }
+                    }
+                  ]
+                }
+              ]
+            })
+          }}
+        />
       </section>
 
       {/* ── CTA ── */}
