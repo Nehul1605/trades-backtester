@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import {
   TrendingUp,
   BarChart3,
@@ -193,6 +194,25 @@ function DashboardMockup() {
 }
 
 /* ─────────────────────── Page ─────────────────────── */
+
+export const metadata: Metadata = {
+  title: "Free Trading Journal & Trade Tracker | TradeTracker Pro",
+  description: "TradeTracker Pro is the best free online trading journal and trade tracker for forex, gold, stocks, and crypto. Log trades, analyze metrics, view calendar heatmaps, and build your edge.",
+  keywords: [
+    "free trade journal",
+    "trade journal",
+    "trade journaling free",
+    "trade tracker",
+    "forex trading journal",
+    "gold trading log",
+    "best trading journal software",
+    "trading journal excel alternative",
+    "TradeZella alternative",
+    "TraderSync alternative",
+    "notion trading journal alternative",
+    "notion.site alternate"
+  ]
+};
 
 export default async function HomePage() {
   const session = await auth();
@@ -820,7 +840,7 @@ export default async function HomePage() {
         <div className="container mx-auto px-6 max-w-6xl">
 
           {/* ── Footer Grid ── */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 py-14">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 py-14">
 
             {/* Brand */}
             <div className="col-span-2 md:col-span-1 space-y-3">
@@ -879,6 +899,25 @@ export default async function HomePage() {
                   { l: "Features", h: "#features" },
                   { l: "How It Works", h: "#how-it-works" },
                   { l: "Reviews", h: "#reviews" },
+                ].map((link) => (
+                  <li key={link.l}>
+                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
+                      {link.l}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Comparisons */}
+            <div>
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
+                Comparisons
+              </h4>
+              <ul className="space-y-2">
+                {[
+                  { l: "vs TradeZella", h: "/compare/tradezella" },
+                  { l: "vs Notion", h: "/compare/notion" },
                 ].map((link) => (
                   <li key={link.l}>
                     <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
