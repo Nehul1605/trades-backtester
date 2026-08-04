@@ -6,7 +6,7 @@ import { computePnlUSD, TradeType } from "@/lib/pnl";
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 // Helper to get authorization header with JWT
-async function getAuthHeader() {
+async function getAuthHeader(): Promise<HeadersInit> {
   const session = await auth();
   const token = (session?.user as any)?.accessToken;
   if (token) {
@@ -548,6 +548,143 @@ export async function updateUserRole(id: string, role: string): Promise<{ error?
     return {
       error: err instanceof Error ? err.message : "Failed to update user role",
     };
+  }
+}
+
+export async function getAdminUsers(params: {
+  search?: string;
+  status?: string;
+  role?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  users: any[];
+  totalPages: number;
+  currentPage: number;
+  totalUsers: number;
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const queryParts: string[] = [];
+    if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    if (params.role) queryParts.push(`role=${encodeURIComponent(params.role)}`);
+    if (params.sortBy) queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
+    if (params.sortOrder) queryParts.push(`sortOrder=${encodeURIComponent(params.sortOrder)}`);
+    if (params.page) queryParts.push(`page=${params.page}`);
+    if (params.limit) queryParts.push(`limit=${params.limit}`);
+
+    const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+
+    const res = await fetch(`${BACKEND_URL}/api/admin/users${queryString}`, {
+      method: "GET",
+      headers: authHeader,
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to fetch users (HTTP ${res.status})`);
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("getAdminUsers error:", err);
+    return { users: [], totalPages: 0, currentPage: 1, totalUsers: 0 };
+  }
+}
+
+export async function updateUserStatus(
+  id: string,
+  status: string,
+  reason?: string
+): Promise<{ error?: string; message?: string; user?: any }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/status`, {
+      method: "PATCH",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status, reason }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to update user status" };
+    }
+    return result;
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to update user status",
+    };
+  }
+}
+
+export async function getAdminUserTrades(id: string): Promise<any[]> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/trades`, {
+      method: "GET",
+      headers: authHeader,
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const trades = await res.json();
+
+    // Map backend response properties back to lower_snake_case to match what UI expects
+    return trades.map((t: any) => ({
+      $id: t.id || t._id,
+      id: t.id || t._id,
+      symbol: t.symbol,
+      entry_price: t.entryPrice,
+      exit_price: t.exitPrice,
+      entry_price_text: t.entryPriceText,
+      exit_price_text: t.exitPriceText,
+      quantity: t.quantity,
+      trade_type: t.tradeType,
+      entry_date: t.entryDate,
+      exit_date: t.exitDate,
+      status: t.status,
+      strategy_name: t.strategyName,
+      notes: t.notes,
+      screenshot_url: t.screenshotUrl,
+      pnl: t.pnl,
+      pnl_percentage: t.pnlPercentage,
+      stop_loss: t.stopLoss,
+      take_profit: t.takeProfit,
+      broker_account_id: t.brokerAccountId || t.broker_account_id,
+    }));
+  } catch (err) {
+    console.error("getAdminUserTrades error:", err);
+    return [];
+  }
+}
+
+export async function getAdminUserAccounts(id: string): Promise<any[]> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/accounts`, {
+      method: "GET",
+      headers: authHeader,
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("getAdminUserAccounts error:", err);
+    return [];
   }
 }
 
