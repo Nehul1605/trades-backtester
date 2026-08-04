@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   ResponsiveContainer,
   BarChart,
@@ -21,7 +23,7 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { cn, getLocalDateString } from "@/lib/utils";
+import { cn, getLocalDateString, loadImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
@@ -236,32 +238,123 @@ export function AnalyticsPeriodChart({
     return null;
   };
 
-  const handleExportChart = () => {
+  const handleExportChartPDF = async () => {
     if (processedData.length === 0) return;
 
-    // CSV Headers
-    const headers = ["Period/Date", "Net Profit ($)"];
-    
-    // Map rows
+    const doc = new jsPDF();
+    const watermarkText = "TRADETRACKER PRO";
+
+    // 1. Draw solid dark background banner at the top (mimicking actual site dark theme)
+    doc.setFillColor(9, 9, 11); // zinc-950
+    doc.rect(0, 0, 210, 36, "F");
+
+    // 2. Calculate Logo dimensions to avoid squishing
+    let logoWidth = 10;
+    let logoHeight = 10;
+    try {
+      const logoImg = await loadImage("/logo.png");
+      const originalWidth = logoImg.naturalWidth || logoImg.width;
+      const originalHeight = logoImg.naturalHeight || logoImg.height;
+      logoWidth = (originalWidth / originalHeight) * logoHeight;
+      // Add logo inside the dark banner
+      doc.addImage(logoImg, "PNG", 14, 13, logoWidth, logoHeight);
+    } catch (err) {
+      console.error("Failed to load logo image, using fallback:", err);
+      doc.setFillColor(197, 168, 128); // gold accent
+      doc.rect(14, 14, 8, 8, "F");
+    }
+
+    const textStartX = 14 + logoWidth + 3;
+
+    // Header Title (Gold color to match dark theme gold)
+    doc.setTextColor(197, 168, 128); // gold: #c5a880
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("TRADETRACKER PRO", textStartX, 21);
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(226, 232, 240); // slate-200
+    doc.text(`ANALYTICS PERFORMANCE REPORT (${period.toUpperCase()})`, textStartX, 26.5);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, 142, 21);
+    doc.text(`Data Points: ${processedData.length}`, 142, 26.5);
+
+    const headers = ["Period / Date", "Net Profit ($)"];
     const rows = processedData.map((d) => [
       d.label,
-      d.pnl
+      d.pnl ? `${d.pnl >= 0 ? "+" : ""}$${d.pnl.toFixed(2)}` : "$0.00"
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.join(","))
-    ].join("\n");
+    autoTable(doc, {
+      startY: 42,
+      head: [headers],
+      body: rows,
+      theme: "striped",
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 1.5,
+        valign: "middle",
+        textColor: [51, 65, 85] // slate-700
+      },
+      headStyles: {
+        fillColor: [176, 143, 98], // TradeTracker Pro gold theme
+        textColor: [255, 255, 255],
+        fontSize: 8.5,
+        fontStyle: "bold",
+        halign: "center"
+      },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+        1: { fontStyle: "bold", halign: "right" }
+      },
+      alternateRowStyles: {
+        fillColor: [250, 248, 245] // very soft gold/white tint
+      },
+      margin: { top: 42, bottom: 20 },
+      willDrawPage: (data) => {
+        // Fallback grid watermark under the table (very light gray) in case transparent overlay is unsupported
+        doc.setTextColor(250, 250, 250);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        for (let y = 60; y < 280; y += 45) {
+          for (let x = 15; x < 200; x += 65) {
+            doc.text(watermarkText, x, y, { angle: 25 });
+          }
+        }
+      },
+      didDrawPage: (data) => {
+        // Add footer page numbers
+        const str = "Page " + doc.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // slate-400
+        doc.text(str, 196 - doc.getTextWidth(str), 287);
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `performance_chart_${period}_${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+        // Professional translucent overlay grid watermark on top of the table/text
+        try {
+          const gState = new (doc as any).GState({ opacity: 0.045 });
+          doc.saveGraphicsState();
+          doc.setGState(gState);
+          doc.setTextColor(0, 0, 0); // black with 4.5% opacity overlay
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+
+          for (let y = 60; y < 280; y += 45) {
+            for (let x = 15; x < 200; x += 65) {
+              doc.text(watermarkText, x, y, { angle: 25 });
+            }
+          }
+          doc.restoreGraphicsState();
+        } catch (e) {
+          console.error("Translucent watermark overlay failed:", e);
+        }
+      }
+    });
+
+    doc.save(`performance_chart_${period}_${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
   if (closedTrades.length === 0) {
@@ -295,13 +388,13 @@ export function AnalyticsPeriodChart({
           {/* Export Chart Data Button */}
           {processedData.length > 0 && (
             <Button
-              onClick={handleExportChart}
+              onClick={handleExportChartPDF}
               variant="outline"
               size="sm"
               className="h-8 px-3 bg-accent/20 border-primary/20 text-primary hover:border-primary/50 hover:bg-accent/40 text-[10px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              Export Chart Data
+              Export Chart PDF
             </Button>
           )}
 
