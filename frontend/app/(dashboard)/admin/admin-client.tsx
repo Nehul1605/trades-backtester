@@ -444,7 +444,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          Broadcaster & Role Manager
+          Site Users (Approved Only)
         </button>
         <button
           onClick={() => setActiveTab("users")}
@@ -606,7 +606,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
         </div>
       )}
 
-      {/* ─── TAB 2: USER ROLE MANAGER ─── */}
+      {/* ─── TAB 2: APPROVED SITE USERS ─── */}
       {activeTab === "roles" && (
         <div className="space-y-6">
           {/* User Search Bar */}
@@ -614,9 +614,10 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
               <Input
-                placeholder="Search user accounts by name or email..."
+                placeholder="Search approved users by name or email..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleUserSearch()}
                 className="pl-9 bg-muted/20 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
               />
             </div>
@@ -637,84 +638,107 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border/40 bg-neutral-900/30 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                      <th className="py-4 px-6">User Name</th>
-                      <th className="py-4 px-6">Email Address</th>
-                      <th className="py-4 px-6">Referral Status</th>
-                      <th className="py-4 px-6">Current Role</th>
+                      <th className="py-4 px-6">Approved User</th>
+                      <th className="py-4 px-6">Broker & Account</th>
+                      <th className="py-4 px-6">Telegram</th>
+                      <th className="py-4 px-6">Role</th>
+                      <th className="py-4 px-6">Joined Date</th>
                       <th className="py-4 px-6 text-right">Assign Privileges</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30 text-xs">
                     {searching && foundUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
                           <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
-                          Searching database...
+                          Loading approved site users...
                         </td>
                       </tr>
                     ) : foundUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="text-center py-20 text-muted-foreground uppercase font-semibold">
-                          No users matching search query.
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                          No approved site users found matching query.
                         </td>
                       </tr>
                     ) : (
-                      foundUsers.map((u) => (
-                        <tr key={u._id} className="hover:bg-neutral-900/10 transition-colors">
-                          <td className="py-4 px-6 font-bold text-foreground">{u.name || "N/A"}</td>
-                          <td className="py-4 px-6 font-mono text-muted-foreground">{u.email}</td>
-                          <td className="py-4 px-6">
-                            <Badge
-                              className={`text-[9px] uppercase font-extrabold px-2 py-0.5 border ${
-                                u.status === "approved"
-                                  ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20"
-                                  : u.status === "rejected"
-                                  ? "bg-red-500/5 text-red-500 border-red-500/20"
-                                  : "bg-yellow-500/5 text-yellow-500 border-yellow-500/20"
-                              }`}
-                            >
-                              {u.status || "pending"}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-6">
-                            <Badge
-                              className={`text-[9px] uppercase font-extrabold px-2 py-0.5 border ${
-                                u.role === "admin"
-                                  ? "bg-red-500/10 text-red-400 border-red-500/25"
-                                  : u.role === "broadcaster"
-                                  ? "bg-primary/10 text-primary border-primary/20"
-                                  : u.role === "member"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
-                                  : "bg-neutral-500/10 text-muted-foreground border-border/40"
-                              }`}
-                            >
-                              {u.role || "user"}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {updatingUserId === u._id ? (
-                                <Loader2 className="w-4 h-4 text-primary animate-spin mr-3" />
+                      foundUsers.map((u) => {
+                        const v = u.verification || {};
+                        return (
+                          <tr key={u._id} className="hover:bg-neutral-900/10 transition-colors">
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-foreground text-sm">{u.name || "N/A"}</span>
+                                <span className="text-muted-foreground text-[10px] font-mono">{u.email}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              {v.broker ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-bold uppercase text-[11px] text-foreground">{v.broker}</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono">#{v.tradingAccountNumber}</span>
+                                </div>
                               ) : (
-                                <Select
-                                  defaultValue={u.role || "user"}
-                                  onValueChange={(val) => handleRoleChange(u._id, val)}
-                                >
-                                  <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50 border-primary/10">
-                                    <SelectValue placeholder="Set Role" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-card">
-                                    <SelectItem value="member" className="text-xs">Member</SelectItem>
-                                    <SelectItem value="user" className="text-xs">User (Audience)</SelectItem>
-                                    <SelectItem value="broadcaster" className="text-xs">Broadcaster</SelectItem>
-                                    <SelectItem value="admin" className="text-xs">Admin (Owner)</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <span className="text-[11px] text-muted-foreground italic">Direct Access</span>
                               )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="py-4 px-6">
+                              {v.telegramUsername ? (
+                                <a
+                                  href={`https://t.me/${v.telegramUsername.replace("@", "")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-primary hover:underline font-semibold text-[11px]"
+                                >
+                                  <Send className="w-3 h-3 shrink-0" />
+                                  <span>{v.telegramUsername}</span>
+                                </a>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground">N/A</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6">
+                              <Badge
+                                className={`text-[9px] uppercase font-extrabold px-2 py-0.5 border ${
+                                  u.role === "admin"
+                                    ? "bg-red-500/10 text-red-400 border-red-500/25"
+                                    : u.role === "broadcaster"
+                                    ? "bg-primary/10 text-primary border-primary/20"
+                                    : u.role === "member"
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                                    : "bg-neutral-500/10 text-muted-foreground border-border/40"
+                                }`}
+                              >
+                                {u.role || "user"}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-6 text-muted-foreground text-[11px]">
+                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"}
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {updatingUserId === u._id ? (
+                                  <Loader2 className="w-4 h-4 text-primary animate-spin mr-3" />
+                                ) : (
+                                  <Select
+                                    defaultValue={u.role || "user"}
+                                    onValueChange={(val) => handleRoleChange(u._id, val)}
+                                  >
+                                    <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50 border-primary/10">
+                                      <SelectValue placeholder="Set Role" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-card">
+                                      <SelectItem value="member" className="text-xs">Member</SelectItem>
+                                      <SelectItem value="user" className="text-xs">User (Audience)</SelectItem>
+                                      <SelectItem value="broadcaster" className="text-xs">Broadcaster</SelectItem>
+                                      <SelectItem value="admin" className="text-xs">Admin (Owner)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

@@ -38,27 +38,50 @@ router.get("/verifications", protect, protectAdmin, async (req, res) => {
   }
 });
 
-// @desc    Search all users for role management
+// @desc    Search site users (defaults to approved users only)
 // @route   GET /api/admin/users/search
 // @access  Admin/Owner
 router.get("/users/search", protect, protectAdmin, async (req, res) => {
   try {
-    const { q } = req.query;
-    if (!q || q.trim().length === 0) {
-      const users = await User.find()
-        .select("name email role status")
-        .limit(20);
-      return res.json(users);
+    const { q, status = "approved" } = req.query;
+
+    let query = {};
+    if (status !== "all") {
+      query.status = status;
     }
 
-    const regex = new RegExp(q.trim(), "i");
-    const users = await User.find({
-      $or: [{ name: regex }, { email: regex }],
-    })
-      .select("name email role status")
-      .limit(30);
+    if (q && q.trim().length > 0) {
+      const regex = new RegExp(q.trim(), "i");
+      const searchConditions = [{ name: regex }, { email: regex }];
+      if (status !== "all") {
+        query.$and = [{ status }, { $or: searchConditions }];
+      } else {
+        query.$or = searchConditions;
+      }
+    }
 
-    res.json(users);
+    const users = await User.find(query)
+      .select("name email role status createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Attach verification request info (broker, trading account, telegram) for complete normal user data
+    const userIds = users.map((u) => u._id);
+    const verifications = await VerificationRequest.find({
+      user: { $in: userIds },
+    }).lean();
+
+    const verificationMap = new Map();
+    verifications.forEach((v) => {
+      verificationMap.set(v.user.toString(), v);
+    });
+
+    const result = users.map((u) => ({
+      ...u,
+      verification: verificationMap.get(u._id.toString()) || null,
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error("Search users error:", error);
     res.status(500).json({ error: "Failed to search users" });
@@ -70,7 +93,7 @@ router.get("/users/search", protect, protectAdmin, async (req, res) => {
 // @access  Admin/Owner
 router.post("/verifications/:id/approve", protect, protectAdmin, async (req, res) => {
   try {
-    const request = await VerificationRequest.findById(req.id || req.params.id);
+    const request = await VerificationRequest.findById(req.id || req.params.id).populate("user", "name email status");
     if (!request) {
       return res.status(404).json({ error: "Request not found" });
     }
@@ -79,7 +102,7 @@ router.post("/verifications/:id/approve", protect, protectAdmin, async (req, res
     await request.save();
 
     // Update associated user status
-    const targetUser = await User.findByIdAndUpdate(request.user, { status: "approved" }, { new: true });
+    const targetUser = await User.findByIdAndUpdate(request.user._id || request.user, { status: "approved" }, { new: true });
 
     // Send email to user
     if (targetUser && targetUser.email) {
@@ -152,7 +175,7 @@ router.post("/verifications/:id/reject", protect, protectAdmin, async (req, res)
   const { remarks } = req.body;
 
   try {
-    const request = await VerificationRequest.findById(req.id || req.params.id);
+    const request = await VerificationRequest.findById(req.id || req.params.id).populate("user", "name email status");
     if (!request) {
       return res.status(404).json({ error: "Request not found" });
     }
@@ -162,7 +185,7 @@ router.post("/verifications/:id/reject", protect, protectAdmin, async (req, res)
     await request.save();
 
     // Update associated user status
-    const targetUser = await User.findByIdAndUpdate(request.user, { status: "rejected" }, { new: true });
+    const targetUser = await User.findByIdAndUpdate(request.user._id || request.user, { status: "rejected" }, { new: true });
 
     // Send email to user
     if (targetUser && targetUser.email) {

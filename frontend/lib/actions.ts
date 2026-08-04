@@ -513,9 +513,9 @@ export async function rejectVerificationRequest(
   }
 }
 
-export async function searchUsers(query: string): Promise<any[]> {
+export async function searchUsers(query: string, status: string = "approved"): Promise<any[]> {
   const authHeader = await getAuthHeader();
-  const res = await fetch(`${BACKEND_URL}/api/admin/users/search?q=${encodeURIComponent(query)}`, {
+  const res = await fetch(`${BACKEND_URL}/api/admin/users/search?q=${encodeURIComponent(query)}&status=${encodeURIComponent(status)}`, {
     method: "GET",
     headers: authHeader,
     next: { revalidate: 0 },
