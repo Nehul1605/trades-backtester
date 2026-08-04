@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    statusRemarks: {
+      type: String,
+      default: "",
+    },
     role: {
       type: String,
       enum: ["user", "admin", "broadcaster", "member"],
