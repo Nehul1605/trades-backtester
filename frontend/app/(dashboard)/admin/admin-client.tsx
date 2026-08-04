@@ -90,7 +90,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const [siteTotalPages, setSiteTotalPages] = useState(1);
   const [siteCurrentPage, setSiteCurrentPage] = useState(1);
   const [siteSearch, setSiteSearch] = useState("");
-  const [siteStatus, setSiteStatus] = useState("all");
+  const [siteStatus, setSiteStatus] = useState("approved");
   const [siteRole, setSiteRole] = useState("all");
   const [siteSortBy, setSiteSortBy] = useState("createdAt");
   const [siteSortOrder, setSiteSortOrder] = useState("desc");
@@ -793,13 +793,13 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                     setSiteCurrentPage(1);
                   }}
                 >
-                  <SelectTrigger className="w-[130px] h-9 text-xs bg-muted/20 border-primary/10">
+                  <SelectTrigger className="w-[150px] h-9 text-xs bg-muted/20 border-primary/10">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-card">
+                    <SelectItem value="approved" className="text-xs">Approved (Site Access)</SelectItem>
                     <SelectItem value="all" className="text-xs">All Statuses</SelectItem>
                     <SelectItem value="pending" className="text-xs">Waiting (Pending)</SelectItem>
-                    <SelectItem value="approved" className="text-xs">Approved</SelectItem>
                     <SelectItem value="rejected" className="text-xs">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -860,7 +860,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                     ) : siteUsers.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="text-center py-20 text-muted-foreground uppercase font-semibold">
-                          No users found matching filters.
+                          No site users found matching filters.
                         </td>
                       </tr>
                     ) : (
@@ -912,43 +912,14 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                             </Badge>
                           </td>
                           <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              {statusLoadingId === u._id ? (
-                                <Loader2 className="w-4 h-4 text-primary animate-spin mr-3" />
-                              ) : (
-                                <>
-                                  {u.status !== "approved" && (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleStatusChange(u._id, "approved")}
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] uppercase h-7 px-2 rounded-lg"
-                                    >
-                                      Approve
-                                    </Button>
-                                  )}
-                                  {u.status !== "rejected" && (
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleStatusChange(u._id, "rejected")}
-                                      className="font-bold text-[9px] uppercase h-7 px-2 rounded-lg"
-                                    >
-                                      Reject
-                                    </Button>
-                                  )}
-                                  {u.status !== "pending" && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleStatusChange(u._id, "pending")}
-                                      className="text-muted-foreground border-primary/10 hover:text-foreground font-bold text-[9px] uppercase h-7 px-2 rounded-lg"
-                                    >
-                                      Wait
-                                    </Button>
-                                  )}
-                                </>
-                              )}
-                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewUserDetail(u)}
+                              className="text-[10px] font-bold uppercase h-7 px-2.5 rounded-lg border-primary/20 hover:border-primary/50 text-primary"
+                            >
+                              View Details
+                            </Button>
                           </td>
                         </tr>
                       ))

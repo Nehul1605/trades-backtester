@@ -303,9 +303,10 @@ router.get("/users", protect, protectAdmin, async (req, res) => {
       query.$or = [{ name: regex }, { email: regex }];
     }
 
-    // Status filter
-    if (status && status !== "all") {
-      query.status = status;
+    // Status filter (defaults to approved for site users who have site access)
+    const effectiveStatus = status || "approved";
+    if (effectiveStatus !== "all") {
+      query.status = effectiveStatus;
     }
 
     // Role filter
