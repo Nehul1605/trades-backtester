@@ -1,81 +1,53 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
+    const token = (session?.user as any)?.accessToken || "";
+    const body = await req.json();
 
-    if (!session?.user?.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // Call Express Backend
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+    
+    // Explicitly type headers as HeadersInit to resolve TS overload issues
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
     }
 
-    const { subject, message, email } = await req.json();
+    console.log("Forwarding support ticket to backend:", `${backendUrl}/api/support`);
 
-    if (!subject || !message) {
-      return new NextResponse("Missing fields", { status: 400 });
-    }
-
-    const supportEmail =
-      process.env.SUPPORT_EMAIL || "support@tradetrackerpro.com";
-    const userName = session.user.name || "Unknown User";
-    const userEmail = session.user.email || email || "No Email Provided";
-
-    console.log("DEBUG: Attempting to send email via Resend", {
-      to: supportEmail,
-      from: "Support Ticket <onboarding@resend.dev>",
-      subject: `[SUPPORT TICKET] ${subject}`,
+    const response = await fetch(`${backendUrl}/api/support`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
     });
 
-    // Send the email using Resend
-    if (process.env.RESEND_API_KEY) {
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorJson;
       try {
-        const response = await resend.emails.send({
-          from: "Support Ticket <onboarding@resend.dev>",
-          to: supportEmail,
-          replyTo: userEmail,
-          subject: `[SUPPORT TICKET] ${subject}`,
-          text: `New support request from your platform:
-          
-  User: ${userName}
-  Email: ${userEmail}
-  Subject: ${subject}
-  
-  Message:
-  ${message}
-          
-  Timestamp: ${new Date().toLocaleString()}`,
-        });
-
-        console.log("DEBUG: Resend API success response:", response);
-      } catch (resendError: any) {
-        console.error("DEBUG: Resend API failure:", resendError);
-        return new NextResponse(
-          JSON.stringify({ error: resendError.message }),
-          { status: 500 },
-        );
+        errorJson = JSON.parse(errorText);
+      } catch {
+        errorJson = { error: errorText };
       }
-    } else {
-      console.warn(
-        "DEBUG: RESEND_API_KEY is missing from environment variables",
+      return new NextResponse(
+        JSON.stringify({ error: errorJson.error || "Failed to forward support request" }),
+        { status: response.status, headers: { "Content-Type": "application/json" } }
       );
-      return new NextResponse("Email service misconfigured", { status: 500 });
     }
 
-    console.log("Support Query Received and Forwarded:", {
-      userName,
-      userEmail,
-      subject,
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Support ticket received by the site administration.",
-    });
-  } catch (error) {
-    console.error("Support API Error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("Support API Forwarding Error:", error);
+    return new NextResponse(
+      JSON.stringify({ error: error.message || "Internal Server Error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
