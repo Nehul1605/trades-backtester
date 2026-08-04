@@ -17,9 +17,10 @@ import {
   Target,
   FileText
 } from "lucide-react";
+import { Footer } from "@/components/landing/Footer";
 
 export const metadata: Metadata = {
-  title: "Notion Trading Journal Alternative | Free Trade Tracker Template Alternate",
+  title: "TradeTracker Pro",
   description: "Comparing TradeTracker Pro vs Notion trading journals. Discover why TradeTracker Pro is the best free alternative with automated day-wise equity curves, P&L heatmaps, and lot calculators instead of tedious manual spreadsheets.",
   keywords: [
     "notion trading journal alternative",
@@ -245,10 +246,7 @@ export default function NotionComparisonPage() {
         </section>
       </div>
 
-      {/* Footer link back */}
-      <footer className="border-t border-border/20 py-8 text-center text-xs text-muted-foreground/60">
-        <p>&copy; {new Date().getFullYear()} TradeTracker Pro. All rights reserved.</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
