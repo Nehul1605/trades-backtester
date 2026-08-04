@@ -52,6 +52,8 @@
     "geist": "latest",
     "gsap": "^3.13.0",
     "input-otp": "1.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "livekit-client": "^2.20.2",
     "lucide-react": "^0.454.0",
     "next": "16.1.4",
