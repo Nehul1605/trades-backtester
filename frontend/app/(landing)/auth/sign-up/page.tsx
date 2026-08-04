@@ -80,14 +80,14 @@ export default function SignUpPage() {
       <div className="w-full max-w-md relative z-10 space-y-6">
         {/* BRANDING HEADER WITH LOGO */}
         <div className="flex flex-col items-center justify-center text-center space-y-2">
-          <Link href="/" className="relative h-12 w-56 overflow-hidden rounded-lg inline-block">
+          <Link href="/" className="inline-block">
             <img
               src="/logo.png"
-              className="h-12 w-auto max-w-none absolute left-1/2 -translate-x-1/2 top-0 select-none pointer-events-none"
+              className="h-15 w-auto select-none pointer-events-none"
               alt="TradeTracker Pro Logo"
             />
           </Link>
-          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
+          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest pt-1">
             Institutional Trade Journaling & Analytics
           </p>
         </div>

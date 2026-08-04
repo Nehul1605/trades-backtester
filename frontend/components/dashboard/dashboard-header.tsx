@@ -38,16 +38,16 @@ export function DashboardHeader() {
         <div className="flex items-center gap-2">
           {sidebarContext && <SidebarTrigger />}
           <div
-            className={`flex items-center gap-2 ${sidebarContext ? "md:hidden" : ""}`}
+            className={`flex items-center gap-2.5 ${sidebarContext ? "md:hidden" : ""}`}
           >
-            <div className="relative h-6 w-6 overflow-hidden rounded-full shrink-0 select-none shadow-sm">
+            <div className="relative h-8 w-8 overflow-hidden rounded-lg shrink-0 select-none shadow-sm">
               <img
                 src="/logo.png"
-                className="h-6 w-auto max-w-none absolute left-0 top-0 pointer-events-none"
+                className="h-8 w-auto max-w-none absolute left-0 top-0 pointer-events-none"
                 alt="TradeTracker Pro Logo Icon"
               />
             </div>
-            <span className="text-sm font-bold tracking-tight uppercase">TradeTracker</span>
+            <span className="text-base font-extrabold tracking-tight uppercase">TradeTracker</span>
           </div>
         </div>
       </div>

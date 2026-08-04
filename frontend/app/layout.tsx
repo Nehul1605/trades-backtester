@@ -12,8 +12,8 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tradetrackerpro.in"),
   title: {
-    default: "TradeTracker Pro | Free Online Trading Journal & Backtester",
-    template: "%s | TradeTracker Pro",
+    default: "TradeTracker Pro",
+    template: "%s",
   },
   description: "The best free trade journal and strategy backtesting software. TradeTracker Pro helps forex, gold, stock, and crypto traders log trades, track metrics, and boost profitability.",
   keywords: [
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+    icon: "/icon",
+    apple: "/icon",
   },
   openGraph: {
     type: "website",
@@ -63,7 +63,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >

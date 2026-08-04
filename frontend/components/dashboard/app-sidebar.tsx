@@ -131,10 +131,10 @@ export function AppSidebar() {
           href="/dashboard"
           className="flex items-center gap-3 px-2 group-data-[collapsible=icon]:px-0"
         >
-          <div className="relative h-10 w-48 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 overflow-hidden transition-all duration-300 rounded-lg">
+          <div className="relative h-11 w-48 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 overflow-hidden transition-all duration-300 rounded-lg">
             <img
               src="/logo.png"
-              className="h-10 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none"
+              className="h-11 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none group-data-[collapsible=icon]:h-10"
               alt="TradeTracker Pro Logo"
             />
           </div>
