@@ -114,14 +114,12 @@ export default function VerificationPendingPage() {
         className="w-full max-w-md relative z-10"
       >
         {/* Transparent Premium Logo header */}
-        <div className="flex flex-col items-center justify-center mb-8 space-y-3">
-          <div className="relative h-12 w-48 overflow-hidden rounded-lg">
-            <img
-              src="/logo.png"
-              className="h-12 w-auto pointer-events-none select-none absolute left-1/2 -translate-x-1/2 top-0"
-              alt="TradeTracker Pro Logo"
-            />
-          </div>
+        <div className="flex flex-col items-center justify-center mb-8 space-y-2">
+          <img
+            src="/logo.png"
+            className="h-15 w-auto pointer-events-none select-none"
+            alt="TradeTracker Pro Logo"
+          />
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black text-center pt-2">
             Referral Verification Gate
           </p>

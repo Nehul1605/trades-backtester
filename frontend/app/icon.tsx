@@ -1,45 +1,45 @@
 import { ImageResponse } from "next/og";
-import { Activity } from "lucide-react";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-export const runtime = "edge";
-
+// Set size to native 128x128 resolution for pixel-perfect HD clarity
 export const size = {
-  width: 32,
-  height: 32,
+  width: 128,
+  height: 128,
 };
 export const contentType = "image/png";
 
 export default function Icon() {
+  // Load the pre-cropped 128x128 favicon.png
+  const faviconPath = join(process.cwd(), "public", "favicon.png");
+  const faviconBuffer = readFileSync(faviconPath);
+  const faviconBase64 = `data:image/png;base64,${faviconBuffer.toString("base64")}`;
+
   return new ImageResponse(
     <div
       style={{
-        fontSize: 24,
-        background: "#3b82f6",
         width: "100%",
         height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "white",
-        borderRadius: "20%",
+        background: "#000000", // High contrast dark background
+        borderRadius: "50%", // Circular parent container
+        overflow: "hidden",
       }}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-      </svg>
+      <img
+        src={faviconBase64}
+        style={{
+          width: 128,
+          height: 128,
+          borderRadius: "50%", // Force image clipping on the image element itself to remove light-gray corners
+        }}
+        alt="TradeTracker Pro Favicon"
+      />
     </div>,
     {
       ...size,
-    },
+    }
   );
 }

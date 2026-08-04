@@ -34,169 +34,22 @@ import {
 } from "lucide-react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { NavbarMobileMenu } from "@/components/landing/NavbarMobileMenu";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Footer } from "@/components/landing/Footer";
+import { InteractiveDashboardMockup } from "@/components/landing/InteractiveDashboardMockup";
 
-/* ─────────────────────── Mock Preview Components ─────────────────────── */
-
-function DashboardMockup() {
-  return (
-    <div className="relative group">
-      {/* Glow behind card */}
-      <div className="absolute -inset-1 rounded-2xl bg-primary/15 blur-2xl opacity-60" />
-      <div className="relative rounded-2xl border border-border/60 bg-card shadow-2xl shadow-black/20 overflow-hidden">
-        {/* Window chrome */}
-        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/20">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-rose-400/80" />
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
-          </div>
-          <div className="flex-1 mx-6 h-5 rounded bg-muted/40 flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground/70 font-mono">
-              tradetrackerpro.in/dashboard
-            </span>
-          </div>
-        </div>
-
-        {/* Sidebar + Content layout */}
-        <div className="flex">
-          {/* Mini sidebar */}
-          <div className="hidden md:flex w-12 border-r border-border/40 bg-muted/10 flex-col items-center py-3 gap-2.5">
-            {[LayoutDashboard, TrendingUp, Calendar, Calculator, Eye].map(
-              (Icon, idx) => (
-                <div
-                  key={idx}
-                  className={`w-7 h-7 rounded-md flex items-center justify-center ${idx === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground/40 hover:text-muted-foreground/60"}`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-              ),
-            )}
-          </div>
-
-          {/* Main content */}
-          <div className="flex-1 p-4 space-y-3">
-            {/* Stat row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                {
-                  label: "Balance",
-                  value: "$12,480",
-                  sub: "+$2,480",
-                  color: "emerald",
-                },
-                {
-                  label: "Win Rate",
-                  value: "68.5%",
-                  sub: "73 / 34 trades",
-                  color: "emerald",
-                },
-                {
-                  label: "Best Day",
-                  value: "+$891",
-                  sub: "Jul 14",
-                  color: "emerald",
-                },
-                {
-                  label: "Avg R:R",
-                  value: "1.8:1",
-                  sub: "Positive edge",
-                  color: "blue",
-                },
-              ].map((s, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg p-2.5 border border-border/30 bg-background/60 relative overflow-hidden"
-                >
-                  <div
-                    className={`absolute top-0 left-0 w-0.5 h-full bg-${s.color}-500/50`}
-                  />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70 block mb-1">
-                    {s.label}
-                  </span>
-                  <div className="text-base font-bold font-mono text-foreground leading-none">
-                    {s.value}
-                  </div>
-                  <div className="text-[9px] text-emerald-500 font-semibold mt-0.5">
-                    {s.sub}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Chart */}
-            <div className="rounded-lg border border-border/30 bg-background/40 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-foreground/70">
-                  Balance Growth (Day-wise)
-                </span>
-                <span className="text-[10px] font-mono text-emerald-500 font-bold">
-                  +$2,480
-                </span>
-              </div>
-              <div className="h-20 flex items-end gap-px">
-                {[
-                  30, 45, 25, 60, 40, 70, 50, 75, 35, 65, 55, 80, 45, 72, 60,
-                  85, 68, 82, 50, 78, 62, 88, 70, 92, 65, 85, 75, 95,
-                ].map((h, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 rounded-t-xs"
-                    style={{
-                      height: `${h}%`,
-                      backgroundColor:
-                        h > 48 ? "rgba(16,185,129,0.5)" : "rgba(244,63,94,0.4)",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Mini trade list */}
-            <div className="rounded-lg border border-border/30 bg-background/40 overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-border/20">
-                <span className="text-[9px] font-bold text-foreground/70 uppercase tracking-wider">
-                  Recent Trades
-                </span>
-              </div>
-              {[
-                { pair: "XAUUSD", dir: "BUY", pnl: "+$342", w: true },
-                { pair: "EURUSD", dir: "SELL", pnl: "-$127", w: false },
-                { pair: "GBPJPY", dir: "BUY", pnl: "+$891", w: true },
-              ].map((t, i) => (
-                <div
-                  key={i}
-                  className="px-3 py-1.5 flex items-center text-[10px] border-b border-border/10 last:border-0"
-                >
-                  <span className="font-bold text-foreground/80 w-16">
-                    {t.pair}
-                  </span>
-                  <span className="text-muted-foreground/50 w-10">{t.dir}</span>
-                  <span className="flex-1" />
-                  <span
-                    className={`font-bold font-mono ${t.w ? "text-emerald-500" : "text-rose-500"}`}
-                  >
-                    {t.pnl}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Interactive sandbox mockup
 
 /* ─────────────────────── Page ─────────────────────── */
 
 export const metadata: Metadata = {
-  title: "Free Trading Journal & Trade Tracker | TradeTracker Pro",
+  title: "TradeTracker Pro",
   description: "TradeTracker Pro is the best free online trading journal and trade tracker for forex, gold, stocks, and crypto. Log trades, analyze metrics, view calendar heatmaps, and build your edge.",
   keywords: [
     "free trade journal",
@@ -273,25 +126,23 @@ export default async function HomePage() {
     <div className="flex min-h-screen flex-col bg-background text-foreground overflow-x-hidden">
       {/* ── Navbar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-2xl">
-        <div className="container mx-auto flex h-14 items-center justify-between px-6">
+        <div className="container mx-auto max-w-7xl flex h-16 items-center justify-between px-6">
           <Link href="/" className="flex items-center group">
-            <div className="relative h-10 w-48 overflow-hidden rounded-lg">
-              <img
-                src="/logo.png"
-                className="h-10 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none"
-                alt="TradeTracker Pro Logo"
-              />
-            </div>
+            <img
+              src="/logo.png"
+              className="h-12 w-auto select-none pointer-events-none"
+              alt="TradeTracker Pro Logo"
+            />
           </Link>
           <nav className="hidden md:flex items-center gap-0.5 text-sm">
             {["Features", "How It Works", "Reviews"].map((label) => (
-              <Link
+              <a
                 key={label}
                 href={`#${label.toLowerCase().replace(/ /g, "-")}`}
-                className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+                className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all cursor-pointer"
               >
                 {label}
-              </Link>
+              </a>
             ))}
           </nav>
           <div className="flex items-center gap-2.5">
@@ -308,6 +159,7 @@ export default async function HomePage() {
             >
               <Link href="/auth/sign-up">Get Started Free</Link>
             </Button>
+            <NavbarMobileMenu />
           </div>
         </div>
       </header>
@@ -379,12 +231,12 @@ export default async function HomePage() {
                 asChild
                 variant="ghost"
                 size="lg"
-                className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                <Link href="#features">
+                <a href="#features">
                   Explore Features{" "}
                   <ArrowUpRight className="ml-1 w-3.5 h-3.5" />
-                </Link>
+                </a>
               </Button>
             </div>
 
@@ -401,10 +253,10 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Dashboard Preview with perspective */}
-          <div className="max-w-5xl mx-auto" style={{ perspective: "2000px" }}>
+          {/* Interactive Sandbox Dashboard Preview with perspective */}
+          <div id="workspace-showcase" className="max-w-7xl mx-auto" style={{ perspective: "2000px" }}>
             <div style={{ transform: "rotateX(2deg)" }}>
-              <DashboardMockup />
+              <InteractiveDashboardMockup />
             </div>
           </div>
         </div>
@@ -435,7 +287,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Features Grid ── */}
-      <section id="features" className="py-20 md:py-28">
+      <section id="features" className="py-20 md:py-28 scroll-mt-10">
         <div className="container mx-auto px-6">
           <div className="text-center max-w-xl mx-auto mb-16">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-3.5 py-1 text-[11px] font-bold text-primary uppercase tracking-widest mb-3">
@@ -449,7 +301,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
             {features.map((f, i) => (
               <div
                 key={i}
@@ -471,7 +323,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Workspace Showcase ── */}
-      <section className="py-20 border-t border-border/30 bg-muted/5">
+      <section id="workspace-details" className="py-20 border-t border-border/30 bg-muted/5">
         <div className="container mx-auto px-6">
           <div className="text-center max-w-xl mx-auto mb-14">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-3.5 py-1 text-[11px] font-bold text-primary uppercase tracking-widest mb-3">
@@ -485,7 +337,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 max-w-6xl mx-auto">
             {[
               { icon: BarChart3, label: "Overview", desc: "Balance, equity curve & key stats" },
               { icon: Table2, label: "Trades", desc: "Spreadsheet ledger of all positions" },
@@ -512,7 +364,7 @@ export default async function HomePage() {
       {/* ── How It Works ── */}
       <section
         id="how-it-works"
-        className="py-20 md:py-24 border-t border-border/30"
+        className="py-20 md:py-24 border-t border-border/30 scroll-mt-10"
       >
         <div className="container mx-auto px-6">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -524,7 +376,7 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          <div className="relative max-w-4xl mx-auto">
+          <div className="relative max-w-6xl mx-auto">
             {/* Connecting line */}
             <div className="hidden md:block absolute top-7 left-[calc(16.67%+28px)] right-[calc(16.67%+28px)] h-px border-t border-dashed border-border/50" />
 
@@ -567,7 +419,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section id="reviews" className="py-20 border-t border-border/30 bg-muted/5">
+      <section id="reviews" className="py-20 border-t border-border/30 bg-muted/5 scroll-mt-10">
         <div className="container mx-auto px-6">
           <div className="text-center max-w-xl mx-auto mb-12">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-3.5 py-1 text-[11px] font-bold text-primary uppercase tracking-widest mb-3">
@@ -578,7 +430,7 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
             {[
               {
                 name: "Rahul S.",
@@ -836,158 +688,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border/30 bg-background">
-        <div className="container mx-auto px-6 max-w-6xl">
-
-          {/* ── Footer Grid ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 py-14">
-
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1 space-y-3">
-              <Link href="/" className="inline-block">
-                <div className="relative h-9 w-44 overflow-hidden">
-                  <img
-                    src="/logo.png"
-                    className="h-9 w-auto max-w-none absolute left-0 top-0 select-none pointer-events-none"
-                    alt="TradeTracker Pro"
-                  />
-                </div>
-              </Link>
-              <p className="text-[12px] text-muted-foreground/50 leading-relaxed">
-                Professional trade journaling and analytics for forex & gold traders.
-              </p>
-              <a
-                href="mailto:tradetrackerpro.in@gmail.com"
-                className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                </svg>
-                tradetrackerpro.in@gmail.com
-              </a>
-            </div>
-
-            {/* Platform */}
-            <div>
-              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
-                Platform
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  { l: "Dashboard", h: "/dashboard" },
-                  { l: "Live Market", h: "/market" },
-                  { l: "Calendar", h: "/calendar" },
-                  { l: "P&L Calculator", h: "/pl-calculator" },
-                  { l: "Consistency", h: "/consistency-calculator" },
-                ].map((link) => (
-                  <li key={link.l}>
-                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                      {link.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
-                Company
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  { l: "Features", h: "#features" },
-                  { l: "How It Works", h: "#how-it-works" },
-                  { l: "Reviews", h: "#reviews" },
-                ].map((link) => (
-                  <li key={link.l}>
-                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                      {link.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Comparisons */}
-            <div>
-              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
-                Comparisons
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  { l: "vs TradeZella", h: "/compare/tradezella" },
-                  { l: "vs Notion", h: "/compare/notion" },
-                ].map((link) => (
-                  <li key={link.l}>
-                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                      {link.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
-                Support
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  { l: "Help Center", h: "/help" },
-                  { l: "Settings", h: "/settings" },
-                  { l: "Contact Us", h: "mailto:tradetrackerpro.in@gmail.com" },
-                ].map((link) => (
-                  <li key={link.l}>
-                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                      {link.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Account */}
-            <div>
-              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-foreground/70 mb-4">
-                Account
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  { l: "Sign In", h: "/auth/login" },
-                  { l: "Create Account", h: "/auth/sign-up" },
-                ].map((link) => (
-                  <li key={link.l}>
-                    <Link href={link.h} className="text-[12px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                      {link.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* ── Risk Disclaimer ── */}
-          <div className="border-t border-border/15 py-4">
-            <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
-              <span className="font-medium text-muted-foreground/45">Risk Disclaimer:</span>{" "}
-              Trading forex, gold, and financial instruments involves substantial risk and is not suitable for all investors. Past performance does not guarantee future results. TradeTracker Pro is a journaling and analytics tool — it does not provide financial advice, trade signals, or investment recommendations.
-            </p>
-          </div>
-
-          {/* ── Bottom Bar ── */}
-          <div className="border-t border-border/15 py-5 flex flex-col md:flex-row justify-between items-center gap-3">
-            <p className="text-[11px] text-muted-foreground/40">
-              &copy; {new Date().getFullYear()} TradeTracker Pro. All rights reserved.
-            </p>
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-500/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              All systems operational
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
