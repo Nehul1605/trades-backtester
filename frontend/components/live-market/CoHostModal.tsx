@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, UserCheck, UserPlus, UserMinus, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
 import { useSession } from "next-auth/react";
 
 interface CoHostModalProps {
@@ -45,7 +47,7 @@ export function CoHostModal({
       setLoading(true);
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/users/search?q=${encodeURIComponent(
+          `${BACKEND_URL}/api/live-sessions/users/search?q=${encodeURIComponent(
             searchQuery
           )}`,
           {
@@ -76,7 +78,7 @@ export function CoHostModal({
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${sessionData._id}/cohosts`,
+        `${BACKEND_URL}/api/live-sessions/${sessionData._id}/cohosts`,
         {
           method: "POST",
           headers: {

@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import {
   Card,
   CardContent,
@@ -162,7 +161,6 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <DashboardHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-10">
         <div className="mx-auto max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div>

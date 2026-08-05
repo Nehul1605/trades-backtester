@@ -1,5 +1,7 @@
 "use server";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+
 export async function registerUser(
   email: string,
   password: string,
@@ -7,7 +9,7 @@ export async function registerUser(
 ): Promise<{ error?: string }> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/register`,
+      `${BACKEND_URL}/api/auth/register`,
       {
         method: "POST",
         headers: {

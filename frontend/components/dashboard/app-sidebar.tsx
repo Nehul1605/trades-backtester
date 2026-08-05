@@ -38,6 +38,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,13 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const user = {
     name: session?.user?.name || "User",
@@ -67,6 +75,7 @@ export function AppSidebar() {
   }, []);
 
   const toggleViewMode = () => {
+    handleNavClick();
     const newMode = viewMode === "admin" ? "user" : "admin";
     setViewMode(newMode);
     localStorage.setItem("adminViewMode", newMode);
@@ -129,6 +138,7 @@ export function AppSidebar() {
       <SidebarHeader className="h-14 flex items-center px-4 border-b border-border/50 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
         <Link
           href="/dashboard"
+          onClick={handleNavClick}
           className="flex items-center gap-3 px-2 group-data-[collapsible=icon]:px-0"
         >
           <div className="relative h-11 w-48 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 overflow-hidden transition-all duration-300 rounded-lg">
@@ -209,6 +219,7 @@ export function AppSidebar() {
                       >
                         <Link
                           href={item.url}
+                          onClick={handleNavClick}
                           className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                         >
                           <item.icon
@@ -244,7 +255,10 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={() => signOut()}
+              onClick={() => {
+                handleNavClick();
+                signOut();
+              }}
               className="h-10 px-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               tooltip="Sign Out"
             >

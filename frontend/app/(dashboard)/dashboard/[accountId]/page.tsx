@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getBrokerAccountById, getTradesForAccount } from "@/lib/actions";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { AccountWorkspace } from "@/components/dashboard/account-workspace";
 
 interface AccountWorkspacePageProps {
@@ -27,7 +26,6 @@ export default async function AccountWorkspacePage({ params }: AccountWorkspaceP
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <DashboardHeader />
       <main className="flex-1 overflow-auto">
         <AccountWorkspace account={account} initialTrades={trades} />
       </main>

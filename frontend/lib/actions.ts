@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { computePnlUSD, TradeType } from "@/lib/pnl";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
 
 // Helper to get authorization header with JWT
 async function getAuthHeader(): Promise<HeadersInit> {

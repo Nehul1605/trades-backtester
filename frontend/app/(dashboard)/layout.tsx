@@ -1,6 +1,7 @@
 import type React from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex flex-col min-h-screen">
+          <DashboardHeader />
           <LiveMeetingWrapper>
             <Suspense fallback={null}>{children}</Suspense>
           </LiveMeetingWrapper>

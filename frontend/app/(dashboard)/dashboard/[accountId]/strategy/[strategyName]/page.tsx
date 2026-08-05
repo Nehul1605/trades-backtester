@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getBrokerAccountById, getTradesForAccount } from "@/lib/actions";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { StrategyDetailsView } from "@/components/analytics/strategy-details-view";
 
 interface StrategyPageProps {
@@ -31,7 +30,6 @@ export default async function StrategyPage({ params }: StrategyPageProps) {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <DashboardHeader />
       <main className="flex-1 overflow-auto">
         <StrategyDetailsView
           account={account}

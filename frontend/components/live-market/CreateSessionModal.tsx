@@ -23,6 +23,8 @@ import { Radio, Loader2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+
 interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -61,7 +63,7 @@ export function CreateSessionModal({
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions`,
+        `${BACKEND_URL}/api/live-sessions`,
         {
           method: "POST",
           headers: {

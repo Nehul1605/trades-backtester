@@ -15,6 +15,8 @@ import { Room, RoomEvent, DisconnectReason } from "livekit-client";
 import { toast } from "sonner";
 import { MiniPlayer } from "./MiniPlayer";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+
 interface LiveMeetingContextType {
   // State
   activeSession: any | null;
@@ -85,7 +87,7 @@ export function LiveMeetingProvider({
     if (!userToken) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/profile`,
+        `${BACKEND_URL}/api/auth/profile`,
         { headers: { Authorization: `Bearer ${userToken}` } }
       );
       if (res.ok) {
@@ -114,7 +116,7 @@ export function LiveMeetingProvider({
     try {
       setLoadingSessions(true);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions`,
+        `${BACKEND_URL}/api/live-sessions`,
         { headers: { Authorization: `Bearer ${userToken}` } }
       );
       if (res.ok) {
@@ -167,7 +169,7 @@ export function LiveMeetingProvider({
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${sess._id}/token`,
+          `${BACKEND_URL}/api/live-sessions/${sess._id}/token`,
           {
             method: "POST",
             headers: {
@@ -259,7 +261,7 @@ export function LiveMeetingProvider({
     if (!activeSession?._id || !userToken) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${activeSession._id}/start`,
+        `${BACKEND_URL}/api/live-sessions/${activeSession._id}/start`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${userToken}` },
@@ -284,7 +286,7 @@ export function LiveMeetingProvider({
     if (!activeSession?._id || !userToken) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/live-sessions/${activeSession._id}/end`,
+        `${BACKEND_URL}/api/live-sessions/${activeSession._id}/end`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${userToken}` },

@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -21,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
+            `${BACKEND_URL}/api/auth/login`,
             {
               method: "POST",
               headers: {
@@ -65,7 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "google" && user.email) {
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/google`,
+            `${BACKEND_URL}/api/auth/google`,
             {
               method: "POST",
               headers: {

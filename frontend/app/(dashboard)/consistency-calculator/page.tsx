@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,10 +73,6 @@ export default function ConsistencyCalculatorPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
-      <DashboardHeader
-        title="Prop Consistency Calculator"
-        description="Calculate maximum daily payouts and profit limits to stay compliant with prop firm consistency rules."
-      />
 
       <div className="grid gap-6 md:grid-cols-12">
         {/* Left Column: Input Form */}

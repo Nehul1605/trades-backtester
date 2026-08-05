@@ -22,9 +22,24 @@ connectDB();
 const app = express();
 
 // Configure CORS
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  process.env.ALLOWED_CORS_ORIGIN,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000",process.env.ALLOWED_CORS_ORIGIN],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, origin);
+    },
     credentials: true,
   })
 );
