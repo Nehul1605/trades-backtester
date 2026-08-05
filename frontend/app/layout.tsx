@@ -78,6 +78,71 @@ export default async function RootLayout({
             <Toaster />
           </ThemeProvider>
         </AuthProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://www.tradetrackerpro.in/#organization",
+                  "name": "TradeTracker Pro",
+                  "url": "https://www.tradetrackerpro.in",
+                  "logo": "https://www.tradetrackerpro.in/logo.png",
+                  "sameAs": []
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://www.tradetrackerpro.in/#website",
+                  "url": "https://www.tradetrackerpro.in",
+                  "name": "TradeTracker Pro",
+                  "description": "The best free trade journal and strategy backtesting software.",
+                  "publisher": {
+                    "@id": "https://www.tradetrackerpro.in/#organization"
+                  }
+                },
+                {
+                  "@type": "ItemList",
+                  "@id": "https://www.tradetrackerpro.in/#sitelinks",
+                  "name": "Site Navigation",
+                  "itemListElement": [
+                    {
+                      "@type": "SiteNavigationElement",
+                      "position": 1,
+                      "name": "Login / Sign In",
+                      "url": "https://www.tradetrackerpro.in/auth/login"
+                    },
+                    {
+                      "@type": "SiteNavigationElement",
+                      "position": 2,
+                      "name": "Sign Up Free",
+                      "url": "https://www.tradetrackerpro.in/auth/sign-up"
+                    },
+                    {
+                      "@type": "SiteNavigationElement",
+                      "position": 3,
+                      "name": "TradeZella Alternative",
+                      "url": "https://www.tradetrackerpro.in/compare/tradezella"
+                    },
+                    {
+                      "@type": "SiteNavigationElement",
+                      "position": 4,
+                      "name": "TraderSync Alternative",
+                      "url": "https://www.tradetrackerpro.in/compare/tradersync"
+                    },
+                    {
+                      "@type": "SiteNavigationElement",
+                      "position": 5,
+                      "name": "Excel Trade Journal",
+                      "url": "https://www.tradetrackerpro.in/compare/excel"
+                    }
+                  ]
+                }
+              ]
+            })
+          }}
+        />
       </body>
     </html>
   );
