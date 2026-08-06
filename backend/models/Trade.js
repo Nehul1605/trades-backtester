@@ -95,8 +95,12 @@ const tradeSchema = new mongoose.Schema(
   }
 );
 
-// Add compound index for queries
+// Compound indexes for fast user-wise, account-wise, and symbol-wise queries
 tradeSchema.index({ userId: 1, entryDate: -1 });
+tradeSchema.index({ userId: 1, brokerAccountId: 1, entryDate: -1 });
+tradeSchema.index({ userId: 1, symbol: 1 });
+tradeSchema.index({ userId: 1, status: 1 });
+tradeSchema.index({ brokerAccountId: 1, externalId: 1 });
 
 const Trade = mongoose.model("Trade", tradeSchema);
 export default Trade;

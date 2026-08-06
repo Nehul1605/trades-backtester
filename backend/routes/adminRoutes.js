@@ -490,7 +490,26 @@ router.patch("/users/:id/status", protect, protectAdmin, async (req, res) => {
 // @access  Admin/Owner
 router.get("/users/:id/trades", protect, protectAdmin, async (req, res) => {
   try {
-    const trades = await Trade.find({ userId: req.params.id })
+    const { symbol, brokerAccountId, status } = req.query;
+    const filter = { userId: req.params.id };
+
+    if (symbol && symbol !== "ALL") {
+      filter.symbol = symbol;
+    }
+
+    if (brokerAccountId && brokerAccountId !== "ALL") {
+      if (brokerAccountId === "none" || brokerAccountId === "null") {
+        filter.brokerAccountId = null;
+      } else {
+        filter.brokerAccountId = brokerAccountId;
+      }
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const trades = await Trade.find(filter)
       .sort({ entryDate: -1, createdAt: -1 });
 
     const mappedTrades = trades.map((t) => {

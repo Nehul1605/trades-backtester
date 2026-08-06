@@ -52,5 +52,9 @@ const brokerAccountSchema = new mongoose.Schema(
   }
 );
 
+// Compound indexes for user account lookups and sorting
+brokerAccountSchema.index({ userId: 1, createdAt: -1 });
+brokerAccountSchema.index({ userId: 1, accountId: 1 });
+
 const BrokerAccount = mongoose.model("BrokerAccount", brokerAccountSchema);
 export default BrokerAccount;
