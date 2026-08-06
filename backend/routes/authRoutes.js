@@ -260,4 +260,46 @@ router.post("/upload-avatar", protect, upload.single("file"), (req, res) => {
   }
 });
 
+// @desc    Update user password
+// @route   PUT /api/auth/password
+// @access  Private
+router.put("/password", protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Please provide both current and new password" });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "New password must be at least 8 characters long" });
+  }
+
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.provider === "google" && !user.password_hash) {
+      return res.status(400).json({
+        error: "Accounts logged in with Google cannot update password.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Current password is incorrect" });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    user.password_hash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Update password error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;

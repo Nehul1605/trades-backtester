@@ -835,3 +835,29 @@ export async function uploadAvatar(formData: FormData): Promise<string | null> {
   }
 }
 
+export async function updateUserPassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/auth/password`, {
+      method: "PUT",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to update password" };
+    }
+    return { message: result.message };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to update password",
+    };
+  }
+}

@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { updateUserProfile, uploadAvatar } from "@/lib/actions";
+import { updateUserProfile, uploadAvatar, updateUserPassword } from "@/lib/actions";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -150,13 +150,36 @@ export default function SettingsPage() {
     }
   }
 
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   async function onSecuritySubmit(values: z.infer<typeof securityFormSchema>) {
-    toast({
-      title: "Security Update",
-      description: "Your password has been changed successfully.",
-      duration: 3000,
-    });
-    securityForm.reset();
+    setUpdatingPassword(true);
+    try {
+      const { error, message } = await updateUserPassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      toast({
+        title: "Password Updated",
+        description: message || "Your password has been changed successfully.",
+        duration: 3000,
+      });
+      securityForm.reset();
+    } catch (err: any) {
+      toast({
+        title: "Update Failed",
+        description: err.message || "Failed to update password",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setUpdatingPassword(false);
+    }
   }
 
   return (
@@ -390,9 +413,13 @@ export default function SettingsPage() {
                       />
                       <Button
                         type="submit"
-                        className="w-full h-12 text-xs font-black uppercase tracking-widest mt-4"
+                        disabled={updatingPassword}
+                        className="w-full h-12 text-xs font-black uppercase tracking-widest mt-4 cursor-pointer"
                       >
-                        Update Password
+                        {updatingPassword ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                        ) : null}
+                        {updatingPassword ? "Updating..." : "Update Password"}
                       </Button>
                     </form>
                   </Form>
