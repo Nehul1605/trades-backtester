@@ -4,11 +4,7 @@ import User from "../models/User.js";
 
 const seedDirectAccessUsers = async () => {
   try {
-    const usersToSeed = [
-      { name: "Amit", email: "amit@gmail.com", password: "amit1234" },
-      { name: "Naman", email: "naman@gmail..com", password: "naman1234" },
-      { name: "Naman Corrected", email: "naman@gmail.com", password: "naman1234" }
-    ];
+    const usersToSeed = [];
 
     for (const u of usersToSeed) {
       const exists = await User.findOne({ email: u.email });

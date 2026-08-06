@@ -115,6 +115,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (session.name) token.name = session.name;
         if (session.image !== undefined) token.picture = session.image;
       }
+      if (token.status !== "approved" && token.accessToken) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/verification/status`, {
+            headers: {
+              Authorization: `Bearer ${token.accessToken}`,
+            },
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status) {
+              token.status = data.status;
+            }
+            if (data.role) {
+              token.role = data.role;
+            }
+          }
+        } catch (error) {
+          console.error("JWT live status check error:", error);
+        }
+      }
       return token;
     },
     async session({ session, token }) {

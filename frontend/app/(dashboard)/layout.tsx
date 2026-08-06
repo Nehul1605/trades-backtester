@@ -7,6 +7,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { LiveMeetingWrapper } from "@/components/live-market/LiveMeetingWrapper";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -23,7 +25,30 @@ export default async function DashboardLayout({
     process.env.REQUIRE_REFERRAL_VERIFICATION !== "false";
 
   if (isVerificationRequired) {
-    const userStatus = (session.user as any).status;
+    let userStatus = (session.user as any).status;
+    const token = (session.user as any).accessToken;
+
+    // Always fetch live status from backend to sync MongoDB in real-time
+    if (token) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/verification/status`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status) {
+            userStatus = data.status;
+          }
+        }
+      } catch (error) {
+        console.error("Dashboard layout live verification check error:", error);
+      }
+    }
+
     if (userStatus !== "approved") {
       redirect("/verification-pending");
     }
