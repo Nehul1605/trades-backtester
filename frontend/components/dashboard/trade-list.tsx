@@ -472,9 +472,9 @@ export function TradeList({ trades }: TradeListProps) {
                             </div>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
-                          <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
-                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
-                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
+                          <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price}</td>
+                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ?? "—"}</td>
+                          <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ?? "—"}</td>
                           <td className="py-3 px-4 text-muted-foreground">{formatDate(trade.entry_date)}</td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -589,10 +589,10 @@ export function TradeList({ trades }: TradeListProps) {
                               </div>
                             </td>
                             <td className="py-3 px-4 font-mono font-bold text-foreground/80">{trade.quantity}</td>
-                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price.toFixed(2)}</td>
-                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.exit_price_text ?? (trade.exit_price ? trade.exit_price.toFixed(2) : "—")}</td>
-                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ? trade.stop_loss.toFixed(2) : "—"}</td>
-                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ? trade.take_profit.toFixed(2) : "—"}</td>
+                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.entry_price_text ?? trade.entry_price}</td>
+                            <td className="py-3 px-4 font-mono text-foreground/80">{trade.exit_price_text ?? (trade.exit_price ?? "—")}</td>
+                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.stop_loss ?? "—"}</td>
+                            <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ?? "—"}</td>
                             <td className="py-3 px-4 text-muted-foreground/75 font-mono">{formatDate(trade.entry_date)}</td>
                             <td className="py-3 px-4 text-muted-foreground/75 font-mono">{trade.exit_date ? formatDate(trade.exit_date) : "—"}</td>
                             <td className="py-3 px-4">

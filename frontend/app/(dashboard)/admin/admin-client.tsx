@@ -1227,8 +1227,8 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                                       {t.trade_type}
                                     </span>
                                   </td>
-                                  <td className="py-2 px-4 font-mono">${t.entry_price?.toFixed(2)}</td>
-                                  <td className="py-2 px-4 font-mono">{t.exit_price ? `$${t.exit_price.toFixed(2)}` : "—"}</td>
+                                  <td className="py-2 px-4 font-mono">${t.entry_price_text ?? t.entry_price}</td>
+                                  <td className="py-2 px-4 font-mono">{t.exit_price_text ?? (t.exit_price ? `$${t.exit_price}` : "—")}</td>
                                   <td className="py-2 px-4 font-mono font-bold">
                                     {t.pnl !== null ? (
                                       <span className={isWin ? "text-emerald-500" : isLoss ? "text-red-500" : "text-muted-foreground"}>
