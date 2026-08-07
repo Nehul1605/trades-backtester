@@ -827,7 +827,7 @@ export function InteractiveDashboardMockup() {
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-foreground">Need Technical Assistance?</h4>
                     <p className="text-[11px] text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                      Submit support inquiries directly using our support modal in the footer of the site, or email us at tradetrackerpro.in@gmail.com.
+                      Submit support inquiries directly using our support modal in the footer of the site, or email us at support@tradetrackerpro.in.
                     </p>
                   </div>
                 </div>

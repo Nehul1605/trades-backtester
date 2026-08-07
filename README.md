@@ -112,7 +112,7 @@ Developed with a sleek, glassmorphic dark-mode interface, the platform offers an
     AUTH_GOOGLE_SECRET=your_google_client_secret
 
     RESEND_API_KEY=your_resend_email_api_key
-    SUPPORT_EMAIL=tradetrackerpro.in@gmail.com
+    SUPPORT_EMAIL=support@tradetrackerpro.in
 
     NEXT_PUBLIC_BACKEND_URL=http://localhost:5555
     NEXT_PUBLIC_REQUIRE_REFERRAL_VERIFICATION=true

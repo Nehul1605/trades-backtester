@@ -273,7 +273,10 @@ export async function getBrokerAccounts(userId: string) {
       $id: a._id,
       id: a._id,
       user_id: a.userId,
+      account_category: a.accountCategory || "broker",
+      market_type: a.marketType || "cfd",
       broker_type: a.brokerType,
+      custom_firm_name: a.customFirmName || "",
       account_id: a.accountId,
       server: a.server,
       status: a.status,
@@ -281,6 +284,7 @@ export async function getBrokerAccounts(userId: string) {
       equity: a.equity,
       currency: a.currency,
       last_sync: a.lastSync,
+      sort_order: a.sortOrder || 0,
     }));
   } catch (err) {
     console.error("getBrokerAccounts error:", err);
@@ -306,7 +310,10 @@ export async function getBrokerAccountById(id: string): Promise<any> {
       $id: a._id,
       id: a._id,
       user_id: a.userId,
+      account_category: a.accountCategory || "broker",
+      market_type: a.marketType || "cfd",
       broker_type: a.brokerType,
+      custom_firm_name: a.customFirmName || "",
       account_id: a.accountId,
       server: a.server,
       status: a.status,
@@ -322,7 +329,10 @@ export async function getBrokerAccountById(id: string): Promise<any> {
 }
 
 export async function createBrokerAccount(data: {
+  account_category?: string;
+  market_type?: string;
   broker_type: string;
+  custom_firm_name?: string;
   account_id: string;
   server?: string;
   password?: string;
@@ -333,7 +343,10 @@ export async function createBrokerAccount(data: {
   try {
     const authHeader = await getAuthHeader();
     const body = {
+      accountCategory: data.account_category || "broker",
+      marketType: data.market_type || "cfd",
       brokerType: data.broker_type,
+      customFirmName: data.custom_firm_name || "",
       accountId: data.account_id,
       server: data.server || "demo",
       password: data.password || "demo",
@@ -381,6 +394,94 @@ export async function topUpAccount(id: string): Promise<{ error?: string; accoun
   } catch (err: unknown) {
     return {
       error: err instanceof Error ? err.message : "Failed to top up account",
+    };
+  }
+}
+
+export async function archiveBrokerAccount(id: string): Promise<{ error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/accounts/${id}`, {
+      method: "DELETE",
+      headers: authHeader,
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to archive account" };
+    }
+
+    return { message: result.message };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to archive account",
+    };
+  }
+}
+
+export async function restoreBrokerAccount(id: string): Promise<{ error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/accounts/${id}/restore`, {
+      method: "POST",
+      headers: authHeader,
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to restore account" };
+    }
+
+    return { message: result.message };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to restore account",
+    };
+  }
+}
+
+export async function deleteBrokerAccountPermanent(id: string): Promise<{ error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/accounts/${id}?permanent=true`, {
+      method: "DELETE",
+      headers: authHeader,
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to delete account permanently" };
+    }
+
+    return { message: result.message };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to delete account permanently",
+    };
+  }
+}
+
+export async function reorderBrokerAccounts(accountIds: string[]): Promise<{ error?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/accounts/reorder`, {
+      method: "PUT",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ accountIds }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to reorder accounts" };
+    }
+
+    return {};
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to reorder accounts",
     };
   }
 }
@@ -861,5 +962,116 @@ export async function updateUserPassword(data: {
     return {
       error: err instanceof Error ? err.message : "Failed to update password",
     };
+  }
+}
+
+// ─── Operator HQ Actions ───────────────────────────────────────────────────
+
+export async function getOperatorTrades(): Promise<{
+  stats?: {
+    totalSignals: number;
+    openSignals: number;
+    winCount: number;
+    lossCount: number;
+    closedCount: number;
+    accuracyPercent: number;
+    totalPips: number;
+  };
+  trades?: any[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/operator-trades`, {
+      method: "GET",
+      next: { revalidate: 0 },
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.message || "Failed to fetch operator signals" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to fetch operator signals" };
+  }
+}
+
+export async function createOperatorTrade(data: {
+  symbol: string;
+  direction: string;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  exitPrice?: number | null;
+  status?: string;
+  notes?: string;
+}): Promise<{ error?: string; trade?: any }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/operator-trades`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.message || "Failed to post trade call" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to post trade call" };
+  }
+}
+
+export async function updateOperatorTrade(
+  id: string,
+  data: {
+    status?: string;
+    exitPrice?: number | null;
+    stopLoss?: number;
+    takeProfit?: number;
+    notes?: string;
+  }
+): Promise<{ error?: string; trade?: any }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/operator-trades/${id}`, {
+      method: "PUT",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.message || "Failed to update trade call" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to update trade call" };
+  }
+}
+
+export async function deleteOperatorTrade(id: string): Promise<{ error?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/operator-trades/${id}`, {
+      method: "DELETE",
+      headers: authHeader,
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.message || "Failed to delete trade call" };
+    }
+    return {};
+  } catch (err: any) {
+    return { error: err.message || "Failed to delete trade call" };
   }
 }

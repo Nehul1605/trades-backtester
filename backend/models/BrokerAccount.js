@@ -8,9 +8,21 @@ const brokerAccountSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    accountCategory: {
+      type: String,
+      default: "broker", // "broker" | "prop_firm"
+    },
+    marketType: {
+      type: String,
+      default: "cfd", // "cfd" | "futures"
+    },
     brokerType: {
       type: String,
-      required: true, // exness / mt5 / etc
+      required: true, // XM / Zuperior / Funding Pips / etc
+    },
+    customFirmName: {
+      type: String,
+      default: "",
     },
     accountId: {
       type: String,
@@ -45,6 +57,10 @@ const brokerAccountSchema = new mongoose.Schema(
     lastSync: {
       type: Date,
       default: Date.now,
+    },
+    sortOrder: {
+      type: Number,
+      default: 0,
     },
   },
   {

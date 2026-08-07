@@ -45,7 +45,7 @@ import {
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 
-const SUPPORT_EMAIL = "tradetrackerpro.in@gmail.com";
+const SUPPORT_EMAIL = "support@tradetrackerpro.in";
 
 const FAQS = [
   {

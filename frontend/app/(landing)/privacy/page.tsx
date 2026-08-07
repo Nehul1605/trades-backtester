@@ -133,7 +133,7 @@ export default function PrivacyPage() {
               <Eye className="w-5 h-5 text-primary" /> 6. Your Rights
             </h2>
             <p>
-              Depending on your location, you may have rights to access, correct, export, or delete the personal data we hold about you. You can update your profile info directly inside your account Settings dashboard. If you wish to delete your account or request data extraction, please submit a support ticket via our Help page or contact us at <a href="mailto:tradetrackerpro.in@gmail.com" className="text-primary hover:underline">tradetrackerpro.in@gmail.com</a>.
+              Depending on your location, you may have rights to access, correct, export, or delete the personal data we hold about you. You can update your profile info directly inside your account Settings dashboard. If you wish to delete your account or request data extraction, please submit a support ticket via our Help page or contact us at <a href="mailto:support@tradetrackerpro.in" className="text-primary hover:underline">support@tradetrackerpro.in</a>.
             </p>
           </section>
 

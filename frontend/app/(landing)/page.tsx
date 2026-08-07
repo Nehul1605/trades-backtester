@@ -135,6 +135,12 @@ export default async function HomePage() {
             />
           </Link>
           <nav className="hidden md:flex items-center gap-0.5 text-sm">
+            <Link
+              href="/signals"
+              className="px-3 py-1.5 rounded-md text-foreground font-semibold bg-accent/40 hover:bg-accent transition-all"
+            >
+              Operator Signals
+            </Link>
             {["Features", "How It Works", "Reviews"].map((label) => (
               <a
                 key={label}
@@ -282,6 +288,82 @@ export default async function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Operator HQ Signals Featured Section ── */}
+      <section id="operator-signals" className="py-16 md:py-20 bg-card/20 border-b border-border/30">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="p-8 md:p-10 rounded-3xl bg-linear-to-b from-card/60 to-card/20 border border-primary/20 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gold-gradient" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-7 space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  No Login or Verification Required
+                </div>
+
+                <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                  Operator HQ Signals &amp; Verified Win Accuracy
+                </h2>
+
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Track real-time signal calls posted by senior operators. See historical win rates, stop-loss / take-profit executions, and total pips gained — transparently open for public inspection without needing to sign in or verify an account.
+                </p>
+
+                <div className="flex flex-wrap gap-4 pt-2">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-gold-gradient text-background hover:opacity-90 font-bold text-xs uppercase px-6"
+                  >
+                    <Link href="/signals">
+                      View Live Signal Feed &amp; Accuracy <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="border-border/60 text-xs uppercase font-bold"
+                  >
+                    <Link href="/signals">
+                      Direct YouTube Share Link (/signals)
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Public Access</div>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-400">100% FREE</div>
+                  <div className="text-[10px] text-muted-foreground">No login needed</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Accuracy</div>
+                  <div className="text-xl sm:text-2xl font-black text-gold-gradient">VERIFIED</div>
+                  <div className="text-[10px] text-muted-foreground">Real-time pips tracking</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Signals Feed</div>
+                  <div className="text-xl sm:text-2xl font-black text-blue-400">LIVE</div>
+                  <div className="text-[10px] text-muted-foreground">Forex &amp; Gold setups</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Verification</div>
+                  <div className="text-xl sm:text-2xl font-black text-foreground">NOT REQUIRED</div>
+                  <div className="text-[10px] text-muted-foreground">Instant web preview</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

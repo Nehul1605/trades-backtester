@@ -43,18 +43,19 @@ export function NavbarMobileMenu() {
           </SheetHeader>
           <nav className="flex flex-col gap-4 mt-4">
             {[
+              { label: "Operator Signals", href: "/signals" },
               { label: "Features", href: "#features" },
               { label: "How It Works", href: "#how-it-works" },
               { label: "Reviews", href: "#reviews" },
             ].map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 onClick={handleLinkClick}
                 className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors py-1 cursor-pointer"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>

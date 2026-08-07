@@ -12,6 +12,8 @@ import verificationRoutes from "./routes/verificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import liveSessionRoutes from "./routes/liveSessionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import calculatorRoutes from "./routes/calculatorRoutes.js";
+import operatorRoutes from "./routes/operatorRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +70,8 @@ app.use("/api/verification", verificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/live-sessions", liveSessionRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/calculator", calculatorRoutes);
+app.use("/api/operator-trades", operatorRoutes);
 
 
 // UptimeRobot Keep-Alive & Health Endpoint

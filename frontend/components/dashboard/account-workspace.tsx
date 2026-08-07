@@ -26,8 +26,9 @@ import {
   CalendarDays,
   Activity,
   Award,
+  RotateCcw,
 } from "lucide-react";
-import { deleteTrade, topUpAccount } from "@/lib/actions";
+import { deleteTrade, topUpAccount, restoreBrokerAccount, archiveBrokerAccount } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -205,8 +206,66 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
     return null;
   };
 
+  const handleRestoreAccount = async () => {
+    try {
+      const res = await restoreBrokerAccount(account.id || account.$id || account._id);
+      if (res.error) throw new Error(res.error);
+      toast({
+        title: "Account Restored",
+        description: "This account has been restored to your active workspace list.",
+      });
+      router.refresh();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Restore Failed",
+        description: err.message || "Failed to restore account.",
+      });
+    }
+  };
+
+  const handleArchiveAccount = async () => {
+    if (!confirm("Move this account to Archive? All trades & stats remain saved in your Archived Accounts tab.")) return;
+    try {
+      const res = await archiveBrokerAccount(account.id || account.$id || account._id);
+      if (res.error) throw new Error(res.error);
+      toast({
+        title: "Account Moved to Archive",
+        description: "This account has been moved to your archive section.",
+      });
+      router.push("/dashboard");
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Archiving Failed",
+        description: err.message || "Failed to archive account.",
+      });
+    }
+  };
+
+  const isArchived = account.status === "archived";
+
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Archived Banner */}
+      {isArchived && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/40 uppercase font-black text-[10px]">
+              Archived Account
+            </Badge>
+            <span>This account is stored in your archive in read-only mode. All trades and stats remain completely intact.</span>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleRestoreAccount}
+            className="bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase px-4 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Restore Account
+          </Button>
+        </div>
+      )}
+
       {/* Dynamic Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/40 pb-6">
         <div className="space-y-2">
@@ -221,9 +280,15 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider text-foreground">
               {account.broker_type} Workspace
             </h1>
-            <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold uppercase text-[9px]">
-              Active
-            </Badge>
+            {isArchived ? (
+              <Badge className="bg-amber-500/10 text-amber-500 border border-amber-500/30 font-bold uppercase text-[9px]">
+                Archived
+              </Badge>
+            ) : (
+              <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold uppercase text-[9px]">
+                Active
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Hash className="w-3 h-3 text-primary/60" />
@@ -234,7 +299,7 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
           </div>
         </div>
 
-        {/* Top-up CTA */}
+        {/* Header Actions */}
         <div className="flex items-center gap-3">
           <div className="text-right group-data-[collapsible=icon]:hidden">
             <div className="text-xs text-muted-foreground uppercase font-black tracking-wider">Account Balance</div>
@@ -242,6 +307,15 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
               ${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
           </div>
+          {!isArchived && (
+            <Button
+              variant="outline"
+              onClick={handleArchiveAccount}
+              className="border-rose-500/30 hover:bg-rose-500/10 text-rose-400 font-bold uppercase text-xs h-10 px-4"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" /> Archive
+            </Button>
+          )}
           <Button
             onClick={handleTopUp}
             disabled={topUpLoading}

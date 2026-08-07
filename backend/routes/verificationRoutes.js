@@ -45,7 +45,7 @@ router.post("/submit", protect, async (req, res) => {
     const userEmail = user ? user.email : "No Email";
 
     // Send email notification to Admin
-    const notifyEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.SUPPORT_EMAIL || "tradetrackerpro.in@gmail.com";
+    const notifyEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.SUPPORT_EMAIL || "support@tradetrackerpro.in";
     try {
       await sendEmail({
         to: notifyEmail,

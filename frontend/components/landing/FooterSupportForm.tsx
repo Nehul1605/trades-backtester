@@ -42,7 +42,7 @@ export function FooterSupportForm({ onSuccess }: { onSuccess?: () => void }) {
         throw new Error(errData.error || "Could not send ticket.");
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send message. Please contact tradetrackerpro.in@gmail.com.");
+      toast.error(err.message || "Failed to send message. Please contact support@tradetrackerpro.in.");
     } finally {
       setLoading(false);
     }

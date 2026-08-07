@@ -42,13 +42,14 @@ router.post("/", optionalProtect, async (req, res) => {
     });
 
     // 2. Send via Resend API (Direct REST Call)
-    const supportEmail = process.env.SUPPORT_EMAIL || "tradetrackerpro.in@gmail.com";
+    const supportEmail = process.env.SUPPORT_EMAIL || "support@tradetrackerpro.in";
     const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Support Ticket <onboarding@resend.dev>";
 
     if (resendApiKey) {
       console.log(`Sending email notification to ${supportEmail} using Resend...`);
       const emailPayload = {
-        from: "Support Ticket <onboarding@resend.dev>",
+        from: fromEmail,
         to: supportEmail,
         reply_to: email,
         subject: `[SUPPORT] ${subject || "New Inquiry"}: ${name}`,
