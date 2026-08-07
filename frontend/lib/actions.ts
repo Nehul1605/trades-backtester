@@ -808,11 +808,11 @@ export async function updateUserProfile(data: {
   }
 }
 
-export async function uploadAvatar(formData: FormData): Promise<string | null> {
+export async function uploadAvatar(formData: FormData): Promise<{ url?: string; error?: string }> {
   try {
     const session = await auth();
     const token = (session?.user as any)?.accessToken;
-    if (!token) return null;
+    if (!token) return { error: "Not authorized. Please log in again." };
 
     const res = await fetch(`${BACKEND_URL}/api/auth/upload-avatar`, {
       method: "POST",
@@ -822,16 +822,18 @@ export async function uploadAvatar(formData: FormData): Promise<string | null> {
       body: formData,
     });
 
-    if (!res.ok) return null;
-
-    const result = await res.json();
-    if (result.url) {
-      return `${BACKEND_URL}${result.url}`;
+    const result = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { error: result?.error || `Server error (${res.status})` };
     }
-    return null;
-  } catch (err) {
+
+    if (result?.url) {
+      return { url: `${BACKEND_URL}${result.url}` };
+    }
+    return { error: "Invalid response from server" };
+  } catch (err: any) {
     console.error("Avatar upload error:", err);
-    return null;
+    return { error: err?.message || "Failed to upload avatar" };
   }
 }
 

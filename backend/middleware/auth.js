@@ -13,15 +13,15 @@ const protect = (req, res, next) => {
       
       // Attach the user ID directly
       req.userId = decoded.id;
-      next();
+      return next();
     } catch (error) {
       console.error("JWT auth error:", error);
-      res.status(401).json({ error: "Not authorized, token failed" });
+      return res.status(401).json({ error: "Not authorized, token failed" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ error: "Not authorized, no token" });
+    return res.status(401).json({ error: "Not authorized, no token" });
   }
 };
 

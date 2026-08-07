@@ -247,17 +247,19 @@ router.put("/profile", protect, async (req, res) => {
 // @desc    Upload avatar
 // @route   POST /api/auth/upload-avatar
 // @access  Private
-router.post("/upload-avatar", protect, upload.single("file"), (req, res) => {
-  try {
+router.post("/upload-avatar", protect, (req, res) => {
+  upload.single("file")(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: `Upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
     if (!req.file) {
       return res.status(400).json({ error: "Please upload a file" });
     }
     const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
-  } catch (error) {
-    console.error("Upload avatar error:", error);
-    res.status(500).json({ error: error.message || "Server error" });
-  }
+    return res.json({ url });
+  });
 });
 
 // @desc    Update user password

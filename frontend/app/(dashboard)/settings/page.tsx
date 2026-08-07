@@ -120,13 +120,26 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Upload Failed",
+        description: "File size exceeds 5MB limit",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
     setUpdatingAvatar(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
 
-      const url = await uploadAvatar(fd);
-      if (!url) throw new Error("Failed to upload avatar image");
+      const res = await uploadAvatar(fd);
+      if (res.error || !res.url) {
+        throw new Error(res.error || "Failed to upload avatar image");
+      }
+      const url = res.url;
 
       const { error } = await updateUserProfile({ name: form.getValues("name"), image: url });
       if (error) throw new Error(error);
