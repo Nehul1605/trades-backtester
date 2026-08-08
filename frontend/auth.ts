@@ -90,7 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             (user as any).token = data.token;
             (user as any).status = data.status;
             (user as any).role = data.role;
-            (user as any).image = data.image || "";
+            (user as any).image = data.image || user.image || "";
             return true;
           }
           return false;

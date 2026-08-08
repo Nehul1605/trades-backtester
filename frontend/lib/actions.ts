@@ -929,7 +929,7 @@ export async function uploadAvatar(formData: FormData): Promise<{ url?: string; 
     }
 
     if (result?.url) {
-      return { url: `${BACKEND_URL}${result.url}` };
+      return { url: result.url };
     }
     return { error: "Invalid response from server" };
   } catch (err: any) {

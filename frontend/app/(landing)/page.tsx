@@ -329,11 +329,15 @@ export default async function HomePage() {
                     asChild
                     variant="outline"
                     size="lg"
-                    className="border-border/60 text-xs uppercase font-bold"
+                    className="border-border/60 text-xs uppercase font-bold hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 transition-colors"
                   >
-                    <Link href="/signals">
-                      Direct YouTube Share Link (/signals)
-                    </Link>
+                    <a
+                      href="https://wa.me/message/J5NEPQUWM7GQK1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Join Operator HQ <ArrowUpRight className="w-4 h-4 ml-1.5" />
+                    </a>
                   </Button>
                 </div>
               </div>
