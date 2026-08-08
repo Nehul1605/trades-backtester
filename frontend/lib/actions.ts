@@ -977,6 +977,20 @@ export async function getOperatorTrades(): Promise<{
     accuracyPercent: number;
     totalPips: number;
   };
+  monthlyData?: Array<{
+    monthKey: string;
+    monthName: string;
+    stats: {
+      totalSignals: number;
+      openSignals: number;
+      winCount: number;
+      lossCount: number;
+      closedCount: number;
+      accuracyPercent: number;
+      totalPips: number;
+    };
+    trades: any[];
+  }>;
   trades?: any[];
   error?: string;
 }> {

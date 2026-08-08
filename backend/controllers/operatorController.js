@@ -28,18 +28,17 @@ export const getOperatorTrades = async (req, res) => {
       .populate("createdBy", "name email role")
       .sort({ createdAt: -1 });
 
-    const totalSignals = trades.length;
-    const openSignals = trades.filter((t) => t.status === "open").length;
-    const winCount = trades.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
-    const lossCount = trades.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
-    const closedCount = winCount + lossCount;
+    // Helper to calculate stats for a list of trades
+    const calculateStats = (tradeList) => {
+      const totalSignals = tradeList.length;
+      const openSignals = tradeList.filter((t) => t.status === "open").length;
+      const winCount = tradeList.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
+      const lossCount = tradeList.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
+      const closedCount = winCount + lossCount;
+      const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
+      const totalPips = Number(tradeList.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
 
-    const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
-    const totalPips = Number(trades.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
-
-    return res.status(200).json({
-      success: true,
-      stats: {
+      return {
         totalSignals,
         openSignals,
         winCount,
@@ -47,7 +46,60 @@ export const getOperatorTrades = async (req, res) => {
         closedCount,
         accuracyPercent,
         totalPips,
-      },
+      };
+    };
+
+    const overallStats = calculateStats(trades);
+
+    // Group trades by Month (e.g., "August 2026", "July 2026")
+    const monthGroups = {};
+
+    trades.forEach((trade) => {
+      const date = new Date(trade.createdAt || Date.now());
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; // e.g. "2026-08"
+      const monthName = date.toLocaleString("en-US", { month: "long", year: "numeric" }); // e.g. "August 2026"
+
+      if (!monthGroups[monthKey]) {
+        monthGroups[monthKey] = {
+          monthKey,
+          monthName,
+          trades: [],
+        };
+      }
+      monthGroups[monthKey].trades.push(trade);
+    });
+
+    // Always include all 2026 months starting from August 2026 (August, September, October, November, December)
+    const startYear = 2026;
+    for (let m = 7; m < 12; m++) {
+      const tempDate = new Date(startYear, m, 1);
+      const monthKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, "0")}`;
+      const monthName = tempDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+      if (!monthGroups[monthKey]) {
+        monthGroups[monthKey] = {
+          monthKey,
+          monthName,
+          trades: [],
+        };
+      }
+    }
+
+    const monthlyData = Object.keys(monthGroups)
+      .sort((a, b) => a.localeCompare(b)) // Chronological order starting from August 2026
+      .map((monthKey) => {
+        const group = monthGroups[monthKey];
+        return {
+          monthKey: group.monthKey,
+          monthName: group.monthName,
+          stats: calculateStats(group.trades),
+          trades: group.trades,
+        };
+      });
+
+    return res.status(200).json({
+      success: true,
+      stats: overallStats,
+      monthlyData,
       trades,
     });
   } catch (error) {

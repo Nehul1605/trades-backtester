@@ -39,6 +39,9 @@ import {
   Sparkles,
   ShieldCheck,
   Zap,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getOperatorTrades,
@@ -50,6 +53,21 @@ import SpotlightCard from "@/components/SpotlightCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+interface MonthlyDataItem {
+  monthKey: string;
+  monthName: string;
+  stats: {
+    totalSignals: number;
+    openSignals: number;
+    winCount: number;
+    lossCount: number;
+    closedCount: number;
+    accuracyPercent: number;
+    totalPips: number;
+  };
+  trades: OperatorTrade[];
+}
 
 interface OperatorTrade {
   _id: string;
@@ -75,6 +93,8 @@ export function OperatorHQ() {
   const isAdmin = (session?.user as any)?.role === "admin";
 
   const [trades, setTrades] = useState<OperatorTrade[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyDataItem[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [stats, setStats] = useState({
     totalSignals: 0,
     openSignals: 0,
@@ -117,6 +137,7 @@ export function OperatorHQ() {
       const res = await getOperatorTrades();
       if (res.trades) setTrades(res.trades);
       if (res.stats) setStats(res.stats);
+      if (res.monthlyData) setMonthlyData(res.monthlyData);
     } catch (err) {
       console.error("Failed to load operator HQ signals:", err);
     } finally {
@@ -223,8 +244,73 @@ export function OperatorHQ() {
     setIsUpdateOpen(true);
   };
 
+  // Ensure month tabs start from August 2026 through December 2026
+  const displayMonthlyData = React.useMemo(() => {
+    if (monthlyData.length > 0) return monthlyData;
+    const startYear = 2026;
+    const result: MonthlyDataItem[] = [];
+
+    for (let m = 7; m < 12; m++) {
+      const tempDate = new Date(startYear, m, 1);
+      const monthKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, "0")}`;
+      const monthName = tempDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+      result.push({
+        monthKey,
+        monthName,
+        stats: { totalSignals: 0, openSignals: 0, winCount: 0, lossCount: 0, closedCount: 0, accuracyPercent: 0, totalPips: 0 },
+        trades: [],
+      });
+    }
+    return result;
+  }, [monthlyData]);
+
+  // Dynamically calculate index matching current real-world date (new Date())
+  const initialCurrentMonthIndex = React.useMemo(() => {
+    const now = new Date();
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const foundIdx = displayMonthlyData.findIndex((m) => m.monthKey === currentKey);
+    return foundIdx !== -1 ? foundIdx : 0;
+  }, [displayMonthlyData]);
+
+  // Index of active month for single-month carousel view
+  const [activeMonthIndex, setActiveMonthIndex] = useState<number>(0);
+
+  // Automatically update active month index to match current date
+  useEffect(() => {
+    setActiveMonthIndex(initialCurrentMonthIndex);
+  }, [initialCurrentMonthIndex]);
+
+  const currentVisibleMonth = displayMonthlyData[activeMonthIndex] || displayMonthlyData[0];
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === "all") {
+      setSelectedMonth(displayMonthlyData[0].monthKey);
+      setActiveMonthIndex(0);
+    } else if (activeMonthIndex > 0) {
+      const newIdx = activeMonthIndex - 1;
+      setActiveMonthIndex(newIdx);
+      setSelectedMonth(displayMonthlyData[newIdx].monthKey);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === "all") {
+      setSelectedMonth(displayMonthlyData[0].monthKey);
+      setActiveMonthIndex(0);
+    } else if (activeMonthIndex < displayMonthlyData.length - 1) {
+      const newIdx = activeMonthIndex + 1;
+      setActiveMonthIndex(newIdx);
+      setSelectedMonth(displayMonthlyData[newIdx].monthKey);
+    }
+  };
+
+  // Active stats & base trades based on month selection
+  const activeMonthGroup = displayMonthlyData.find((m) => m.monthKey === selectedMonth);
+  const activeStats = selectedMonth === "all" ? stats : (activeMonthGroup?.stats || stats);
+  const baseTrades = selectedMonth === "all" ? trades : (activeMonthGroup?.trades || []);
+
   // Filtered trades list
-  const filteredTrades = trades.filter((t) => {
+  const filteredTrades = baseTrades.filter((t) => {
     if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
     if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
     if (filter === "open") return t.status === "open";
@@ -261,6 +347,85 @@ export function OperatorHQ() {
         )}
       </div>
 
+      {/* Month Filter Selector Bar - Single Horizontal Row with Arrow Controls */}
+      <div className="p-3.5 rounded-2xl bg-card/40 border border-primary/20 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <Calendar className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-foreground">
+              Month-wise Signals
+            </h3>
+          </div>
+        </div>
+
+        {/* Single Row Horizontal List: All Months + Single Active Month Button between arrows */}
+        <div className="flex items-center gap-2 shrink-0 max-w-full">
+          {/* Static All Months Button */}
+          <button
+            onClick={() => setSelectedMonth("all")}
+            className={cn(
+              "px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer",
+              selectedMonth === "all"
+                ? "bg-gold-gradient text-background shadow-xs font-black"
+                : "bg-muted/40 hover:bg-muted text-muted-foreground"
+            )}
+          >
+            <span>All Months</span>
+            <span className="opacity-80">({trades.length})</span>
+          </button>
+
+          <div className="h-5 w-[1px] bg-border/40 shrink-0" />
+
+          {/* Left Arrow Button */}
+          <button
+            onClick={handlePrevMonth}
+            disabled={selectedMonth !== "all" && activeMonthIndex <= 0}
+            className={cn(
+              "p-1.5 rounded-lg bg-muted/40 text-muted-foreground transition-all shrink-0 cursor-pointer",
+              selectedMonth !== "all" && activeMonthIndex <= 0
+                ? "opacity-30 cursor-not-allowed"
+                : "hover:bg-muted hover:text-foreground"
+            )}
+            title="Previous Month"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Single Visible Month Button */}
+          <button
+            onClick={() => {
+              setSelectedMonth(currentVisibleMonth.monthKey);
+            }}
+            className={cn(
+              "px-4 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer min-w-[140px] justify-center",
+              selectedMonth === currentVisibleMonth.monthKey
+                ? "bg-primary text-primary-foreground shadow-xs font-black"
+                : "bg-muted/40 hover:bg-muted text-muted-foreground font-semibold"
+            )}
+          >
+            <span>{currentVisibleMonth.monthName}</span>
+            <span className="opacity-80">({currentVisibleMonth.trades.length})</span>
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={handleNextMonth}
+            disabled={activeMonthIndex >= displayMonthlyData.length - 1}
+            className={cn(
+              "p-1.5 rounded-lg bg-muted/40 text-muted-foreground transition-all shrink-0 cursor-pointer",
+              activeMonthIndex >= displayMonthlyData.length - 1
+                ? "opacity-30 cursor-not-allowed"
+                : "hover:bg-muted hover:text-foreground"
+            )}
+            title="Next Month"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       {/* Accuracy & Transparency Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Win Rate Accuracy */}
@@ -275,12 +440,12 @@ export function OperatorHQ() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-extrabold tracking-tight text-gold-gradient">
-                {stats.closedCount > 0 ? `${stats.accuracyPercent}%` : "0%"}
+                {activeStats.closedCount > 0 ? `${activeStats.accuracyPercent}%` : "0%"}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">
-                {stats.closedCount > 0
-                  ? `Verified Win Rate (${stats.winCount} W / ${stats.lossCount} L)`
-                  : "No closed callouts yet"}
+                {activeStats.closedCount > 0
+                  ? `Verified Win Rate (${activeStats.winCount} W / ${activeStats.lossCount} L)`
+                  : "No closed callouts in period"}
               </p>
             </CardContent>
           </Card>
@@ -297,7 +462,7 @@ export function OperatorHQ() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-extrabold tracking-tight text-emerald-500 font-mono">
-                {stats.totalPips >= 0 ? `+${stats.totalPips}` : stats.totalPips}
+                {activeStats.totalPips >= 0 ? `+${activeStats.totalPips}` : activeStats.totalPips}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">
                 Cumulative pips across callouts
@@ -317,10 +482,10 @@ export function OperatorHQ() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-extrabold tracking-tight text-foreground font-mono">
-                {stats.totalSignals}
+                {activeStats.totalSignals}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">
-                {stats.openSignals} Active • {stats.closedCount} Closed
+                {activeStats.openSignals} Active • {activeStats.closedCount} Closed
               </p>
             </CardContent>
           </Card>
@@ -338,11 +503,11 @@ export function OperatorHQ() {
             <CardContent>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold tracking-tight text-emerald-500 font-mono">
-                  {stats.winCount}W
+                  {activeStats.winCount}W
                 </span>
                 <span className="text-xl text-muted-foreground font-bold font-mono">-</span>
                 <span className="text-3xl font-extrabold tracking-tight text-rose-500 font-mono">
-                  {stats.lossCount}L
+                  {activeStats.lossCount}L
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">
@@ -366,7 +531,7 @@ export function OperatorHQ() {
                   : "bg-muted/30 hover:bg-muted text-muted-foreground"
               )}
             >
-              All Signals ({trades.length})
+              All Signals ({baseTrades.length})
             </button>
             <button
               onClick={() => setFilter("gold")}
@@ -400,7 +565,7 @@ export function OperatorHQ() {
                   : "bg-muted/30 hover:bg-muted text-muted-foreground"
               )}
             >
-              Active Calls ({stats.openSignals})
+              Active Calls ({activeStats.openSignals})
             </button>
             <button
               onClick={() => setFilter("wins")}
@@ -411,7 +576,7 @@ export function OperatorHQ() {
                   : "bg-muted/30 hover:bg-muted text-muted-foreground"
               )}
             >
-              Wins ({stats.winCount})
+              Wins ({activeStats.winCount})
             </button>
           </div>
 
@@ -420,7 +585,7 @@ export function OperatorHQ() {
           </span>
         </div>
 
-        {/* Signals List Grid */}
+        {/* Row-wise Trade Signals List */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -437,14 +602,13 @@ export function OperatorHQ() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-3">
             <AnimatePresence>
               {filteredTrades.map((t, idx) => {
                 const isGold = t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
                 const isWin = t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0);
                 const isLoss = t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0);
-                const isOpen = t.status === "open";
-
+                
                 // RR ratio
                 const slDist = Math.abs(t.entryPrice - t.stopLoss);
                 const tpDist = Math.abs(t.takeProfit - t.entryPrice);
@@ -453,170 +617,159 @@ export function OperatorHQ() {
                 return (
                   <motion.div
                     key={t._id}
-                    initial={{ opacity: 0, y: 15 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: idx * 0.04 }}
-                    className="h-full"
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.25, delay: idx * 0.03 }}
                   >
-                    <SpotlightCard
-                      spotlightColor={isGold ? "rgba(217, 119, 6, 0.15)" : "rgba(59, 130, 246, 0.15)"}
+                    <div
                       className={cn(
-                        "h-full bg-card/30 border-border/60 transition-all duration-300 relative rounded-2xl p-5 flex flex-col justify-between space-y-4",
-                        isGold && "border-amber-500/30 gold-glow-subtle",
-                        isWin && "border-emerald-500/40 bg-emerald-500/5",
-                        isLoss && "border-rose-500/40 bg-rose-500/5"
+                        "p-4 rounded-xl bg-card/40 border border-border/60 hover:border-primary/40 transition-all duration-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative",
+                        isGold && "border-amber-500/30 bg-amber-500/5",
+                        isWin && "border-emerald-500/30 bg-emerald-500/5",
+                        isLoss && "border-rose-500/30 bg-rose-500/5"
                       )}
                     >
-                      {/* Top Header: Symbol & Status */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              className={cn(
-                                "font-extrabold text-xs tracking-wider uppercase px-2.5 py-0.5",
-                                isGold
-                                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs"
-                                  : "bg-primary text-primary-foreground"
-                              )}
-                            >
-                              {t.symbol}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-[11px] font-bold gap-1 uppercase px-2 py-0.5",
-                                t.direction === "long"
-                                  ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
-                                  : "text-rose-500 border-rose-500/30 bg-rose-500/10"
-                              )}
-                            >
-                              {t.direction === "long" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {t.direction === "long" ? "BUY" : "SELL"}
-                            </Badge>
-                          </div>
+                      {/* Left: Symbol, Direction, Date */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge
+                          className={cn(
+                            "font-extrabold text-xs tracking-wider uppercase px-3 py-1.5",
+                            isGold
+                              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs"
+                              : "bg-primary text-primary-foreground"
+                          )}
+                        >
+                          {t.symbol}
+                        </Badge>
 
-                          {/* Status Badge */}
-                          {t.status === "tp_hit" && (
-                            <Badge className="bg-emerald-600 text-white font-black text-[10px] uppercase gap-1 px-2 py-0.5 shadow-xs">
-                              <CheckCircle2 className="w-3 h-3" /> TP HIT
-                            </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs font-bold gap-1 uppercase px-2.5 py-1",
+                            t.direction === "long"
+                              ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
+                              : "text-rose-500 border-rose-500/30 bg-rose-500/10"
                           )}
-                          {t.status === "sl_hit" && (
-                            <Badge className="bg-rose-600 text-white font-black text-[10px] uppercase gap-1 px-2 py-0.5 shadow-xs">
-                              <XCircle className="w-3 h-3" /> SL HIT
-                            </Badge>
-                          )}
-                          {t.status === "open" && (
-                            <Badge className="bg-blue-600 text-white font-black text-[10px] uppercase gap-1 px-2 py-0.5 shadow-xs animate-pulse">
-                              <Clock className="w-3 h-3" /> ACTIVE CALL
-                            </Badge>
-                          )}
-                          {t.status === "breakeven" && (
-                            <Badge variant="outline" className="text-muted-foreground text-[10px] font-bold uppercase">
-                              BREAKEVEN
-                            </Badge>
-                          )}
-                          {t.status === "closed" && (
-                            <Badge variant="secondary" className="text-[10px] font-bold uppercase">
-                              CLOSED
-                            </Badge>
-                          )}
+                        >
+                          {t.direction === "long" ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                          {t.direction === "long" ? "BUY" : "SELL"}
+                        </Badge>
+
+                        <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline-block">
+                          {new Date(t.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      {/* Middle: Price Levels Row */}
+                      <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-xs font-mono shrink-0 overflow-x-auto">
+                        <div>
+                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
+                          <span className="font-bold text-foreground">{t.entryPrice}</span>
                         </div>
-
-                        {/* Trade Price Levels Grid */}
-                        <div className="bg-muted/20 rounded-xl p-3.5 border border-border/40 font-mono space-y-2 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground text-[11px] font-sans">Entry Price:</span>
-                            <span className="font-bold text-foreground">{t.entryPrice}</span>
-                          </div>
-
-                          {t.exitPrice && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground text-[11px] font-sans">Exit Price:</span>
-                              <span className={cn("font-bold", isWin ? "text-emerald-500" : isLoss ? "text-rose-500" : "text-foreground")}>
-                                {t.exitPrice}
-                              </span>
+                        <div className="h-6 w-[1px] bg-border/40" />
+                        <div>
+                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
+                          <span className="font-bold text-rose-400">{t.stopLoss}</span>
+                        </div>
+                        <div className="h-6 w-[1px] bg-border/40" />
+                        <div>
+                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
+                          <span className="font-bold text-emerald-400">{t.takeProfit}</span>
+                        </div>
+                        {t.exitPrice && (
+                          <>
+                            <div className="h-6 w-[1px] bg-border/40" />
+                            <div>
+                              <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
+                              <span className="font-bold text-blue-400">{t.exitPrice}</span>
                             </div>
+                          </>
+                        )}
+                        <div className="h-6 w-[1px] bg-border/40 hidden md:block" />
+                        <div className="hidden md:block">
+                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">R:R</span>
+                          <span className="font-bold text-muted-foreground">1:{rrRatio}</span>
+                        </div>
+                      </div>
+
+                      {/* Notes (if present) */}
+                      {t.notes && (
+                        <p className="text-xs text-muted-foreground italic truncate max-w-xs hidden xl:block" title={t.notes}>
+                          &quot;{t.notes}&quot;
+                        </p>
+                      )}
+
+                      {/* Right: Status, PnL Pips, Admin Controls */}
+                      <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
+                        {/* Status Badge */}
+                        {t.status === "tp_hit" && (
+                          <Badge className="bg-emerald-600 text-white font-black text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> TP HIT
+                          </Badge>
+                        )}
+                        {t.status === "sl_hit" && (
+                          <Badge className="bg-rose-600 text-white font-black text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs">
+                            <XCircle className="w-3.5 h-3.5" /> SL HIT
+                          </Badge>
+                        )}
+                        {t.status === "open" && (
+                          <Badge className="bg-blue-600 text-white font-black text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs animate-pulse">
+                            <Clock className="w-3.5 h-3.5" /> ACTIVE CALL
+                          </Badge>
+                        )}
+                        {t.status === "breakeven" && (
+                          <Badge variant="outline" className="text-muted-foreground text-[10px] font-bold uppercase">
+                            BREAKEVEN
+                          </Badge>
+                        )}
+                        {t.status === "closed" && (
+                          <Badge variant="secondary" className="text-[10px] font-bold uppercase">
+                            CLOSED
+                          </Badge>
+                        )}
+
+                        {/* PnL Pips Display */}
+                        <div className="font-mono text-xs font-extrabold min-w-[70px] text-right">
+                          {t.pnlPips > 0 ? (
+                            <span className="text-emerald-500">+{t.pnlPips} Pips</span>
+                          ) : t.pnlPips < 0 ? (
+                            <span className="text-rose-500">{t.pnlPips} Pips</span>
+                          ) : (
+                            <span className="text-muted-foreground">0 Pips</span>
                           )}
-
-                          <div className="flex justify-between items-center text-rose-400">
-                            <span className="text-muted-foreground text-[11px] font-sans">Stop Loss:</span>
-                            <span>{t.stopLoss}</span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-emerald-400">
-                            <span className="text-muted-foreground text-[11px] font-sans">Take Profit:</span>
-                            <span>{t.takeProfit}</span>
-                          </div>
                         </div>
 
-                        {/* Notes / Operator Context */}
-                        {t.notes && (
-                          <div className="text-xs text-muted-foreground italic bg-muted/10 p-2.5 rounded-lg border border-border/30">
-                            &quot;{t.notes}&quot;
+                        {/* Admin Control Buttons */}
+                        {isAdmin && (
+                          <div className="flex items-center gap-1 border-l border-border/40 pl-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openUpdateModal(t)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              title="Update Signal"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-primary" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteTrade(t._id)}
+                              className="h-8 w-8 p-0 text-rose-400 hover:text-rose-500 hover:bg-rose-500/10"
+                              title="Delete Signal"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
                         )}
                       </div>
-
-                      {/* Card Footer: Pips Callout & Actions */}
-                      <div className="space-y-3 pt-3 border-t border-border/40">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 font-mono">
-                            <span className="text-[11px] text-muted-foreground font-sans">P&L Result:</span>
-                            <span
-                              className={cn(
-                                "font-extrabold text-sm",
-                                t.pnlPips > 0
-                                  ? "text-emerald-500"
-                                  : t.pnlPips < 0
-                                  ? "text-rose-500"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {t.pnlPips > 0 ? `+${t.pnlPips} Pips` : `${t.pnlPips} Pips`}
-                            </span>
-                          </div>
-
-                          <div className="text-[11px] text-muted-foreground font-mono">
-                            1:{rrRatio} R:R
-                          </div>
-                        </div>
-
-                        {/* Date & Admin Action Buttons */}
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
-                          <span>
-                            {new Date(t.createdAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-
-                          {isAdmin && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 text-[10px] px-2 gap-1"
-                                onClick={() => openUpdateModal(t)}
-                              >
-                                <Edit3 className="w-3 h-3 text-primary" /> Update
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] px-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
-                                onClick={() => handleDeleteTrade(t._id)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </SpotlightCard>
+                    </div>
                   </motion.div>
                 );
               })}
