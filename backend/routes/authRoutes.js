@@ -153,7 +153,7 @@ router.post("/login", async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 router.post("/google", async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, image } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -172,14 +172,28 @@ router.post("/google", async (req, res) => {
         provider: "google",
         status: initialStatus,
         role: initialRole,
+        image: image || "",
       });
-    } else if (isAdminEmail(email) && (user.role !== "admin" || user.status !== "approved")) {
-      user.role = "admin";
-      user.status = "approved";
-      await user.save();
-    } else if (isDirectAccessEmail(email) && user.status !== "approved") {
-      user.status = "approved";
-      await user.save();
+    } else {
+      let needsSave = false;
+      if (isAdminEmail(email) && (user.role !== "admin" || user.status !== "approved")) {
+        user.role = "admin";
+        user.status = "approved";
+        needsSave = true;
+      } else if (isDirectAccessEmail(email) && user.status !== "approved") {
+        user.status = "approved";
+        needsSave = true;
+      }
+
+      // Persist Google image if user has no image set
+      if (!user.image && image) {
+        user.image = image;
+        needsSave = true;
+      }
+
+      if (needsSave) {
+        await user.save();
+      }
     }
 
     res.json({

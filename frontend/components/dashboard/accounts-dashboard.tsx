@@ -349,7 +349,7 @@ export function AccountsDashboard({ userId }: AccountsDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-extrabold tracking-tight">
-                {accounts.length}
+                {activeAccounts.length}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">
                 Simulated accounts connected

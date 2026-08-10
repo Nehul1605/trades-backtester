@@ -38,6 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { updateUserProfile, uploadAvatar, updateUserPassword } from "@/lib/actions";
+import { getMediaUrl } from "@/lib/utils";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -252,7 +253,7 @@ export default function SettingsPage() {
                   <CardContent className="flex flex-col items-center gap-4">
                     <div className="relative group">
                       <Avatar className="h-32 w-32 border-4 border-primary/20">
-                        <AvatarImage src={session?.user?.image || ""} />
+                        <AvatarImage src={getMediaUrl(session?.user?.image || "")} />
                         <AvatarFallback className="text-4xl bg-primary/10 text-primary font-black">
                           {session?.user?.name?.[0] || "?"}
                         </AvatarFallback>
