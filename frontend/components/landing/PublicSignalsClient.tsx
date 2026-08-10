@@ -481,12 +481,10 @@ function TradeSignalRow({ trade }: { trade: any }) {
           {isLong ? "BUY" : "SELL"}
         </Badge>
 
-        <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline-block">
+        <span className="text-[11px] text-muted-foreground font-mono inline-block">
           {new Date(trade.createdAt).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
           })}
         </span>
       </div>

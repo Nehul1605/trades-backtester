@@ -707,12 +707,10 @@ export function OperatorHQ() {
                           {t.direction === "long" ? "BUY" : "SELL"}
                         </Badge>
 
-                        <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline-block">
+                        <span className="text-[11px] text-muted-foreground font-mono inline-block">
                           {new Date(t.createdAt).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
                           })}
                         </span>
                       </div>
