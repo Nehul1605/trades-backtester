@@ -1019,6 +1019,7 @@ export async function createOperatorTrade(data: {
   exitPrice?: number | null;
   status?: string;
   notes?: string;
+  createdAt?: string;
 }): Promise<{ error?: string; trade?: any }> {
   try {
     const authHeader = await getAuthHeader();

@@ -76,6 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               body: JSON.stringify({
                 email: user.email,
                 name: user.name,
+                image: user.image || "",
               }),
             }
           );

@@ -118,11 +118,12 @@ export function OperatorHQ() {
   const [createForm, setCreateForm] = useState({
     symbol: "XAUUSD",
     direction: "long" as "long" | "short",
-    entryPrice: "2400.00",
-    stopLoss: "2390.00",
-    takeProfit: "2420.00",
+    entryPrice: "",
+    stopLoss: "",
+    takeProfit: "",
     status: "open",
-    notes: "Gold liquidity sweep & retest entry.",
+    notes: "",
+    createdAt: "",
   });
 
   const [updateForm, setUpdateForm] = useState({
@@ -173,6 +174,7 @@ export function OperatorHQ() {
         takeProfit: tp,
         status: createForm.status,
         notes: createForm.notes,
+        createdAt: createForm.createdAt || undefined,
       });
 
       if (result.error) {
@@ -187,6 +189,16 @@ export function OperatorHQ() {
           description: `Official signal call for ${createForm.symbol} published to Operator HQ!`,
         });
         setIsCreateOpen(false);
+        setCreateForm({
+          symbol: "XAUUSD",
+          direction: "long",
+          entryPrice: "",
+          stopLoss: "",
+          takeProfit: "",
+          status: "open",
+          notes: "",
+          createdAt: "",
+        });
         fetchData();
       }
     });
@@ -306,8 +318,35 @@ export function OperatorHQ() {
 
   // Active stats & base trades based on month selection
   const activeMonthGroup = displayMonthlyData.find((m) => m.monthKey === selectedMonth);
-  const activeStats = selectedMonth === "all" ? stats : (activeMonthGroup?.stats || stats);
   const baseTrades = selectedMonth === "all" ? trades : (activeMonthGroup?.trades || []);
+
+  // Dynamic active stats based on month selection and symbol filter (Gold, EURUSD, or All)
+  const activeStats = React.useMemo(() => {
+    // Filter baseTrades by symbol to compute accuracy/pips for that symbol
+    const tradesForStats = baseTrades.filter((t) => {
+      if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+      if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+      return true; // For "all", "open", "wins", use all symbols
+    });
+
+    const totalSignals = tradesForStats.length;
+    const openSignals = tradesForStats.filter((t) => t.status === "open").length;
+    const winCount = tradesForStats.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
+    const lossCount = tradesForStats.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
+    const closedCount = winCount + lossCount;
+    const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
+    const totalPips = Number(tradesForStats.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
+
+    return {
+      totalSignals,
+      openSignals,
+      winCount,
+      lossCount,
+      closedCount,
+      accuracyPercent,
+      totalPips,
+    };
+  }, [baseTrades, filter]);
 
   // Filtered trades list
   const filteredTrades = baseTrades.filter((t) => {
@@ -373,7 +412,13 @@ export function OperatorHQ() {
             )}
           >
             <span>All Months</span>
-            <span className="opacity-80">({trades.length})</span>
+            <span className="opacity-80">
+              ({trades.filter((t) => {
+                if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+                if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+                return true;
+              }).length})
+            </span>
           </button>
 
           <div className="h-5 w-[1px] bg-border/40 shrink-0" />
@@ -406,7 +451,13 @@ export function OperatorHQ() {
             )}
           >
             <span>{currentVisibleMonth.monthName}</span>
-            <span className="opacity-80">({currentVisibleMonth.trades.length})</span>
+            <span className="opacity-80">
+              ({currentVisibleMonth.trades.filter((t) => {
+                if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+                if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+                return true;
+              }).length})
+            </span>
           </button>
 
           {/* Right Arrow Button */}
@@ -667,33 +718,33 @@ export function OperatorHQ() {
                       </div>
 
                       {/* Middle: Price Levels Row */}
-                      <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-xs font-mono shrink-0 overflow-x-auto">
+                      <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-sm font-mono shrink-0 overflow-x-auto">
                         <div>
-                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
+                          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
                           <span className="font-bold text-foreground">{t.entryPrice}</span>
                         </div>
                         <div className="h-6 w-[1px] bg-border/40" />
                         <div>
-                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
+                          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
                           <span className="font-bold text-rose-400">{t.stopLoss}</span>
                         </div>
                         <div className="h-6 w-[1px] bg-border/40" />
                         <div>
-                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
+                          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
                           <span className="font-bold text-emerald-400">{t.takeProfit}</span>
                         </div>
                         {t.exitPrice && (
                           <>
                             <div className="h-6 w-[1px] bg-border/40" />
                             <div>
-                              <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
+                              <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
                               <span className="font-bold text-blue-400">{t.exitPrice}</span>
                             </div>
                           </>
                         )}
                         <div className="h-6 w-[1px] bg-border/40 hidden md:block" />
                         <div className="hidden md:block">
-                          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">R:R</span>
+                          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">R:R</span>
                           <span className="font-bold text-muted-foreground">1:{rrRatio}</span>
                         </div>
                       </div>
@@ -881,6 +932,17 @@ export function OperatorHQ() {
                 <option value="tp_hit">TP Hit (Win)</option>
                 <option value="sl_hit">SL Hit (Loss)</option>
               </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Trade Date</Label>
+              <Input
+                type="date"
+                className="h-9 font-sans"
+                value={createForm.createdAt}
+                onChange={(e) => setCreateForm({ ...createForm, createdAt: e.target.value })}
+              />
+              <span className="text-[9px] text-muted-foreground">Leave blank to use current time (intraday)</span>
             </div>
 
             <div className="space-y-1">

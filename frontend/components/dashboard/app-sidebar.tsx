@@ -26,7 +26,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, getMediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -160,7 +160,7 @@ export function AppSidebar() {
         <div className="px-4 py-4 group-data-[collapsible=icon]:px-2">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 border border-border/40 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:justify-center">
             <Avatar className="h-9 w-9 border border-primary/20 shrink-0">
-              <AvatarImage src={user.avatar} />
+              <AvatarImage src={getMediaUrl(user.avatar)} />
               <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                 {user.name?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>

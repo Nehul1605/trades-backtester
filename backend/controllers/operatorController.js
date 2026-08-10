@@ -122,6 +122,7 @@ export const createOperatorTrade = async (req, res) => {
       takeProfit,
       status = "open",
       notes,
+      createdAt,
     } = req.body;
 
     if (!entryPrice || !stopLoss || !takeProfit) {
@@ -137,7 +138,7 @@ export const createOperatorTrade = async (req, res) => {
       pnlPips = calculatePips(symbol, direction, Number(entryPrice), Number(stopLoss));
     }
 
-    const trade = await OperatorTrade.create({
+    const tradeData = {
       createdBy: req.userId,
       symbol: symbol.toUpperCase(),
       direction,
@@ -148,7 +149,16 @@ export const createOperatorTrade = async (req, res) => {
       status,
       pnlPips,
       notes: notes || "",
-    });
+    };
+
+    let trade;
+    if (createdAt) {
+      tradeData.createdAt = new Date(createdAt);
+      trade = new OperatorTrade(tradeData);
+      await trade.save({ timestamps: false });
+    } else {
+      trade = await OperatorTrade.create(tradeData);
+    }
 
     return res.status(201).json({ success: true, trade });
   } catch (error) {

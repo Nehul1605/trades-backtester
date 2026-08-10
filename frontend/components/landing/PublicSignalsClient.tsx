@@ -109,9 +109,75 @@ export function PublicSignalsClient({
     }
   };
 
+  const [filter, setFilter] = useState<"all" | "gold" | "eur">("all");
+
   const activeMonthGroup = displayMonthlyData.find((m) => m.monthKey === selectedMonth);
-  const activeStats = selectedMonth === "all" ? overallStats : (activeMonthGroup?.stats || overallStats);
   const displayTrades = selectedMonth === "all" ? allTrades : (activeMonthGroup?.trades || []);
+
+  const activeStats = React.useMemo(() => {
+    const tradesForStats = displayTrades.filter((t) => {
+      if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+      if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+      return true;
+    });
+
+    const totalSignals = tradesForStats.length;
+    const openSignals = tradesForStats.filter((t) => t.status === "open").length;
+    const winCount = tradesForStats.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
+    const lossCount = tradesForStats.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
+    const closedCount = winCount + lossCount;
+    const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
+    const totalPips = Number(tradesForStats.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
+
+    return {
+      totalSignals,
+      openSignals,
+      winCount,
+      lossCount,
+      closedCount,
+      accuracyPercent,
+      totalPips,
+    };
+  }, [displayTrades, filter]);
+
+  const displayMonthlyDataFiltered = React.useMemo(() => {
+    return displayMonthlyData.map((mGroup) => {
+      const filteredGroupTrades = mGroup.trades.filter((t) => {
+        if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+        if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+        return true;
+      });
+
+      const winCount = filteredGroupTrades.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
+      const lossCount = filteredGroupTrades.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
+      const closedCount = winCount + lossCount;
+      const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
+      const totalPips = Number(filteredGroupTrades.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
+
+      return {
+        ...mGroup,
+        trades: filteredGroupTrades,
+        stats: {
+          ...mGroup.stats,
+          totalSignals: filteredGroupTrades.length,
+          openSignals: filteredGroupTrades.filter((t) => t.status === "open").length,
+          winCount,
+          lossCount,
+          closedCount,
+          accuracyPercent,
+          totalPips,
+        }
+      };
+    });
+  }, [displayMonthlyData, filter]);
+
+  const filteredDisplayTrades = React.useMemo(() => {
+    return displayTrades.filter((t) => {
+      if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+      if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+      return true;
+    });
+  }, [displayTrades, filter]);
 
   return (
     <div className="space-y-12">
@@ -141,7 +207,13 @@ export function PublicSignalsClient({
             )}
           >
             <span>All Months</span>
-            <span className="opacity-80">({allTrades.length})</span>
+            <span className="opacity-80">
+              ({allTrades.filter((t) => {
+                if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+                if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+                return true;
+              }).length})
+            </span>
           </button>
 
           <div className="h-5 w-[1px] bg-border/40 shrink-0" />
@@ -174,7 +246,13 @@ export function PublicSignalsClient({
             )}
           >
             <span>{currentVisibleMonth.monthName}</span>
-            <span className="opacity-80">({currentVisibleMonth.trades.length})</span>
+            <span className="opacity-80">
+              ({currentVisibleMonth.trades.filter((t) => {
+                if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+                if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+                return true;
+              }).length})
+            </span>
           </button>
 
           {/* Right Arrow Button */}
@@ -248,7 +326,7 @@ export function PublicSignalsClient({
 
       {/* Public Signal Feed Row-wise */}
       <div className="space-y-8">
-        <div className="flex items-center justify-between border-b border-border/40 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/40 pb-4 gap-4">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight">
               {selectedMonth === "all" ? "Public Trade Signals Log" : `${activeMonthGroup?.monthName} Trade Signals`}
@@ -257,12 +335,52 @@ export function PublicSignalsClient({
               Verified market entries, stop loss, take profit, and exit pips performance
             </p>
           </div>
-          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 uppercase font-black text-[10px]">
+          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 uppercase font-black text-[10px] self-start sm:self-auto">
             Live Feed
           </Badge>
         </div>
 
-        {displayTrades.length === 0 ? (
+        {/* Symbol Filter Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+            <button
+              onClick={() => setFilter("all")}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                filter === "all"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "bg-muted/30 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              All Signals ({displayTrades.length})
+            </button>
+            <button
+              onClick={() => setFilter("gold")}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1 cursor-pointer",
+                filter === "gold"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "bg-muted/30 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              <Sparkles className="w-3 h-3 text-amber-300" />
+              Gold (XAUUSD)
+            </button>
+            <button
+              onClick={() => setFilter("eur")}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                filter === "eur"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "bg-muted/30 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              EURUSD
+            </button>
+          </div>
+        </div>
+
+        {filteredDisplayTrades.length === 0 ? (
           <div className="p-12 text-center border border-dashed border-border/60 rounded-2xl bg-card/20">
             <Award className="w-10 h-10 text-primary mx-auto mb-3 opacity-60" />
             <h3 className="text-sm font-bold uppercase tracking-wider">No signals posted for this month</h3>
@@ -273,42 +391,45 @@ export function PublicSignalsClient({
         ) : selectedMonth === "all" ? (
           /* Render Monthwise Grouped Row Sections when "All Months" is selected */
           <div className="space-y-10">
-            {monthlyData.map((mGroup) => (
-              <div key={mGroup.monthKey} className="space-y-3">
-                {/* Month Group Header Banner */}
-                <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-card/60 border border-primary/20 backdrop-blur-md">
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-primary/20 text-primary border-primary/40 font-black text-xs uppercase px-3 py-1">
-                      {mGroup.monthName}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground font-semibold">
-                      {mGroup.trades.length} signal calls
-                    </span>
+            {displayMonthlyDataFiltered.map((mGroup) => {
+              if (mGroup.trades.length === 0) return null; // Hide empty months when filtered
+              return (
+                <div key={mGroup.monthKey} className="space-y-3">
+                  {/* Month Group Header Banner */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-card/60 border border-primary/20 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-primary/20 text-primary border-primary/40 font-black text-xs uppercase px-3 py-1">
+                        {mGroup.monthName}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground font-semibold">
+                        {mGroup.trades.length} signal calls
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-mono">
+                      <span className="text-emerald-400 font-bold">
+                        Win Rate: {mGroup.stats.accuracyPercent}%
+                      </span>
+                      <span className="text-gold-gradient font-bold">
+                        Pips: {mGroup.stats.totalPips > 0 ? `+${mGroup.stats.totalPips}` : mGroup.stats.totalPips}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs font-mono">
-                    <span className="text-emerald-400 font-bold">
-                      Win Rate: {mGroup.stats.accuracyPercent}%
-                    </span>
-                    <span className="text-gold-gradient font-bold">
-                      Pips: {mGroup.stats.totalPips > 0 ? `+${mGroup.stats.totalPips}` : mGroup.stats.totalPips}
-                    </span>
+                  {/* Signals Row List for this Month */}
+                  <div className="space-y-3">
+                    {mGroup.trades.map((trade: any) => (
+                      <TradeSignalRow key={trade._id || trade.id} trade={trade} />
+                    ))}
                   </div>
                 </div>
-
-                {/* Signals Row List for this Month */}
-                <div className="space-y-3">
-                  {mGroup.trades.map((trade: any) => (
-                    <TradeSignalRow key={trade._id || trade.id} trade={trade} />
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           /* Render Rows for Selected Month */
           <div className="space-y-3">
-            {displayTrades.map((trade: any) => (
+            {filteredDisplayTrades.map((trade: any) => (
               <TradeSignalRow key={trade._id || trade.id} trade={trade} />
             ))}
           </div>
@@ -371,26 +492,26 @@ function TradeSignalRow({ trade }: { trade: any }) {
       </div>
 
       {/* Middle: Horizontal Price Levels */}
-      <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-xs font-mono shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-sm font-mono shrink-0 overflow-x-auto">
         <div>
-          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
+          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
           <span className="font-bold text-foreground">{trade.entryPrice}</span>
         </div>
         <div className="h-6 w-[1px] bg-border/40" />
         <div>
-          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
+          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
           <span className="font-bold text-rose-400">{trade.stopLoss}</span>
         </div>
         <div className="h-6 w-[1px] bg-border/40" />
         <div>
-          <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
+          <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
           <span className="font-bold text-emerald-400">{trade.takeProfit}</span>
         </div>
         {trade.exitPrice && (
           <>
             <div className="h-6 w-[1px] bg-border/40" />
             <div>
-              <span className="text-[9px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
+              <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
               <span className="font-bold text-blue-400">{trade.exitPrice}</span>
             </div>
           </>
