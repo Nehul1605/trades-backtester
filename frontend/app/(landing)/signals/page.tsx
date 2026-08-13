@@ -11,6 +11,7 @@ import { getOperatorTrades } from "@/lib/actions";
 import { NavbarMobileMenu } from "@/components/landing/NavbarMobileMenu";
 import { Footer } from "@/components/landing/Footer";
 import { PublicSignalsClient } from "@/components/landing/PublicSignalsClient";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Operator HQ Signals & Track Record | TradeTracker Pro",
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PublicSignalsPage() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user;
   const data = await getOperatorTrades();
   const stats = data?.stats || {
     totalSignals: 0,
@@ -65,20 +68,32 @@ export default async function PublicSignalsPage() {
             </Link>
           </nav>
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/auth/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-            >
-              Sign in
-            </Link>
-            <Button
-              asChild
-              size="sm"
-              className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-xs shadow-primary/20"
-            >
-              <Link href="/auth/sign-up">Get Started Free</Link>
-            </Button>
-            <NavbarMobileMenu />
+            {isLoggedIn ? (
+              <Button
+                asChild
+                size="sm"
+                className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-xs shadow-primary/20"
+              >
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                >
+                  Sign in
+                </Link>
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-xs shadow-primary/20"
+                >
+                  <Link href="/auth/sign-up">Get Started Free</Link>
+                </Button>
+              </>
+            )}
+            <NavbarMobileMenu isLoggedIn={isLoggedIn} />
           </div>
         </div>
       </header>
@@ -122,9 +137,15 @@ export default async function PublicSignalsPage() {
                 asChild
                 className="bg-gold-gradient text-background hover:opacity-90 font-bold text-xs uppercase px-5 shrink-0"
               >
-                <Link href="/auth/sign-up">
-                  Create Free Account <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/dashboard">
+                    Go to Dashboard <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Link>
+                ) : (
+                  <Link href="/auth/sign-up">
+                    Create Free Account <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Link>
+                )}
               </Button>
             </div>
           </div>

@@ -69,10 +69,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const session = await auth();
-
-  if (session?.user) {
-    redirect("/dashboard");
-  }
+  const isLoggedIn = !!session?.user;
 
   const features = [
     {
@@ -152,20 +149,32 @@ export default async function HomePage() {
             ))}
           </nav>
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/auth/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-            >
-              Sign in
-            </Link>
-            <Button
-              asChild
-              size="sm"
-              className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-sm shadow-primary/20"
-            >
-              <Link href="/auth/sign-up">Get Started Free</Link>
-            </Button>
-            <NavbarMobileMenu />
+            {isLoggedIn ? (
+              <Button
+                asChild
+                size="sm"
+                className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-sm shadow-primary/20"
+              >
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                >
+                  Sign in
+                </Link>
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[13px] font-semibold shadow-sm shadow-primary/20"
+                >
+                  <Link href="/auth/sign-up">Get Started Free</Link>
+                </Button>
+              </>
+            )}
+            <NavbarMobileMenu isLoggedIn={isLoggedIn} />
           </div>
         </div>
       </header>
@@ -228,10 +237,17 @@ export default async function HomePage() {
                 size="lg"
                 className="h-11 px-6 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-sm shadow-primary/15"
               >
-                <Link href="/auth/sign-up">
-                  Start Journaling Free{" "}
-                  <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/dashboard">
+                    Go to Dashboard{" "}
+                    <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <Link href="/auth/sign-up">
+                    Start Journaling Free{" "}
+                    <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                  </Link>
+                )}
               </Button>
               <Button
                 asChild
@@ -752,23 +768,37 @@ export default async function HomePage() {
               Join traders using TradeTracker Pro to journal their executions, analyze their strategies, and build real consistency. Free to start — no credit card needed.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-2.5">
-              <Button
-                asChild
-                size="lg"
-                className="h-11 px-6 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-sm shadow-primary/15"
-              >
-                <Link href="/auth/sign-up">
-                  Create Free Account <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-11 px-6 text-sm rounded-lg border-border/60"
-              >
-                <Link href="/auth/login">Sign In</Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-11 px-6 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-sm shadow-primary/15 animate-shimmer"
+                >
+                  <Link href="/dashboard">
+                    Go to Dashboard <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="h-11 px-6 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-sm shadow-primary/15"
+                  >
+                    <Link href="/auth/sign-up">
+                      Create Free Account <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="h-11 px-6 text-sm rounded-lg border-border/60"
+                  >
+                    <Link href="/auth/login">Sign In</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
