@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-export function NavbarMobileMenu() {
+export function NavbarMobileMenu({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [open, setOpen] = React.useState(false);
 
   const handleLinkClick = () => {
@@ -60,21 +60,33 @@ export function NavbarMobileMenu() {
           </nav>
         </div>
         <div className="flex flex-col gap-3 border-t border-border/10 pt-6">
-          <Button
-            asChild
-            variant="outline"
-            className="w-full h-10 border-border/60"
-            onClick={handleLinkClick}
-          >
-            <Link href="/auth/login">Sign in</Link>
-          </Button>
-          <Button
-            asChild
-            className="w-full h-10 bg-primary text-primary-foreground"
-            onClick={handleLinkClick}
-          >
-            <Link href="/auth/sign-up">Start Free</Link>
-          </Button>
+          {isLoggedIn ? (
+            <Button
+              asChild
+              className="w-full h-10 bg-primary text-primary-foreground"
+              onClick={handleLinkClick}
+            >
+              <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full h-10 border-border/60"
+                onClick={handleLinkClick}
+              >
+                <Link href="/auth/login">Sign in</Link>
+              </Button>
+              <Button
+                asChild
+                className="w-full h-10 bg-primary text-primary-foreground"
+                onClick={handleLinkClick}
+              >
+                <Link href="/auth/sign-up">Start Free</Link>
+              </Button>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

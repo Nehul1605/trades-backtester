@@ -17,6 +17,7 @@ import {
   Target
 } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "TradeTracker Pro",
@@ -32,7 +33,9 @@ export const metadata: Metadata = {
   ]
 };
 
-export default function TradezellaComparisonPage() {
+export default async function TradezellaComparisonPage() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user;
   const comparisonRows = [
     {
       feature: "Monthly Pricing",
@@ -235,9 +238,15 @@ export default function TradezellaComparisonPage() {
                 asChild
                 className="h-11 px-6 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-sm shadow-primary/15"
               >
-                <Link href="/auth/sign-up">
-                  Create Free Account <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/dashboard">
+                    Go to Dashboard <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <Link href="/auth/sign-up">
+                    Create Free Account <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                  </Link>
+                )}
               </Button>
             </div>
           </div>
