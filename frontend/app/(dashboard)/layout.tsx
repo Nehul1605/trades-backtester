@@ -24,7 +24,9 @@ export default async function DashboardLayout({
     process.env.NEXT_PUBLIC_REQUIRE_REFERRAL_VERIFICATION !== "false" &&
     process.env.REQUIRE_REFERRAL_VERIFICATION !== "false";
 
-  if (isVerificationRequired) {
+  const isAdmin = (session.user as any).role === "admin";
+
+  if (isVerificationRequired && !isAdmin) {
     let userStatus = (session.user as any).status;
     const token = (session.user as any).accessToken;
 

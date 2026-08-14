@@ -49,9 +49,16 @@ export default function VerificationPendingPage() {
     }
   };
 
+  const isAdmin = (session?.user as any)?.role === "admin";
+
   useEffect(() => {
-    fetchStatus();
-  }, []);
+    if (isAdmin) {
+      router.replace("/dashboard");
+      router.refresh();
+    } else {
+      fetchStatus();
+    }
+  }, [isAdmin, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
