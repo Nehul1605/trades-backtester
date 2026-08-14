@@ -25,7 +25,7 @@ import {
   ArrowRight,
   Loader2 
 } from "lucide-react";
-import { createPaymentOrder, verifyPaymentSignature } from "@/lib/actions";
+import { createPaymentOrder, verifyPaymentSignature, getExchangeRate } from "@/lib/actions";
 
 declare global {
   interface Window {
@@ -45,6 +45,21 @@ export default function PremiumCheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
   const [showTransitionLoader, setShowTransitionLoader] = useState(false);
+  const [rates, setRates] = useState<{ rate: number; monthlyInr: number; annualInr: number } | null>(null);
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      const res = await getExchangeRate();
+      if (!res.error && res.rate) {
+        setRates({
+          rate: res.rate,
+          monthlyInr: res.monthlyInr || 955,
+          annualInr: res.annualInr || 10314
+        });
+      }
+    };
+    fetchRates();
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -213,7 +228,11 @@ export default function PremiumCheckoutPage() {
   const launchPrice = plan === "annual" ? 108 : 10;
   const discountPercent = plan === "annual" ? 40 : 33;
   const couponCode = plan === "annual" ? "LAUNCH40" : "LAUNCH33";
-  const inrAmount = plan === "annual" ? "₹10,314" : "₹955";
+
+  // Calculate dynamic INR amount display using fetched rates
+  const inrAmount = plan === "annual"
+    ? `₹${(rates?.annualInr || 10314).toLocaleString("en-IN")}`
+    : `₹${(rates?.monthlyInr || 955).toLocaleString("en-IN")}`;
 
   if (showTransitionLoader) {
     return (

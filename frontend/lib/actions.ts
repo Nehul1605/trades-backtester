@@ -1193,3 +1193,28 @@ export async function getUserSubscriptions(): Promise<{
   }
 }
 
+export async function getExchangeRate(): Promise<{
+  error?: string;
+  rate?: number;
+  monthlyInr?: number;
+  annualInr?: number;
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/payments/exchange-rate`, {
+      headers: {
+        ...authHeader,
+      },
+      cache: "no-store",
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to fetch live exchange rate" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to fetch live exchange rate" };
+  }
+}
+
