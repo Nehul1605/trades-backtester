@@ -22,6 +22,49 @@ const getRazorpayInstance = () => {
   });
 };
 
+let cachedRate = null;
+let cacheTime = null;
+
+const getLiveExchangeRate = async () => {
+  const now = Date.now();
+  // Cache for 1 hour to avoid hitting API rate limits
+  if (cachedRate && cacheTime && (now - cacheTime < 60 * 60 * 1000)) {
+    return cachedRate;
+  }
+
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    if (!res.ok) throw new Error("Failed to fetch exchange rate");
+    const data = await res.json();
+    if (data && data.rates && data.rates.INR) {
+      cachedRate = parseFloat(data.rates.INR);
+      cacheTime = now;
+      console.log(`[Exchange Rate] Fetched live rate: ${cachedRate}`);
+      return cachedRate;
+    }
+  } catch (error) {
+    console.error("Exchange rate fetch error, falling back to 95.5:", error);
+  }
+  return parseFloat(process.env.USD_TO_INR_RATE || "95.5");
+};
+
+// @desc    Get live USD to INR exchange rate and calculated prices
+// @route   GET /api/payments/exchange-rate
+// @access  Private
+router.get("/exchange-rate", protect, async (req, res) => {
+  try {
+    const rate = await getLiveExchangeRate();
+    res.json({
+      rate,
+      monthlyInr: Math.round(10 * rate),
+      annualInr: Math.round(108 * rate)
+    });
+  } catch (error) {
+    console.error("Get exchange-rate route error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // @desc    Create Razorpay payment order
 // @route   POST /api/payments/create-order
 // @access  Private
@@ -32,19 +75,15 @@ router.post("/create-order", protect, async (req, res) => {
     return res.status(400).json({ error: "Please provide planType, name, and phone" });
   }
 
-  // Calculate pricing based on USD to INR conversion at $1 = 95.5
-  // Monthly: $10 -> ₹955 INR -> 95500 paise
-  // Annual: $108 (40% discount) -> ₹10,314 INR -> 1031400 paise
-  let amountInPaise = 95500;
-  if (planType === "annual") {
-    amountInPaise = 1031400;
-  }
-
   try {
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    const conversionRate = await getLiveExchangeRate();
+    const baseUsdAmount = planType === "annual" ? 108 : 10;
+    const amountInPaise = Math.round(baseUsdAmount * conversionRate * 100);
 
     const rzp = getRazorpayInstance();
     const receiptId = `receipt_${req.userId}_${Date.now()}`;
