@@ -232,9 +232,9 @@ export default function PremiumCheckoutPage() {
 
   // Pricing values for UI
   const originalPrice = plan === "annual" ? 180 : 15;
-  const launchPrice = plan === "annual" ? 108 : 10;
-  const discountPercent = plan === "annual" ? 40 : 33;
-  const couponCode = plan === "annual" ? "LAUNCH40" : "LAUNCH33";
+  const launchPrice = plan === "annual" ? 99 : 8.99;
+  const discountPercent = plan === "annual" ? 45 : 40;
+  const couponCode = plan === "annual" ? "LAUNCH45" : "LAUNCH40";
 
   // Calculate dynamic INR/USD amount display using fetched rates and 18% GST
   const isUsd = currency === "USD";
@@ -345,7 +345,7 @@ export default function PremiumCheckoutPage() {
               }`}
             >
               <span>Monthly Access</span>
-              <span className="text-[10px] opacity-80">$10/month</span>
+              <span className="text-[10px] opacity-80">$8.99/month</span>
             </button>
             <button
               type="button"
@@ -357,10 +357,10 @@ export default function PremiumCheckoutPage() {
               }`}
             >
               <div className="absolute top-0 right-0 bg-yellow-500 text-neutral-950 text-[8px] font-black tracking-widest px-2 py-0.5 rounded-bl uppercase">
-                Best Deal (Save 40%)
+                Best Deal (Save 45%)
               </div>
               <span>Annual Access</span>
-              <span className="text-[10px] opacity-80">$108/year</span>
+              <span className="text-[10px] opacity-80">$99/year</span>
             </button>
           </div>
 
@@ -481,7 +481,7 @@ export default function PremiumCheckoutPage() {
                     <div className="text-right">
                       <span className="text-primary text-base">{totalString}</span>
                       <span className="block text-[10px] text-muted-foreground font-medium mt-0.5">
-                        {isUsd ? `Approx. ${totalString}` : `Approx. $${launchPrice}.00 USD + Fee`}
+                        {isUsd ? `Approx. ${totalString}` : `Approx. $${launchPrice.toFixed(2)} USD + Fee`}
                       </span>
                     </div>
                   </div>

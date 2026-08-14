@@ -57,8 +57,8 @@ router.get("/exchange-rate", protect, async (req, res) => {
     const rate = await getLiveExchangeRate();
     res.json({
       rate,
-      monthlyInr: Math.round(10 * rate),
-      annualInr: Math.round(108 * rate)
+      monthlyInr: Math.round(8.99 * rate),
+      annualInr: Math.round(99 * rate)
     });
   } catch (error) {
     console.error("Get exchange-rate route error:", error);
@@ -69,6 +69,7 @@ router.get("/exchange-rate", protect, async (req, res) => {
 // @desc    Create Razorpay payment order
 // @route   POST /api/payments/create-order
 // @access  Private
+// @route   POST /api/payments/create-order
 router.post("/create-order", protect, async (req, res) => {
   const { planType, customerPhone, customerName, currency = "INR" } = req.body;
 
@@ -82,7 +83,7 @@ router.post("/create-order", protect, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const baseUsdAmount = planType === "annual" ? 108 : 10;
+    const baseUsdAmount = planType === "annual" ? 99 : 8.99;
     let amountInPaise = 0;
 
     if (currency === "USD") {
