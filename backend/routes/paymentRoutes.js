@@ -238,6 +238,36 @@ router.post("/verify-signature", protect, async (req, res) => {
   }
 });
 
+// @desc    Cancel Razorpay order / update status to FAILED
+// @route   POST /api/payments/cancel-order
+// @access  Private
+router.post("/cancel-order", protect, async (req, res) => {
+  const { orderId } = req.body;
+
+  if (!orderId) {
+    return res.status(400).json({ error: "Missing orderId parameter" });
+  }
+
+  try {
+    const transaction = await Transaction.findOne({ orderId });
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    // Only update to FAILED if it was PENDING
+    if (transaction.status === "PENDING") {
+      transaction.status = "FAILED";
+      await transaction.save();
+      console.log(`[Razorpay] Transaction marked as FAILED for cancelled order: ${orderId}`);
+    }
+
+    res.json({ status: "FAILED", message: "Order cancelled successfully" });
+  } catch (error) {
+    console.error("Cancel order route error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // @desc    Razorpay Webhook stub
 // @route   POST /api/payments/webhook
 // @access  Public

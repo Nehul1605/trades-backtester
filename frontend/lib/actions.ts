@@ -1218,3 +1218,25 @@ export async function getExchangeRate(): Promise<{
   }
 }
 
+export async function cancelPaymentOrder(orderId: string): Promise<{ error?: string; status?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/payments/cancel-order`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderId }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to cancel payment order" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to cancel payment order" };
+  }
+}
+

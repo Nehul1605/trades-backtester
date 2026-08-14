@@ -25,7 +25,7 @@ import {
   ArrowRight,
   Loader2 
 } from "lucide-react";
-import { createPaymentOrder, verifyPaymentSignature, getExchangeRate } from "@/lib/actions";
+import { createPaymentOrder, verifyPaymentSignature, getExchangeRate, cancelPaymentOrder } from "@/lib/actions";
 
 declare global {
   interface Window {
@@ -195,6 +195,9 @@ export default function PremiumCheckoutPage() {
               title: "Payment Cancelled",
               description: "You closed the Razorpay payment window.",
             });
+            if (res.orderId) {
+              cancelPaymentOrder(res.orderId);
+            }
             setLoading(false);
           },
         },
@@ -208,6 +211,9 @@ export default function PremiumCheckoutPage() {
           title: "Payment Failed",
           description: response.error?.description || "Razorpay transaction failed.",
         });
+        if (res.orderId) {
+          cancelPaymentOrder(res.orderId);
+        }
         setLoading(false);
       });
 

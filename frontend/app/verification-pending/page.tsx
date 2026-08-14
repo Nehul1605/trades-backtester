@@ -383,6 +383,9 @@ export default function VerificationPendingPage() {
                 {mode === "broker" ? (
                   <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4 py-4">
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500/90 rounded-xl p-3.5 text-[11px] leading-relaxed text-left">
+                        ℹ️ <strong>Note:</strong> Here, the info to be filled is that with which account you are affiliated under Lala Operator.
+                      </div>
                       <div className="space-y-1">
                         <Label htmlFor="broker" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           Broker Name
@@ -469,7 +472,7 @@ export default function VerificationPendingPage() {
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Enter the promo code mentioned in our YouTube videos to unlock a 10-day trial of the core trading journal console and stats features.
+                        Enter the promo code mentioned in our YouTube video to unlock a 10-day trial of the core trading journal console and stats features.
                       </p>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
