@@ -30,8 +30,12 @@ export default function LiveMarketPage() {
   const { data: session } = useSession();
   const isPromo = (session?.user as any)?.isPromoActive;
   const isPremium = (session?.user as any)?.isPremiumActive;
+  const role = (session?.user as any)?.role;
+  const membershipTag = (session?.user as any)?.membershipTag;
   
-  if (isPromo && !isPremium) {
+  const isBypassed = role === "admin" || membershipTag === "OPERATOR HQ" || isPremium;
+  
+  if (isPromo && !isBypassed) {
     return <FeatureLockedOverlay featureName="Live Market Stream" />;
   }
 

@@ -67,7 +67,10 @@ export function AppSidebar() {
   const isAdmin = (session?.user as any)?.role === "admin";
   const isPromo = (session?.user as any)?.isPromoActive;
   const isPremium = (session?.user as any)?.isPremiumActive;
-  const isPromoTrial = isPromo && !isPremium;
+  const membershipTag = (session?.user as any)?.membershipTag;
+  
+  const isBypassed = isAdmin || membershipTag === "OPERATOR HQ" || isPremium;
+  const isPromoTrial = isPromo && !isBypassed;
 
   const [viewMode, setViewMode] = React.useState<"admin" | "user">("admin");
   const [mounted, setMounted] = React.useState(false);

@@ -14,6 +14,8 @@ export default function CalendarPage() {
 
   const isPromo = (session?.user as any)?.isPromoActive;
   const isPremium = (session?.user as any)?.isPremiumActive;
+  const role = (session?.user as any)?.role;
+  const membershipTag = (session?.user as any)?.membershipTag;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -23,7 +25,9 @@ export default function CalendarPage() {
 
   if (status !== "authenticated") return null;
 
-  if (isPromo && !isPremium) {
+  const isBypassed = role === "admin" || membershipTag === "OPERATOR HQ" || isPremium;
+
+  if (isPromo && !isBypassed) {
     return <FeatureLockedOverlay featureName="Economic Calendar" />;
   }
 
