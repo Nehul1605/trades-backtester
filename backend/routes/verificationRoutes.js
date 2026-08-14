@@ -128,11 +128,45 @@ router.post("/submit", protect, async (req, res) => {
 router.get("/status", protect, async (req, res) => {
   try {
     const request = await VerificationRequest.findOne({ user: req.userId });
-    const user = await User.findById(req.userId).select("status role");
+    const user = await User.findById(req.userId).select(
+      "status role isPromoUser promoExpiresAt isPremiumUser premiumExpiresAt promoCode"
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const now = new Date();
+    const hasActivePremium = user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now;
+    const hasActivePromo = user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now;
+    const isBrokerVerified = request && request.status === "approved";
+
+    // Access is approved if premium, active promo, or approved broker verification exists
+    let calculatedStatus = "pending";
+    if (hasActivePremium || isBrokerVerified || hasActivePromo) {
+      calculatedStatus = "approved";
+    }
+
+    // Determine custom membership tag
+    let membershipTag = "FREE";
+    if (hasActivePremium) {
+      membershipTag = "PREMIUM";
+    } else if (isBrokerVerified) {
+      membershipTag = "OPERATOR HQ";
+    } else if (hasActivePromo) {
+      membershipTag = "PROMO TRIAL";
+    }
 
     res.json({
-      status: user ? user.status : "pending",
-      role: user ? user.role : "user",
+      status: calculatedStatus,
+      role: user.role,
+      isPromoActive: hasActivePromo,
+      isPremiumActive: hasActivePremium,
+      isBrokerVerified: !!isBrokerVerified,
+      membershipTag,
+      promoExpiresAt: user.promoExpiresAt,
+      premiumExpiresAt: user.premiumExpiresAt,
+      promoCode: user.promoCode,
       request,
     });
   } catch (error) {

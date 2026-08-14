@@ -1090,3 +1090,106 @@ export async function deleteOperatorTrade(id: string): Promise<{ error?: string 
     return { error: err.message || "Failed to delete trade call" };
   }
 }
+
+export async function applyPromoCode(code: string): Promise<{ error?: string; message?: string; user?: any }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/promo/apply`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to apply promo code" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to apply promo code" };
+  }
+}
+
+export async function createPaymentOrder(data: {
+  planType: "monthly" | "annual";
+  customerName: string;
+  customerPhone: string;
+}): Promise<{ error?: string; orderId?: string; amount?: number; currency?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/payments/create-order`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to create payment order" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to create payment order" };
+  }
+}
+
+export async function verifyPaymentSignature(data: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}): Promise<{ error?: string; status?: string; message?: string; premiumExpiresAt?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/payments/verify-signature`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to verify payment signature" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to verify payment signature" };
+  }
+}
+
+export async function getUserSubscriptions(): Promise<{
+  error?: string;
+  isPremium?: boolean;
+  premiumExpiresAt?: string;
+  isPromo?: boolean;
+  promoExpiresAt?: string;
+  membershipTag?: string;
+  transactions?: any[];
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/payments/subscriptions`, {
+      headers: {
+        ...authHeader,
+      },
+      cache: "no-store",
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to fetch subscription details" };
+    }
+    return result;
+  } catch (err: any) {
+    return { error: err.message || "Failed to fetch subscription details" };
+  }
+}
+

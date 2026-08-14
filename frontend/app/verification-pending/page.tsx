@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Building, Hash, Send, LogOut, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { getVerificationStatus, submitVerificationRequest } from "@/lib/actions";
+import { getVerificationStatus, submitVerificationRequest, applyPromoCode } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,6 +20,9 @@ export default function VerificationPendingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [statusData, setStatusData] = useState<any>(null);
+  const [mode, setMode] = useState<"broker" | "promo">("broker");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     broker: "",
@@ -84,6 +87,50 @@ export default function VerificationPendingPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePromoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCode.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Code Required",
+        description: "Please enter a valid promotional code.",
+      });
+      return;
+    }
+
+    setPromoLoading(true);
+    try {
+      const result = await applyPromoCode(promoCode);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      toast({
+        title: "Promo Code Applied",
+        description: result.message || "Your 10-day trial has been activated!",
+      });
+
+      // Update session to reflect the approved status
+      await updateSession({ 
+        status: "approved",
+        membershipTag: "PROMO TRIAL",
+        isPromoActive: true,
+        isPremiumActive: false
+      });
+      router.replace("/dashboard");
+      router.refresh();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Activation Failed",
+        description: error.message || "Failed to apply promotional code.",
+      });
+    } finally {
+      setPromoLoading(false);
     }
   };
 
@@ -303,78 +350,148 @@ export default function VerificationPendingPage() {
                     Activate Community Portal
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground pt-1">
-                    Submit your trading account details to unlock full access.
+                    Select your preferred activation method to unlock the site.
                   </CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSubmit}>
-                  <CardContent className="space-y-4 py-4">
-                    <div className="space-y-1">
-                      <Label htmlFor="broker" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Broker Name
-                      </Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
-                        <Input
-                          id="broker"
-                          placeholder="e.g. Exness, IC Markets"
-                          value={formData.broker}
-                          onChange={(e) => setFormData({ ...formData, broker: e.target.value })}
-                          className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="tradingAccountNumber" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        MT5/MT4 Trading Account Number
-                      </Label>
-                      <div className="relative">
-                        <Hash className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
-                        <Input
-                          id="tradingAccountNumber"
-                          placeholder="e.g. 5092304"
-                          value={formData.tradingAccountNumber}
-                          onChange={(e) => setFormData({ ...formData, tradingAccountNumber: e.target.value })}
-                          className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label htmlFor="telegramUsername" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Telegram Username
-                      </Label>
-                      <div className="relative">
-                        <Send className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
-                        <Input
-                          id="telegramUsername"
-                          placeholder="e.g. @tradetracker_user"
-                          value={formData.telegramUsername}
-                          onChange={(e) => setFormData({ ...formData, telegramUsername: e.target.value })}
-                          className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
-                    <Button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full bg-gold-gradient text-background font-bold text-xs uppercase"
-                    >
-                      {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />}
-                      Request Verification
-                    </Button>
-                    <Button
+                  {/* Activation Mode Selector */}
+                  <div className="grid grid-cols-2 gap-2 mt-4 p-1 bg-neutral-950/70 rounded-xl border border-border/20">
+                    <button
                       type="button"
-                      variant="ghost"
-                      onClick={() => signOut({ callbackUrl: "/auth/login" })}
-                      className="w-full hover:bg-destructive/10 hover:text-destructive font-bold text-xs uppercase transition-all"
+                      onClick={() => setMode("broker")}
+                      className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
+                        mode === "broker"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
+                      }`}
                     >
-                      <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                    </Button>
-                  </CardFooter>
-                </form>
+                      Partner Broker (Free)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode("promo")}
+                      className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
+                        mode === "promo"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
+                      }`}
+                    >
+                      Promo Code Trial
+                    </button>
+                  </div>
+                </CardHeader>
+
+                {mode === "broker" ? (
+                  <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-4 py-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="broker" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Broker Name
+                        </Label>
+                        <div className="relative">
+                          <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                          <Input
+                            id="broker"
+                            placeholder="e.g. Exness, IC Markets"
+                            value={formData.broker}
+                            onChange={(e) => setFormData({ ...formData, broker: e.target.value })}
+                            className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="tradingAccountNumber" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          MT5/MT4 Trading Account Number
+                        </Label>
+                        <div className="relative">
+                          <Hash className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                          <Input
+                            id="tradingAccountNumber"
+                            placeholder="e.g. 5092304"
+                            value={formData.tradingAccountNumber}
+                            onChange={(e) => setFormData({ ...formData, tradingAccountNumber: e.target.value })}
+                            className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="telegramUsername" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Telegram Username
+                        </Label>
+                        <div className="relative">
+                          <Send className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                          <Input
+                            id="telegramUsername"
+                            placeholder="e.g. @tradetracker_user"
+                            value={formData.telegramUsername}
+                            onChange={(e) => setFormData({ ...formData, telegramUsername: e.target.value })}
+                            className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
+                      <Button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full bg-gold-gradient text-background font-bold text-xs uppercase"
+                      >
+                        {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />}
+                        Request Verification
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                        className="w-full hover:bg-destructive/10 hover:text-destructive font-bold text-xs uppercase transition-all"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                      </Button>
+                    </CardFooter>
+                  </form>
+                ) : (
+                  <form onSubmit={handlePromoSubmit}>
+                    <CardContent className="space-y-4 py-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="promoCode" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Promotional Code
+                        </Label>
+                        <div className="relative">
+                          <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                          <Input
+                            id="promoCode"
+                            placeholder=""
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value)}
+                            className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg uppercase"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Enter the promo code mentioned in our YouTube videos to unlock a 10-day trial of the core trading journal console and stats features.
+                      </p>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
+                      <Button
+                        type="submit"
+                        disabled={promoLoading}
+                        className="w-full bg-gold-gradient text-background font-bold text-xs uppercase"
+                      >
+                        {promoLoading && <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />}
+                        Activate 10-Day Trial
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                        className="w-full hover:bg-destructive/10 hover:text-destructive font-bold text-xs uppercase transition-all"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                      </Button>
+                    </CardFooter>
+                  </form>
+                )}
               </Card>
             </motion.div>
           )}

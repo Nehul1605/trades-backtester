@@ -6,10 +6,14 @@ import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, Clock, Sparkles, Bell, ShieldAlert, Zap, Globe, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FeatureLockedOverlay } from "@/components/dashboard/feature-locked-overlay";
 
 export default function CalendarPage() {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+
+  const isPromo = (session?.user as any)?.isPromoActive;
+  const isPremium = (session?.user as any)?.isPremiumActive;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -18,6 +22,10 @@ export default function CalendarPage() {
   }, [status, router]);
 
   if (status !== "authenticated") return null;
+
+  if (isPromo && !isPremium) {
+    return <FeatureLockedOverlay featureName="Economic Calendar" />;
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto select-none">

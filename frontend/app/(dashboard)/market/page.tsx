@@ -23,8 +23,18 @@ import { CreateSessionModal } from "@/components/live-market/CreateSessionModal"
 import { LiveMeetingWrapper } from "@/components/live-market/LiveMeetingWrapper";
 import { useLiveMeeting } from "@/components/live-market/LiveMeetingProvider";
 import { LiveKitRoom } from "@livekit/components-react";
+import { useSession } from "next-auth/react";
+import { FeatureLockedOverlay } from "@/components/dashboard/feature-locked-overlay";
 
 export default function LiveMarketPage() {
+  const { data: session } = useSession();
+  const isPromo = (session?.user as any)?.isPromoActive;
+  const isPremium = (session?.user as any)?.isPremiumActive;
+  
+  if (isPromo && !isPremium) {
+    return <FeatureLockedOverlay featureName="Live Market Stream" />;
+  }
+
   const {
     sessions,
     activeSession,
