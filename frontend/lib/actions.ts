@@ -1117,6 +1117,7 @@ export async function createPaymentOrder(data: {
   planType: "monthly" | "annual";
   customerName: string;
   customerPhone: string;
+  currency?: "INR" | "USD";
 }): Promise<{ error?: string; orderId?: string; amount?: number; currency?: string }> {
   try {
     const authHeader = await getAuthHeader();

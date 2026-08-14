@@ -69,7 +69,7 @@ router.get("/exchange-rate", protect, async (req, res) => {
 // @route   POST /api/payments/create-order
 // @access  Private
 router.post("/create-order", protect, async (req, res) => {
-  const { planType, customerPhone, customerName } = req.body;
+  const { planType, customerPhone, customerName, currency = "INR" } = req.body;
 
   if (!planType || !customerPhone || !customerName) {
     return res.status(400).json({ error: "Please provide planType, name, and phone" });
@@ -81,18 +81,27 @@ router.post("/create-order", protect, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const conversionRate = await getLiveExchangeRate();
     const baseUsdAmount = planType === "annual" ? 108 : 10;
-    const amountInPaise = Math.round(baseUsdAmount * conversionRate * 100);
+    let amountInPaise = 0;
+
+    if (currency === "USD") {
+      // Direct USD calculation: base amount * 1.18 * 100 (in cents)
+      amountInPaise = Math.round(baseUsdAmount * 1.18 * 100);
+    } else {
+      // INR calculation: base amount * conversion rate * 1.18 * 100 (in paise)
+      const conversionRate = await getLiveExchangeRate();
+      const baseAmountPaise = Math.round(baseUsdAmount * conversionRate * 100);
+      amountInPaise = Math.round(baseAmountPaise * 1.18);
+    }
 
     const rzp = getRazorpayInstance();
     const receiptId = `receipt_${req.userId}_${Date.now()}`;
 
-    console.log(`[Razorpay] Creating Order: ${receiptId}, amount in paise: ${amountInPaise}`);
+    console.log(`[Razorpay] Creating Order (${currency}): ${receiptId}, amount: ${amountInPaise}`);
 
     const options = {
       amount: amountInPaise,
-      currency: "INR",
+      currency: currency === "USD" ? "USD" : "INR",
       receipt: receiptId,
     };
 
@@ -102,7 +111,8 @@ router.post("/create-order", protect, async (req, res) => {
     await Transaction.create({
       user: req.userId,
       orderId: order.id,
-      amount: amountInPaise / 100, // store in standard INR
+      amount: amountInPaise / 100, // store in standard unit (USD dollars or INR rupees)
+      currency: currency === "USD" ? "USD" : "INR",
       planType,
       status: "PENDING",
     });
@@ -177,45 +187,75 @@ router.post("/verify-signature", protect, async (req, res) => {
     // Send confirmation email
     if (targetUser && targetUser.email) {
       try {
+        const totalAmount = transaction.amount;
+        const subtotalAmount = Math.round((totalAmount / 1.18) * 100) / 100;
+        const gstAmount = Math.round((totalAmount - subtotalAmount) * 100) / 100;
+
+        const symbol = transaction.currency === "USD" ? "$" : "₹";
+        const locale = transaction.currency === "USD" ? "en-US" : "en-IN";
+
+        const totalString = `${symbol}${totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const subtotalString = `${symbol}${subtotalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const gstString = `${symbol}${gstAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const planName = transaction.planType === "annual" ? "Annual Premium Plan" : "Monthly Premium Plan";
+
         await sendEmail({
           to: targetUser.email,
-          subject: "👑 Welcome to TradeTracker Pro Premium!",
-          text: `Hi ${targetUser.name || "there"},\n\nThank you for upgrading to TradeTracker Pro Premium! Your payment was verified successfully.\n\nYour account has been upgraded, and your subscription is active until ${premiumExpiresAt.toLocaleDateString()}.\n\nAccess Dashboard: ${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard\n\nBest regards,\nThe TradeTracker Pro Team`,
+          subject: `👑 TradeTracker Pro Subscription Confirmed - ${transaction.planType === "annual" ? "Annual" : "Monthly"}`,
+          text: `Hi ${targetUser.name || "there"},\n\nThank you for upgrading to TradeTracker Pro Premium! Your payment was verified successfully.\n\nPlan: ${planName}\nTotal Paid: ${totalString} (Subtotal: ${subtotalString}, GST 18%: ${gstString})\nActive until: ${premiumExpiresAt.toLocaleDateString()}\n\nAccess Dashboard: ${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard\n\nBest regards,\nThe TradeTracker Pro Team`,
           html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; padding: 30px 15px; color: #1e293b; line-height: 1.6;">
-              <div style="max-width: 550px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
-                <!-- Header Banner -->
-                <div style="background-color: #09090b; padding: 24px; text-align: center; border-bottom: 3px solid #c5a880;">
-                  <span style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1.5px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">TRADETRACKER PRO</span>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #070708; padding: 40px 15px; color: #f2f2f7; line-height: 1.6;">
+              <div style="max-width: 550px; margin: 0 auto; background-color: #0d0d0f; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); border: 1px solid #1f1f24;">
+                
+                <!-- Logo Header -->
+                <div style="background-color: #0d0d0f; padding: 30px; text-align: center; border-bottom: 1px solid #1f1f24;">
+                  <h1 style="margin: 0; color: #c5a880; font-size: 22px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;">TRADETRACKER PRO</h1>
+                  <span style="font-size: 10px; color: #9a9a9f; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; display: block; margin-top: 5px;">Payment Receipt</span>
                 </div>
                 
-                <!-- Body Content -->
-                <div style="padding: 30px;">
-                  <div style="text-align: center; margin-bottom: 24px;">
-                    <div style="display: inline-block; background-color: #fef3c7; border-radius: 50%; padding: 12px; margin-bottom: 16px;">
-                      <span style="font-size: 32px;">👑</span>
-                    </div>
-                    <h2 style="color: #ca8a04; margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Premium Unlocked!</h2>
-                  </div>
-                  
-                  <p style="font-size: 15px; margin-top: 0;">Hi <strong>${targetUser.name || "Trader"}</strong>,</p>
-                  <p style="font-size: 14.5px; color: #475569;">Thank you for subscribing to <strong>TradeTracker Pro Premium</strong>! Your payment has been successfully processed, and your account has been upgraded.</p>
-                  
-                  <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin: 24px 0; border: 1px solid #f1f5f9; text-align: center;">
-                    <span style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Subscription Expiry Date</span>
-                    <strong style="font-size: 18px; color: #0f172a;">${premiumExpiresAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                  </div>
-
-                  <p style="font-size: 14.5px; color: #475569;">You now have permanent access to all platform features, charts, economic calendars, and partner broker syncs.</p>
-
-                  <div style="text-align: center; margin: 30px 0 10px 0;">
-                    <a href="${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard" style="background-color: #09090b; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Enter Premium Dashboard</a>
-                  </div>
+                <!-- Congratulations Message -->
+                <div style="padding: 30px; text-align: center; border-bottom: 1px solid #1f1f24;">
+                  <div style="background-color: #c5a880; color: #070708; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; line-height: 50px; text-align: center; margin: 0 auto 15px auto;">👑</div>
+                  <h2 style="color: #c5a880; font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0 0 10px 0;">Premium Unlocked!</h2>
+                  <p style="font-size: 13px; color: #9a9a9f; margin: 0;">Hi <strong>${targetUser.name || "Trader"}</strong>, thank you for subscribing to Premium. Your membership details are listed below.</p>
                 </div>
-                
+
+                <!-- Receipt Details Breakdown -->
+                <div style="padding: 30px; border-bottom: 1px solid #1f1f24;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #f2f2f7;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #9a9a9f;">Subscribed Plan:</td>
+                      <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #c5a880;">${planName}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #9a9a9f;">Base Price:</td>
+                      <td style="padding: 8px 0; text-align: right;">${subtotalString}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #9a9a9f;">GST (18%):</td>
+                      <td style="padding: 8px 0; text-align: right;">${gstString}</td>
+                    </tr>
+                    <tr style="border-top: 1px dashed #1f1f24;">
+                      <td style="padding: 12px 0 8px 0; font-weight: bold; color: #ffffff;">Total Charged:</td>
+                      <td style="padding: 12px 0 8px 0; text-align: right; font-weight: bold; color: #c5a880; font-size: 16px;">${totalString}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <!-- Date Box -->
+                <div style="padding: 20px 30px; background-color: #161619; text-align: center; border-bottom: 1px solid #1f1f24;">
+                  <span style="font-size: 11px; color: #9a9a9f; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Membership Valid Until</span>
+                  <strong style="font-size: 16px; color: #ffffff;">${premiumExpiresAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="padding: 35px 30px; text-align: center;">
+                  <a href="${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard" style="background-color: #c5a880; color: #070708; padding: 14px 30px; font-size: 12.5px; font-weight: bold; text-decoration: none; border-radius: 10px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 10px 20px -5px rgba(197, 168, 128, 0.3);">Enter Premium Dashboard</a>
+                </div>
+
                 <!-- Footer -->
-                <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11.5px; color: #94a3b8;">
-                  This is an automated receipt confirmation for your subscription order. For billing queries, reach out to <a href="mailto:support@tradetrackerpro.in" style="color: #ca8a04; text-decoration: underline;">support@tradetrackerpro.in</a>.
+                <div style="background-color: #161619; padding: 20px; text-align: center; font-size: 11px; color: #9a9a9f; border-top: 1px solid #1f1f24;">
+                  This is a system-generated invoice receipt. For billing support, email <a href="mailto:support@tradetrackerpro.in" style="color: #c5a880; text-decoration: none; font-weight: bold;">support@tradetrackerpro.in</a>.
                 </div>
               </div>
             </div>

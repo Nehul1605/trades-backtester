@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, 
@@ -46,6 +47,9 @@ export default function PremiumCheckoutPage() {
   const [sdkReady, setSdkReady] = useState(false);
   const [showTransitionLoader, setShowTransitionLoader] = useState(false);
   const [rates, setRates] = useState<{ rate: number; monthlyInr: number; annualInr: number } | null>(null);
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [showMt5Announcement, setShowMt5Announcement] = useState(false);
 
   useEffect(() => {
     const fetchRates = async () => {
@@ -70,14 +74,10 @@ export default function PremiumCheckoutPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      toast({
-        title: "🔥 Feature Announcement",
-        description: "Bring the feature of MT5 Account Sync Real-Time!",
-        duration: 5000,
-      });
+      setShowMt5Announcement(true);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [toast]);
+  }, []);
 
   const handleSdkLoad = () => {
     setSdkReady(true);
@@ -113,6 +113,7 @@ export default function PremiumCheckoutPage() {
         planType: plan,
         customerName: name,
         customerPhone: phone,
+        currency: currency,
       });
 
       if (res.error) {
@@ -235,10 +236,20 @@ export default function PremiumCheckoutPage() {
   const discountPercent = plan === "annual" ? 40 : 33;
   const couponCode = plan === "annual" ? "LAUNCH40" : "LAUNCH33";
 
-  // Calculate dynamic INR amount display using fetched rates
-  const inrAmount = plan === "annual"
-    ? `₹${(rates?.annualInr || 10314).toLocaleString("en-IN")}`
-    : `₹${(rates?.monthlyInr || 955).toLocaleString("en-IN")}`;
+  // Calculate dynamic INR/USD amount display using fetched rates and 18% GST
+  const isUsd = currency === "USD";
+  const subtotalVal = isUsd
+    ? launchPrice
+    : (plan === "annual" ? (rates?.annualInr || 10314) : (rates?.monthlyInr || 955));
+  const gstVal = parseFloat((subtotalVal * 0.18).toFixed(2));
+  const totalVal = parseFloat((subtotalVal + gstVal).toFixed(2));
+
+  const currencySymbol = isUsd ? "$" : "₹";
+  const locale = isUsd ? "en-US" : "en-IN";
+
+  const subtotalString = `${currencySymbol}${subtotalVal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const gstString = `${currencySymbol}${gstVal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalString = `${currencySymbol}${totalVal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (showTransitionLoader) {
     return (
@@ -390,20 +401,59 @@ export default function PremiumCheckoutPage() {
             <Card className="bg-card/40 border-primary/20 backdrop-blur-xl relative overflow-hidden shadow-2xl gold-glow-subtle">
               <div className="absolute top-0 left-0 w-full h-[2px] bg-gold-gradient" />
               
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-black uppercase tracking-wider text-foreground">
-                  Order Checkout
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Fill in your details and pay securely via Razorpay Standard Checkout
-                </CardDescription>
+              <CardHeader className="pb-4 flex flex-row items-center justify-between space-y-0">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg font-black uppercase tracking-wider text-foreground">
+                    Order Checkout
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Fill in your details and pay securely via Razorpay
+                  </CardDescription>
+                </div>
+                
+                {/* Custom Currency Selector Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-neutral-950 border border-border/30 hover:border-primary/40 rounded-xl text-xs font-bold uppercase cursor-pointer select-none transition-all text-foreground"
+                  >
+                    <span>Pay in {currency}</span>
+                    <span className="text-[10px] text-muted-foreground">▼</span>
+                  </button>
+                  
+                  {isCurrencyOpen && (
+                    <div className="absolute right-0 mt-1.5 w-28 bg-neutral-950 border border-border/30 rounded-xl overflow-hidden shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrency("INR");
+                          setIsCurrencyOpen(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold uppercase text-foreground hover:bg-primary/10 flex items-center gap-2 cursor-pointer border-b border-border/10"
+                      >
+                        <span>🇮🇳</span> INR
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrency("USD");
+                          setIsCurrencyOpen(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold uppercase text-foreground hover:bg-primary/10 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>🇺🇸</span> USD
+                      </button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 {/* Billing Summary Box */}
                 <div className="bg-neutral-900/60 rounded-xl p-4 border border-border/30 space-y-3">
                   <div className="flex justify-between text-xs font-bold border-b border-border/20 pb-2">
-                    <span className="text-muted-foreground uppercase">Subtotal ({plan})</span>
+                    <span className="text-muted-foreground uppercase">Base USD Price ({plan})</span>
                     <span className="text-muted-foreground line-through">${originalPrice}.00</span>
                   </div>
 
@@ -414,11 +464,25 @@ export default function PremiumCheckoutPage() {
                     <span>{couponCode} (-{discountPercent}%)</span>
                   </div>
 
-                  <div className="flex justify-between text-sm font-black pt-2">
-                    <span className="text-foreground uppercase">Order Total</span>
+                  {/* GST Breakdown Section */}
+                  <div className="space-y-1.5 border-t border-border/20 pt-2 text-xs">
+                    <div className="flex justify-between font-medium text-muted-foreground">
+                      <span>Subtotal (Base {currency})</span>
+                      <span>{subtotalString}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-muted-foreground">
+                      <span>GST (18%)</span>
+                      <span>{gstString}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-sm font-black pt-2 border-t border-border/20">
+                    <span className="text-foreground uppercase">Total Pay</span>
                     <div className="text-right">
-                      <span className="text-primary text-base">${launchPrice}.00</span>
-                      <span className="block text-[10px] text-muted-foreground font-medium mt-0.5">Approx. {inrAmount} INR</span>
+                      <span className="text-primary text-base">{totalString}</span>
+                      <span className="block text-[10px] text-muted-foreground font-medium mt-0.5">
+                        {isUsd ? `Approx. ${totalString}` : `Approx. $${launchPrice}.00 USD + GST`}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -499,6 +563,60 @@ export default function PremiumCheckoutPage() {
           </form>
         </div>
       </div>
+
+      {/* MT5 Coming Soon Premium Dialog */}
+      <Dialog open={showMt5Announcement} onOpenChange={setShowMt5Announcement}>
+        <DialogContent className="bg-neutral-950 border border-primary/30 text-foreground max-w-md rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+          {/* Spotlight aura */}
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <DialogHeader className="space-y-3 text-center">
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary mb-1 animate-pulse">
+              <Sparkles className="w-6 h-6 text-primary" />
+            </div>
+            
+            <DialogTitle className="text-xl font-black uppercase tracking-tight italic">
+              ⚡ Coming Soon: <span className="text-primary not-italic font-black">MT5 Sync</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground uppercase font-black tracking-widest">
+              Automated Real-Time Trading Journal
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 text-xs leading-relaxed text-muted-foreground">
+            <p className="text-center text-foreground font-medium">
+              We are excited to announce that live real-time Metatrader 5 sync is officially in active development!
+            </p>
+            
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-3 bg-neutral-900/50 p-3 rounded-xl border border-border/10">
+                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5 animate-pulse" />
+                <div>
+                  <strong className="text-foreground uppercase text-[10px] tracking-wider block text-left">Zero Manual Entries</strong>
+                  <span className="text-left block text-[11px]">Your trades will automatically sync directly from your broker to the journal.</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-neutral-900/50 p-3 rounded-xl border border-border/10">
+                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5 animate-pulse" />
+                <div>
+                  <strong className="text-foreground uppercase text-[10px] tracking-wider block text-left">Instant Statistics Sync</strong>
+                  <span className="text-left block text-[11px]">P&L, winrate, and strategy metrics will recalculate instantly as you close trades.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button
+              onClick={() => setShowMt5Announcement(false)}
+              className="w-full h-11 bg-gold-gradient text-background font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-primary/10 cursor-pointer"
+            >
+              Get Notified on Launch
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

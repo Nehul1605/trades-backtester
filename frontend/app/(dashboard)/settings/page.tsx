@@ -80,6 +80,138 @@ export default function SettingsPage() {
   const [subData, setSubData] = useState<any>(null);
   const [fetchingSub, setFetchingSub] = useState(false);
 
+  const downloadInvoicePDF = (tx: any, user: any) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Blocker Active",
+        description: "Please allow pop-ups to download the invoice PDF.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const date = new Date(tx.createdAt).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const expiresAt = tx.createdAt ? new Date(new Date(tx.createdAt).getTime() + (tx.planType === "annual" ? 365 : 30) * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }) : "N/A";
+    
+    // Calculate dynamic subtotal, GST, and Total from transaction amount (which is total pay)
+    const total = tx.amount;
+    const subtotal = Math.round((total / 1.18) * 100) / 100;
+    const gst = Math.round((total - subtotal) * 100) / 100;
+    
+    const symbol = tx.currency === "USD" ? "$" : "₹";
+    const locale = tx.currency === "USD" ? "en-US" : "en-IN";
+
+    const subtotalString = `${symbol}${subtotal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const gstString = `${symbol}${gst.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const totalString = `${symbol}${total.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice - ${tx.orderId}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 0; }
+              @page { size: auto; margin: 0; }
+            }
+            body {
+              background-color: #ffffff;
+            }
+          </style>
+        </head>
+        <body onload="window.print(); setTimeout(() => { window.close(); }, 500);">
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 50px; color: #1e293b; max-width: 800px; margin: auto; line-height: 1.5;">
+            <!-- Header section -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ca8a04; padding-bottom: 20px; margin-bottom: 30px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="${window.location.origin}/logo.png" style="height: 38px; width: auto; object-fit: contain;" onerror="this.style.display='none';" alt="TradeTracker Pro Logo">
+                <div>
+                  <h1 style="margin: 0; color: #ca8a04; font-size: 20px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">TRADETRACKER PRO</h1>
+                  <p style="margin: 3px 0 0 0; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Official Subscription Receipt</p>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <h2 style="margin: 0; font-size: 18px; color: #0f172a; font-weight: 800;">TAX INVOICE</h2>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">Date: ${date}</p>
+              </div>
+            </div>
+
+            <!-- Billing details -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; font-size: 13px;">
+              <div>
+                <h3 style="color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px;">Billed To:</h3>
+                <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">${user?.name || "Premium Subscriber"}</p>
+                <p style="margin: 3px 0 0 0; color: #475569;">Email: ${user?.email}</p>
+              </div>
+              <div style="text-align: right;">
+                <h3 style="color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px;">Transaction details:</h3>
+                <p style="margin: 0; color: #334155;"><strong>Order ID:</strong> ${tx.orderId}</p>
+                <p style="margin: 3px 0 0 0; color: #334155;"><strong>Payment ID:</strong> ${tx.razorpayPaymentId || "N/A"}</p>
+                <p style="margin: 3px 0 0 0; color: #334155;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: bold;">PAID</span></p>
+              </div>
+            </div>
+
+            <!-- Invoice Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px;">
+              <thead>
+                <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0; font-weight: bold; text-align: left; color: #334155;">
+                  <th style="padding: 12px; font-weight: 800;">Description</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 800;">Qty</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 800;">Rate</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 800;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #e2e8f0; color: #334155;">
+                  <td style="padding: 12px;">
+                    <strong style="color: #0f172a;">TradeTracker Pro Premium Access - ${tx.planType === "annual" ? "Annual" : "Monthly"} Plan</strong><br>
+                    <span style="font-size: 11px; color: #64748b;">Full permanent access to live market charts, signals, calendar, and calculators. Valid until ${expiresAt}</span>
+                  </td>
+                  <td style="padding: 12px; text-align: right;">1</td>
+                  <td style="padding: 12px; text-align: right;">${subtotalString}</td>
+                  <td style="padding: 12px; text-align: right;">${subtotalString}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Subtotal & GST section -->
+            <div style="display: flex; justify-content: flex-end; font-size: 13px;">
+              <table style="width: 260px; border-collapse: collapse; color: #334155;">
+                <tr>
+                  <td style="padding: 6px 0; border-bottom: 1px solid #f1f5f9;">Subtotal (Base Price):</td>
+                  <td style="padding: 6px 0; text-align: right; border-bottom: 1px solid #f1f5f9;">${subtotalString}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; border-bottom: 1px solid #f1f5f9;">GST (18%):</td>
+                  <td style="padding: 6px 0; text-align: right; border-bottom: 1px solid #f1f5f9;">${gstString}</td>
+                </tr>
+                <tr style="font-weight: 800; font-size: 15px; color: #ca8a04;">
+                  <td style="padding: 10px 0;">Total Paid (Incl. GST):</td>
+                  <td style="padding: 10px 0; text-align: right;">${totalString}</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Footer terms -->
+            <div style="margin-top: 100px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center; font-size: 11px; color: #64748b;">
+              This is a system-generated invoice receipts copy under our subscription portal. For any invoice revisions, please reach out to <a href="mailto:support@tradetrackerpro.in" style="color: #ca8a04; text-decoration: none; font-weight: bold;">support@tradetrackerpro.in</a>.
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   useEffect(() => {
     if (activeTab === "subscription") {
       const getDetails = async () => {
@@ -603,6 +735,7 @@ export default function SettingsPage() {
                                 <th className="p-4">Plan</th>
                                 <th className="p-4 text-right">Amount</th>
                                 <th className="p-4 text-center">Status</th>
+                                <th className="p-4 text-center">Action</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border/20">
@@ -617,7 +750,13 @@ export default function SettingsPage() {
                                   </td>
                                   <td className="p-4 font-mono select-all text-xs opacity-75">{tx.orderId}</td>
                                   <td className="p-4 uppercase font-bold text-[10px]">{tx.planType}</td>
-                                  <td className="p-4 text-right font-bold text-foreground">₹{tx.amount?.toLocaleString()}</td>
+                                  <td className="p-4 text-right font-bold text-foreground">
+                                    {tx.currency === "USD" ? "$" : "₹"}
+                                    {tx.amount?.toLocaleString(tx.currency === "USD" ? "en-US" : "en-IN", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </td>
                                   <td className="p-4 text-center">
                                     <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                                       tx.status === "PAID"
@@ -628,6 +767,21 @@ export default function SettingsPage() {
                                     }`}>
                                       {tx.status}
                                     </span>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    {tx.status === "PAID" ? (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => downloadInvoicePDF(tx, session?.user)}
+                                        className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/20 hover:border-primary/50 cursor-pointer rounded-lg px-2.5 transition-all"
+                                      >
+                                        Invoice
+                                      </Button>
+                                    ) : (
+                                      <span className="text-[10px] text-muted-foreground font-semibold uppercase opacity-40">—</span>
+                                    )}
                                   </td>
                                 </tr>
                               ))}
