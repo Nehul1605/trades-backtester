@@ -14,12 +14,18 @@ import liveSessionRoutes from "./routes/liveSessionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import calculatorRoutes from "./routes/calculatorRoutes.js";
 import operatorRoutes from "./routes/operatorRoutes.js";
+import promoRoutes from "./routes/promoRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import { startTrialCheckScheduler } from "./utils/trialScheduler.js";
 
 // Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
+
+// Start trial expiry background scheduler
+startTrialCheckScheduler();
 
 const app = express();
 
@@ -72,6 +78,8 @@ app.use("/api/live-sessions", liveSessionRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/calculator", calculatorRoutes);
 app.use("/api/operator-trades", operatorRoutes);
+app.use("/api/promo", promoRoutes);
+app.use("/api/payments", paymentRoutes);
 
 
 // UptimeRobot Keep-Alive & Health Endpoint

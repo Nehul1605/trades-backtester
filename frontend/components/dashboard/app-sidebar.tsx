@@ -21,6 +21,7 @@ import {
   Percent,
   Scale,
   Award,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -64,6 +65,9 @@ export function AppSidebar() {
   };
 
   const isAdmin = (session?.user as any)?.role === "admin";
+  const isPromo = (session?.user as any)?.isPromoActive;
+  const isPremium = (session?.user as any)?.isPremiumActive;
+  const isPromoTrial = isPromo && !isPremium;
 
   const [viewMode, setViewMode] = React.useState<"admin" | "user">("admin");
   const [mounted, setMounted] = React.useState(false);
@@ -172,9 +176,9 @@ export function AppSidebar() {
                 </span>
                 <Badge
                   variant="secondary"
-                  className="text-[9px] h-3.5 px-1 leading-none bg-primary/10 text-primary border-none font-bold uppercase"
+                  className="text-[9px] h-3.5 px-1 leading-none bg-primary/10 text-primary border-none font-bold uppercase shrink-0"
                 >
-                  {isAdmin ? "Admin" : "FREE"}
+                  {isAdmin ? "Admin" : (session?.user as any)?.membershipTag || "FREE"}
                 </Badge>
               </div>
               <span className="text-[10px] text-muted-foreground truncate opacity-70">
@@ -232,17 +236,21 @@ export function AppSidebar() {
                           <span className="group-data-[collapsible=icon]:hidden text-[13px] tracking-tight">
                             {item.title}
                           </span>
-                          {item.badge && (
-                            <Badge
-                              className={cn(
-                                "ml-auto text-[9px] h-4 px-1 group-data-[collapsible=icon]:hidden font-black",
-                                item.badge === "PRO"
-                                  ? "bg-primary-foreground text-primary"
-                                  : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {item.badge}
-                            </Badge>
+                          {isPromoTrial && ["/market", "/operator-hq", "/calendar", "/position-calculator"].includes(item.url) ? (
+                            <Lock className="ml-auto h-3.5 w-3.5 text-amber-500/80 shrink-0 group-data-[collapsible=icon]:hidden animate-pulse" />
+                          ) : (
+                            item.badge && (
+                              <Badge
+                                className={cn(
+                                  "ml-auto text-[9px] h-4 px-1 group-data-[collapsible=icon]:hidden font-black",
+                                  item.badge === "PRO"
+                                    ? "bg-primary-foreground text-primary"
+                                    : "bg-muted text-muted-foreground",
+                                )}
+                              >
+                                {item.badge}
+                              </Badge>
+                            )
                           )}
                         </Link>
                       </SidebarMenuButton>

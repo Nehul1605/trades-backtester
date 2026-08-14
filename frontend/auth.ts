@@ -115,8 +115,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = session.role ?? token.role;
         if (session.name) token.name = session.name;
         if (session.image !== undefined) token.picture = session.image;
+        if (session.membershipTag) token.membershipTag = session.membershipTag;
+        if (session.isPromoActive !== undefined) token.isPromoActive = session.isPromoActive;
+        if (session.isPremiumActive !== undefined) token.isPremiumActive = session.isPremiumActive;
       }
-      if (token.status !== "approved" && token.accessToken) {
+      if (token.accessToken) {
         try {
           const res = await fetch(`${BACKEND_URL}/api/verification/status`, {
             headers: {
@@ -132,6 +135,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (data.role) {
               token.role = data.role;
             }
+            token.isPromoActive = !!data.isPromoActive;
+            token.isPremiumActive = !!data.isPremiumActive;
+            token.membershipTag = data.membershipTag || "FREE";
           }
         } catch (error) {
           console.error("JWT live status check error:", error);
@@ -145,6 +151,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).accessToken = token.accessToken as string;
         (session.user as any).status = token.status as string;
         (session.user as any).role = token.role as string;
+        (session.user as any).isPromoActive = token.isPromoActive as boolean;
+        (session.user as any).isPremiumActive = token.isPremiumActive as boolean;
+        (session.user as any).membershipTag = token.membershipTag as string;
         if (token.name) session.user.name = token.name as string;
         if (token.picture !== undefined) session.user.image = token.picture as string;
       }

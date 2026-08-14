@@ -64,6 +64,7 @@ export function AccountsDashboard({ userId }: AccountsDashboardProps) {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [topUpLoadingId, setTopUpLoadingId] = useState<string | null>(null);

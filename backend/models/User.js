@@ -41,6 +41,38 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isPromoUser: {
+      type: Boolean,
+      default: false,
+    },
+    promoCode: {
+      type: String,
+      default: "",
+    },
+    promoActivatedAt: {
+      type: Date,
+      default: null,
+    },
+    promoExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    trialWarningEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+    trialEndedEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+    isPremiumUser: {
+      type: Boolean,
+      default: false,
+    },
+    premiumExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
