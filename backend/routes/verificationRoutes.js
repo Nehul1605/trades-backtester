@@ -137,19 +137,22 @@ router.get("/status", protect, async (req, res) => {
     }
 
     const now = new Date();
+    const isAdmin = user.role === "admin";
     const hasActivePremium = user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now;
     const hasActivePromo = user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now;
     const isBrokerVerified = request && request.status === "approved";
 
-    // Access is approved if premium, active promo, or approved broker verification exists
+    // Access is approved if premium, active promo, approved broker verification, or admin exists
     let calculatedStatus = "pending";
-    if (hasActivePremium || isBrokerVerified || hasActivePromo) {
+    if (hasActivePremium || isBrokerVerified || hasActivePromo || isAdmin) {
       calculatedStatus = "approved";
     }
 
     // Determine custom membership tag
     let membershipTag = "FREE";
-    if (hasActivePremium) {
+    if (isAdmin) {
+      membershipTag = "ADMIN";
+    } else if (hasActivePremium) {
       membershipTag = "PREMIUM";
     } else if (isBrokerVerified) {
       membershipTag = "OPERATOR HQ";

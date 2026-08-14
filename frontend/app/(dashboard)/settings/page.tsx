@@ -658,6 +658,10 @@ export default function SettingsPage() {
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
                             subData?.membershipTag === "PREMIUM" 
                               ? "bg-primary/20 text-primary border border-primary/30" 
+                              : subData?.membershipTag === "ADMIN"
+                              ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
+                              : subData?.membershipTag === "OPERATOR HQ"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                               : subData?.membershipTag === "PROMO TRIAL"
                               ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse"
                               : "bg-muted text-muted-foreground"
@@ -668,6 +672,10 @@ export default function SettingsPage() {
                         <p className="text-xs text-muted-foreground">
                           {subData?.membershipTag === "PREMIUM" 
                             ? "Thank you for supporting TradeTracker Pro! You have unlimited access to all platform resources."
+                            : subData?.membershipTag === "ADMIN"
+                            ? "This is an Admin account with full unrestricted platform access. No renewal/expiry deadlines apply."
+                            : subData?.membershipTag === "OPERATOR HQ"
+                            ? "Your account is verified under Lala Operator. You have permanent lifetime access to all platform resources!"
                             : subData?.membershipTag === "PROMO TRIAL"
                             ? "You are currently exploring the platform using a temporary promotional trial code."
                             : "Upgrade to unlock Live Market charts, economic calendars, and partner broker connections."}
@@ -681,6 +689,22 @@ export default function SettingsPage() {
                                 month: "long",
                                 day: "numeric",
                               })}
+                            </span>
+                          </div>
+                        )}
+                        {subData?.membershipTag === "ADMIN" && (
+                          <div className="text-xs text-amber-400 font-semibold flex items-center gap-1.5 pt-1">
+                            <Shield className="h-3.5 w-3.5 text-amber-400 animate-pulse" /> Subscription Status:{" "}
+                            <span className="text-foreground font-black uppercase">
+                              Permanent Administrator
+                            </span>
+                          </div>
+                        )}
+                        {subData?.membershipTag === "OPERATOR HQ" && (
+                          <div className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 pt-1">
+                            <Shield className="h-3.5 w-3.5 text-emerald-400 animate-pulse" /> Subscription Status:{" "}
+                            <span className="text-foreground font-black uppercase">
+                              Lifetime Access Verified
                             </span>
                           </div>
                         )}
@@ -698,7 +722,7 @@ export default function SettingsPage() {
                         )}
                       </div>
                       
-                      {subData?.membershipTag !== "PREMIUM" && (
+                      {subData?.membershipTag !== "PREMIUM" && subData?.membershipTag !== "ADMIN" && (
                         <Button 
                           type="button" 
                           onClick={() => router.push("/premium")}
