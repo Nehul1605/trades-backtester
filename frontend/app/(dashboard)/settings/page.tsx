@@ -140,7 +140,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div style="text-align: right;">
-                <h2 style="margin: 0; font-size: 18px; color: #0f172a; font-weight: 800;">TAX INVOICE</h2>
+                <h2 style="margin: 0; font-size: 18px; color: #0f172a; font-weight: 800;">PAYMENT RECEIPT</h2>
                 <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">Date: ${date}</p>
               </div>
             </div>
@@ -191,11 +191,11 @@ export default function SettingsPage() {
                   <td style="padding: 6px 0; text-align: right; border-bottom: 1px solid #f1f5f9;">${subtotalString}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 6px 0; border-bottom: 1px solid #f1f5f9;">GST (18%):</td>
+                  <td style="padding: 6px 0; border-bottom: 1px solid #f1f5f9;">Platform Fee (18%):</td>
                   <td style="padding: 6px 0; text-align: right; border-bottom: 1px solid #f1f5f9;">${gstString}</td>
                 </tr>
                 <tr style="font-weight: 800; font-size: 15px; color: #ca8a04;">
-                  <td style="padding: 10px 0;">Total Paid (Incl. GST):</td>
+                  <td style="padding: 10px 0;">Total Paid (Incl. Fee):</td>
                   <td style="padding: 10px 0; text-align: right;">${totalString}</td>
                 </tr>
               </table>
@@ -203,7 +203,7 @@ export default function SettingsPage() {
 
             <!-- Footer terms -->
             <div style="margin-top: 100px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center; font-size: 11px; color: #64748b;">
-              This is a system-generated invoice receipts copy under our subscription portal. For any invoice revisions, please reach out to <a href="mailto:support@tradetrackerpro.in" style="color: #ca8a04; text-decoration: none; font-weight: bold;">support@tradetrackerpro.in</a>.
+              This is a system-generated subscription receipt copy under our subscription portal. For any receipt revisions, please reach out to <a href="mailto:support@tradetrackerpro.in" style="color: #ca8a04; text-decoration: none; font-weight: bold;">support@tradetrackerpro.in</a>.
             </div>
           </div>
         </body>

@@ -464,14 +464,14 @@ export default function PremiumCheckoutPage() {
                     <span>{couponCode} (-{discountPercent}%)</span>
                   </div>
 
-                  {/* GST Breakdown Section */}
+                  {/* Platform Fee Breakdown Section */}
                   <div className="space-y-1.5 border-t border-border/20 pt-2 text-xs">
                     <div className="flex justify-between font-medium text-muted-foreground">
                       <span>Subtotal (Base {currency})</span>
                       <span>{subtotalString}</span>
                     </div>
                     <div className="flex justify-between font-medium text-muted-foreground">
-                      <span>GST (18%)</span>
+                      <span>Platform Fee (18%)</span>
                       <span>{gstString}</span>
                     </div>
                   </div>
@@ -481,7 +481,7 @@ export default function PremiumCheckoutPage() {
                     <div className="text-right">
                       <span className="text-primary text-base">{totalString}</span>
                       <span className="block text-[10px] text-muted-foreground font-medium mt-0.5">
-                        {isUsd ? `Approx. ${totalString}` : `Approx. $${launchPrice}.00 USD + GST`}
+                        {isUsd ? `Approx. ${totalString}` : `Approx. $${launchPrice}.00 USD + Fee`}
                       </span>
                     </div>
                   </div>

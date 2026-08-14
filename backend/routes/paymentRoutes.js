@@ -202,7 +202,7 @@ router.post("/verify-signature", protect, async (req, res) => {
         await sendEmail({
           to: targetUser.email,
           subject: `👑 TradeTracker Pro Subscription Confirmed - ${transaction.planType === "annual" ? "Annual" : "Monthly"}`,
-          text: `Hi ${targetUser.name || "there"},\n\nThank you for upgrading to TradeTracker Pro Premium! Your payment was verified successfully.\n\nPlan: ${planName}\nTotal Paid: ${totalString} (Subtotal: ${subtotalString}, GST 18%: ${gstString})\nActive until: ${premiumExpiresAt.toLocaleDateString()}\n\nAccess Dashboard: ${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard\n\nBest regards,\nThe TradeTracker Pro Team`,
+          text: `Hi ${targetUser.name || "there"},\n\nThank you for upgrading to TradeTracker Pro Premium! Your payment was verified successfully.\n\nPlan: ${planName}\nTotal Paid: ${totalString} (Subtotal: ${subtotalString}, Platform Fee 18%: ${gstString})\nActive until: ${premiumExpiresAt.toLocaleDateString()}\n\nAccess Dashboard: ${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/dashboard\n\nBest regards,\nThe TradeTracker Pro Team`,
           html: `
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #070708; padding: 40px 15px; color: #f2f2f7; line-height: 1.6;">
               <div style="max-width: 550px; margin: 0 auto; background-color: #0d0d0f; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); border: 1px solid #1f1f24;">
@@ -232,7 +232,7 @@ router.post("/verify-signature", protect, async (req, res) => {
                       <td style="padding: 8px 0; text-align: right;">${subtotalString}</td>
                     </tr>
                     <tr>
-                      <td style="padding: 8px 0; color: #9a9a9f;">GST (18%):</td>
+                      <td style="padding: 8px 0; color: #9a9a9f;">Platform Fee (18%):</td>
                       <td style="padding: 8px 0; text-align: right;">${gstString}</td>
                     </tr>
                     <tr style="border-top: 1px dashed #1f1f24;">
