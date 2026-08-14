@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import User from "../models/User.js";
 import Transaction from "../models/Transaction.js";
+import VerificationRequest from "../models/VerificationRequest.js";
 import protect from "../middleware/auth.js";
 import { sendEmail } from "../config/email.js";
 
@@ -364,21 +365,29 @@ router.post("/webhook", async (req, res) => {
 router.get("/subscriptions", protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select(
-      "status isPromoUser promoExpiresAt isPremiumUser premiumExpiresAt"
+      "status role isPromoUser promoExpiresAt isPremiumUser premiumExpiresAt"
     );
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const request = await VerificationRequest.findOne({ user: req.userId });
+
     const now = new Date();
+    const isAdmin = user.role === "admin";
     const hasActivePremium = user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now;
     const hasActivePromo = user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now;
+    const isBrokerVerified = request && request.status === "approved";
 
     // Determine membership status tag
     let membershipTag = "FREE";
-    if (hasActivePremium) {
+    if (isAdmin) {
+      membershipTag = "ADMIN";
+    } else if (hasActivePremium) {
       membershipTag = "PREMIUM";
+    } else if (isBrokerVerified) {
+      membershipTag = "OPERATOR HQ";
     } else if (hasActivePromo) {
       membershipTag = "PROMO TRIAL";
     }

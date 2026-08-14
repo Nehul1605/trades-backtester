@@ -722,7 +722,7 @@ export default function SettingsPage() {
                         )}
                       </div>
                       
-                      {subData?.membershipTag !== "PREMIUM" && subData?.membershipTag !== "ADMIN" && (
+                      {subData?.membershipTag !== "PREMIUM" && subData?.membershipTag !== "ADMIN" && subData?.membershipTag !== "OPERATOR HQ" && (
                         <Button 
                           type="button" 
                           onClick={() => router.push("/premium")}
