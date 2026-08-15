@@ -289,6 +289,7 @@ router.get("/users", protect, protectAdmin, async (req, res) => {
       search,
       status,
       role,
+      promoOnly,
       sortBy = "createdAt",
       sortOrder = "desc",
       page = 1,
@@ -297,16 +298,27 @@ router.get("/users", protect, protectAdmin, async (req, res) => {
 
     const query = {};
 
-    // Search query (matches name or email)
+    // Search query (matches name, email, or promoCode if promoOnly is true)
     if (search && search.trim().length > 0) {
       const regex = new RegExp(search.trim(), "i");
-      query.$or = [{ name: regex }, { email: regex }];
+      if (promoOnly === "true") {
+        query.$or = [{ name: regex }, { email: regex }, { promoCode: regex }];
+      } else {
+        query.$or = [{ name: regex }, { email: regex }];
+      }
     }
 
-    // Status filter (defaults to approved for site users who have site access)
-    const effectiveStatus = status || "approved";
-    if (effectiveStatus !== "all") {
-      query.status = effectiveStatus;
+    if (promoOnly === "true") {
+      query.isPromoUser = true;
+      if (status && status !== "all") {
+        query.status = status;
+      }
+    } else {
+      // Status filter (defaults to approved for site users who have site access)
+      const effectiveStatus = status || "approved";
+      if (effectiveStatus !== "all") {
+        query.status = effectiveStatus;
+      }
     }
 
     // Role filter
@@ -327,10 +339,21 @@ router.get("/users", protect, protectAdmin, async (req, res) => {
       .select("-password_hash")
       .sort(sort)
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
+
+    const usersWithVerification = await Promise.all(
+      users.map(async (u) => {
+        const verification = await VerificationRequest.findOne({ user: u._id });
+        return {
+          ...u,
+          isBrokerVerified: verification ? verification.status === "approved" : false,
+        };
+      })
+    );
 
     res.json({
-      users,
+      users: usersWithVerification,
       totalPages: Math.ceil(totalUsers / limitNum),
       currentPage: pageNum,
       totalUsers,

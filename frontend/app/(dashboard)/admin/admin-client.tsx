@@ -43,6 +43,7 @@ import {
   Calendar,
   Clock,
   Activity,
+  Ticket,
 } from "lucide-react";
 import {
   approveVerificationRequest,
@@ -65,7 +66,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const { toast } = useToast();
   
   // Navigation / View Modes
-  const [activeTab, setActiveTab] = useState<"verifications" | "roles" | "users">("verifications");
+  const [activeTab, setActiveTab] = useState<"verifications" | "roles" | "users" | "promo">("verifications");
   const [mounted, setMounted] = useState(false);
 
   // Tab 1: Verifications State
@@ -96,6 +97,16 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const [siteSortOrder, setSiteSortOrder] = useState("desc");
   const [siteLoading, setSiteLoading] = useState(false);
   const [statusLoadingId, setStatusLoadingId] = useState<string | null>(null);
+
+  // Tab 4: Promo Users State
+  const [promoUsers, setPromoUsers] = useState<any[]>([]);
+  const [promoTotalUsers, setPromoTotalUsers] = useState(0);
+  const [promoTotalPages, setPromoTotalPages] = useState(1);
+  const [promoCurrentPage, setPromoCurrentPage] = useState(1);
+  const [promoSearch, setPromoSearch] = useState("");
+  const [promoSortBy, setPromoSortBy] = useState("promoActivatedAt");
+  const [promoSortOrder, setPromoSortOrder] = useState("desc");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   // User Details Modal State (stats/trades)
   const [detailsUser, setDetailsUser] = useState<any | null>(null);
@@ -209,6 +220,38 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
       fetchSiteUsers();
     }
   }, [activeTab, siteSearch, siteStatus, siteRole, siteSortBy, siteSortOrder, siteCurrentPage, mounted]);
+
+  const fetchPromoUsers = async () => {
+    setPromoLoading(true);
+    try {
+      const res = await getAdminUsers({
+        search: promoSearch,
+        promoOnly: "true",
+        sortBy: promoSortBy,
+        sortOrder: promoSortOrder,
+        page: promoCurrentPage,
+        limit: 10,
+      });
+      setPromoUsers(res.users);
+      setPromoTotalPages(res.totalPages || 1);
+      setPromoTotalUsers(res.totalUsers || 0);
+    } catch (err: any) {
+      console.error("Failed to fetch promo users:", err);
+      toast({
+        variant: "destructive",
+        title: "Fetch Failed",
+        description: err.message || "Could not retrieve promo users.",
+      });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "promo" && mounted) {
+      fetchPromoUsers();
+    }
+  }, [activeTab, promoSearch, promoSortBy, promoSortOrder, promoCurrentPage, mounted]);
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
     if (newStatus === "rejected") {
@@ -455,6 +498,19 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
           }`}
         >
           Site Users
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("promo");
+            setPromoCurrentPage(1);
+          }}
+          className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
+            activeTab === "promo"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Promo Access Logs
         </button>
       </div>
 
@@ -949,6 +1005,208 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                       variant="outline"
                       disabled={siteCurrentPage === siteTotalPages || siteLoading}
                       onClick={() => setSiteCurrentPage((prev) => prev + 1)}
+                      className="text-xs border-primary/10"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── TAB 4: PROMO ACCESS LOGS ─── */}
+      {activeTab === "promo" && (
+        <div className="space-y-6">
+          {/* Search and Sorting Filters */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-card/30 border border-border/40 p-4 rounded-xl backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row gap-2 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                <Input
+                  placeholder="Search by name, email, or promo code..."
+                  value={promoSearch}
+                  onChange={(e) => {
+                    setPromoSearch(e.target.value);
+                    setPromoCurrentPage(1);
+                  }}
+                  className="pl-9 bg-muted/20 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Sort:</span>
+              <Select
+                value={promoSortBy}
+                onValueChange={(val) => setPromoSortBy(val)}
+              >
+                <SelectTrigger className="w-[150px] h-9 text-xs bg-muted/20 border-primary/10">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent className="bg-card">
+                  <SelectItem value="promoActivatedAt" className="text-xs">Activation Date</SelectItem>
+                  <SelectItem value="promoExpiresAt" className="text-xs">Expiry Date</SelectItem>
+                  <SelectItem value="name" className="text-xs">Name</SelectItem>
+                  <SelectItem value="email" className="text-xs">Email</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-9 w-9 border-primary/10 bg-muted/20 text-muted-foreground hover:text-foreground"
+                onClick={() => setPromoSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Promo Users Table */}
+          <Card className="bg-card/30 border-border/50 backdrop-blur-md overflow-hidden">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/40 bg-neutral-900/30 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+                      <th className="py-4 px-6">User Profile</th>
+                      <th className="py-4 px-6">Promo Code</th>
+                      <th className="py-4 px-6">Activated At</th>
+                      <th className="py-4 px-6">Expires At</th>
+                      <th className="py-4 px-6">Access Status</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30 text-xs">
+                    {promoLoading ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                          <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
+                          Loading promo access logs...
+                        </td>
+                      </tr>
+                    ) : promoUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                          No promo trial users found.
+                        </td>
+                      </tr>
+                    ) : (
+                      promoUsers.map((u) => {
+                        const now = new Date();
+                        const isPremium = u.isPremiumUser && u.premiumExpiresAt && new Date(u.premiumExpiresAt) > now;
+                        const isVerified = u.isBrokerVerified;
+                        const isExpired = u.promoExpiresAt ? new Date(u.promoExpiresAt) <= now : true;
+                        
+                        let statusBadge;
+                        if (isPremium) {
+                          statusBadge = (
+                            <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Upgraded (Premium)
+                            </Badge>
+                          );
+                        } else if (isVerified) {
+                          statusBadge = (
+                            <Badge className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Upgraded (Operator HQ)
+                            </Badge>
+                          );
+                        } else if (isExpired) {
+                          statusBadge = (
+                            <Badge className="bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Expired
+                            </Badge>
+                          );
+                        } else {
+                          const expiry = new Date(u.promoExpiresAt);
+                          const diffMs = expiry.getTime() - now.getTime();
+                          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                          const remainingText = diffDays > 1 ? `${diffDays} days left` : diffDays === 1 ? `1 day left` : `expires today`;
+                          statusBadge = (
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Active ({remainingText})
+                            </Badge>
+                          );
+                        }
+
+                        return (
+                          <tr 
+                            key={u._id} 
+                            className="hover:bg-neutral-900/10 cursor-pointer transition-colors"
+                            onClick={() => handleViewUserDetail(u)}
+                          >
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                                  {u.name || "N/A"}
+                                </span>
+                                <span className="text-muted-foreground text-[10px]">{u.email}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono px-2 py-0.5">
+                                {u.promoCode ? u.promoCode.toUpperCase() : "N/A"}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-6 text-muted-foreground font-mono text-[11px]">
+                              {u.promoActivatedAt ? new Date(u.promoActivatedAt).toLocaleDateString(undefined, {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }) : "N/A"}
+                            </td>
+                            <td className="py-4 px-6 text-muted-foreground font-mono text-[11px]">
+                              {u.promoExpiresAt ? new Date(u.promoExpiresAt).toLocaleDateString(undefined, {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }) : "N/A"}
+                            </td>
+                            <td className="py-4 px-6">
+                              {statusBadge}
+                            </td>
+                            <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewUserDetail(u)}
+                                className="text-[10px] font-bold uppercase h-7 px-2.5 rounded-lg border-primary/20 hover:border-primary/50 text-primary"
+                              >
+                                View Details
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {promoTotalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-border/40 p-4 bg-neutral-900/10">
+                  <span className="text-[11px] text-muted-foreground">
+                    Showing page {promoCurrentPage} of {promoTotalPages} ({promoTotalUsers} logs total)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={promoCurrentPage === 1 || promoLoading}
+                      onClick={() => setPromoCurrentPage((prev) => prev - 1)}
+                      className="text-xs border-primary/10"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={promoCurrentPage === promoTotalPages || promoLoading}
+                      onClick={() => setPromoCurrentPage((prev) => prev + 1)}
                       className="text-xs border-primary/10"
                     >
                       Next

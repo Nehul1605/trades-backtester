@@ -656,6 +656,7 @@ export async function getAdminUsers(params: {
   search?: string;
   status?: string;
   role?: string;
+  promoOnly?: string;
   sortBy?: string;
   sortOrder?: string;
   page?: number;
@@ -672,6 +673,7 @@ export async function getAdminUsers(params: {
     if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
     if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
     if (params.role) queryParts.push(`role=${encodeURIComponent(params.role)}`);
+    if (params.promoOnly) queryParts.push(`promoOnly=${encodeURIComponent(params.promoOnly)}`);
     if (params.sortBy) queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
     if (params.sortOrder) queryParts.push(`sortOrder=${encodeURIComponent(params.sortOrder)}`);
     if (params.page) queryParts.push(`page=${params.page}`);
