@@ -58,7 +58,7 @@ router.get("/exchange-rate", protect, async (req, res) => {
     res.json({
       rate,
       monthlyInr: Math.round(8.99 * rate),
-      annualInr: Math.round(99 * rate)
+      annualInr: Math.round(80 * rate)
     });
   } catch (error) {
     console.error("Get exchange-rate route error:", error);
@@ -83,7 +83,7 @@ router.post("/create-order", protect, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const baseUsdAmount = planType === "annual" ? 99 : 8.99;
+    const baseUsdAmount = planType === "annual" ? 80 : 8.99;
     let amountInPaise = 0;
 
     if (currency === "USD") {

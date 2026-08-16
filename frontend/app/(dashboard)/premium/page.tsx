@@ -58,7 +58,7 @@ export default function PremiumCheckoutPage() {
         setRates({
           rate: res.rate,
           monthlyInr: res.monthlyInr || 955,
-          annualInr: res.annualInr || 10314
+          annualInr: res.annualInr || 8334
         });
       }
     };
@@ -232,15 +232,15 @@ export default function PremiumCheckoutPage() {
 
   // Pricing values for UI
   const originalPrice = plan === "annual" ? 180 : 15;
-  const launchPrice = plan === "annual" ? 99 : 8.99;
-  const discountPercent = plan === "annual" ? 45 : 40;
-  const couponCode = plan === "annual" ? "LAUNCH45" : "LAUNCH40";
+  const launchPrice = plan === "annual" ? 80 : 8.99;
+  const discountPercent = plan === "annual" ? 55 : 40;
+  const couponCode = plan === "annual" ? "LAUNCH55" : "LAUNCH40";
 
   // Calculate dynamic INR/USD amount display using fetched rates and 18% GST
   const isUsd = currency === "USD";
   const subtotalVal = isUsd
     ? launchPrice
-    : (plan === "annual" ? (rates?.annualInr || 10314) : (rates?.monthlyInr || 955));
+    : (plan === "annual" ? (rates?.annualInr || 8334) : (rates?.monthlyInr || 955));
   const gstVal = parseFloat((subtotalVal * 0.18).toFixed(2));
   const totalVal = parseFloat((subtotalVal + gstVal).toFixed(2));
 
@@ -357,10 +357,10 @@ export default function PremiumCheckoutPage() {
               }`}
             >
               <div className="absolute top-0 right-0 bg-yellow-500 text-neutral-950 text-[8px] font-black tracking-widest px-2 py-0.5 rounded-bl uppercase">
-                Best Deal (Save 45%)
+                Best Deal (Save 55%)
               </div>
               <span>Annual Access</span>
-              <span className="text-[10px] opacity-80">$99/year</span>
+              <span className="text-[10px] opacity-80">$80/year</span>
             </button>
           </div>
 

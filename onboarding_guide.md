@@ -36,8 +36,8 @@ Promo Trial users are locked out of specific institutional trading features. If 
 ## 4. Paid Subscription Plans (Razorpay Integration)
 Payment checkout under `/premium` gathers customer Name, Email, and Phone number to initialize orders:
 
-* **Monthly Plan:** **$10/month** (Auto-applies `LAUNCH33` coupon, charged as **₹955 INR** using $1 = 95.5 exchange rate).
-* **Annual Launch Plan:** **$108/year** (Auto-applies `LAUNCH40` coupon for 40% discount off standard $180, charged as **₹10,314 INR**).
+* **Monthly Plan:** **$8.99/month** (Auto-applies `LAUNCH40` coupon, charged as **₹955 INR** using fallback exchange rate).
+* **Annual Launch Plan:** **$80/year** (Auto-applies `LAUNCH55` coupon for 55% discount off standard $180, charged as **₹8,334 INR** fallback exchange rate).
 * **Auto-Sync:** Verified instantly inside the standard Razorpay checkout modal handler callback, upgrading the next-auth browser session to `PREMIUM` and redirecting back to `/dashboard` without reload.
 
 ---
