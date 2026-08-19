@@ -178,6 +178,7 @@ router.post("/upload", protect, upload.single("file"), (req, res) => {
 // @access  Private
 router.put("/:id", protect, async (req, res) => {
   try {
+    console.log("PUT /api/trades/:id request body:", req.body);
     const trade = await Trade.findOne({ _id: req.params.id, userId: req.userId });
 
     if (!trade) {

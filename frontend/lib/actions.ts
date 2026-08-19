@@ -204,6 +204,7 @@ export async function getTradesForUser(
       stop_loss: t.stopLoss,
       take_profit: t.takeProfit,
       broker_account_id: t.brokerAccountId,
+      commission: t.commission,
     }));
   } catch (err) {
     console.error("getTradesForUser error:", err);
@@ -249,6 +250,7 @@ export async function getTradesForAccount(
       stop_loss: t.stopLoss,
       take_profit: t.takeProfit,
       broker_account_id: t.brokerAccountId,
+      commission: t.commission,
     }));
   } catch (err) {
     console.error("getTradesForAccount error:", err);
@@ -767,6 +769,7 @@ export async function getAdminUserTrades(id: string): Promise<any[]> {
       stop_loss: t.stopLoss,
       take_profit: t.takeProfit,
       broker_account_id: t.brokerAccountId || t.broker_account_id,
+      commission: t.commission,
     }));
   } catch (err) {
     console.error("getAdminUserTrades error:", err);
