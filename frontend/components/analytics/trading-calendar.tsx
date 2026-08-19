@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CalendarDays, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { cn, getLocalDateString } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Trade {
   id: string;
@@ -13,6 +19,12 @@ interface Trade {
   pnl: number | null;
   entry_date: string;
   status: string;
+  commission?: number | null;
+  quantity: number;
+  entry_price: number;
+  exit_price: number | null;
+  trade_type: string;
+  notes: string | null;
 }
 
 interface TradingCalendarProps {
@@ -21,6 +33,14 @@ interface TradingCalendarProps {
 
 export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDayTrades, setSelectedDayTrades] = useState<{ date: string; trades: Trade[] } | null>(null);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
+  };
 
   // Filter closed trades
   const closedTrades = useMemo(() => {
@@ -37,7 +57,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
       if (isNaN(dateObj.getTime())) return;
       const dateStr = getLocalDateString(dateObj);
 
-      pnlMap[dateStr] = (pnlMap[dateStr] || 0) + (trade.pnl || 0);
+      pnlMap[dateStr] = (pnlMap[dateStr] || 0) + ((trade.pnl || 0) - (trade.commission || 0));
       
       if (!tradesMap[dateStr]) {
         tradesMap[dateStr] = [];
@@ -185,19 +205,38 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
             {calendarData.days.map((day, i) => (
               <div
                 key={i}
+                onClick={() => {
+                  if (day && day.trades.length > 0) {
+                    setSelectedDayTrades({ date: day.date, trades: day.trades });
+                  }
+                }}
                 className={cn(
                   "min-h-[90px] rounded-xl border flex flex-col items-center justify-center relative transition-all duration-300 group",
                   !day 
-                    ? "bg-transparent border-transparent" 
-                    : "bg-muted/5 border-border/40 hover:border-primary/50 hover:bg-neutral-900/10 shadow-sm",
-                  day && day.pnl > 0 ? "bg-emerald-500/[0.02] border-emerald-500/20" : "",
-                  day && day.pnl < 0 ? "bg-rose-500/[0.02] border-rose-500/20" : "",
-                  day && day.date === getLocalDateString(new Date()) ? "border-primary border-2 shadow-[0_0_15px_rgba(var(--primary),0.05)]" : ""
+                    ? "bg-transparent border-transparent cursor-default" 
+                    : cn(
+                        "border-border/40 shadow-sm",
+                        day.trades.length > 0 
+                          ? "cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-primary/50" 
+                          : "cursor-default"
+                      ),
+                  day && day.pnl > 0 
+                    ? "bg-emerald-500/[0.06] border-emerald-500/35 hover:bg-emerald-500/[0.09]" 
+                    : "",
+                  day && day.pnl < 0 
+                    ? "bg-rose-500/[0.06] border-rose-500/35 hover:bg-rose-500/[0.09]" 
+                    : "",
+                  day && day.pnl === 0 && day.trades.length > 0
+                    ? "bg-muted/10 hover:bg-neutral-900/10"
+                    : "bg-muted/5",
+                  day && day.date === getLocalDateString(new Date()) 
+                    ? "border-primary border-2 shadow-[0_0_15px_rgba(var(--primary),0.05)]" 
+                    : ""
                 )}
               >
                 {day && (
                   <>
-                    <span className="text-[10px] font-black absolute top-2 left-2.5 text-muted-foreground/30 group-hover:text-primary transition-colors">
+                    <span className="text-[10px] font-black absolute top-2 left-2.5 text-muted-foreground/80 group-hover:text-primary transition-colors">
                       {day.day}
                     </span>
                     <div className="flex flex-col items-center gap-1">
@@ -216,7 +255,7 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
                       )}
                     </div>
                     {day.trades.length > 0 && (
-                      <span className="absolute bottom-1.5 right-2 text-[8px] font-bold text-muted-foreground/45 uppercase">
+                      <span className="absolute bottom-1.5 right-2 text-[8px] font-bold text-muted-foreground/90 uppercase">
                         {day.trades.length} {day.trades.length === 1 ? "Trade" : "Trades"}
                       </span>
                     )}
@@ -227,6 +266,75 @@ export function TradingCalendar({ initialTrades }: TradingCalendarProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Trades Dialog Modal */}
+      <Dialog open={!!selectedDayTrades} onOpenChange={(open) => { if (!open) setSelectedDayTrades(null); }}>
+        <DialogContent className="max-w-2xl bg-neutral-950/95 border border-border/40 text-foreground backdrop-blur-md rounded-2xl shadow-2xl">
+          <DialogHeader className="border-b border-border/20 pb-4">
+            <DialogTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2.5">
+              <CalendarDays className="w-4.5 h-4.5 text-primary" />
+              Trades on {selectedDayTrades ? new Date(selectedDayTrades.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-auto py-4 space-y-4 pr-1">
+            {selectedDayTrades?.trades.map((trade) => {
+              const netPnl = (trade.pnl || 0) - (trade.commission || 0);
+              return (
+                <div 
+                  key={trade.id} 
+                  className="p-4 rounded-xl bg-muted/10 border border-border/30 hover:border-primary/20 transition-all flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-bold text-sm text-foreground">{trade.symbol}</span>
+                      <Badge
+                        className={cn(
+                          "text-[8px] px-1.5 py-0.5 font-black uppercase border leading-none shrink-0",
+                          trade.trade_type === "long" 
+                            ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" 
+                            : "bg-red-500/5 text-red-500 border-red-500/20"
+                        )}
+                      >
+                        {trade.trade_type === "long" ? "LONG" : "SHORT"}
+                      </Badge>
+                    </div>
+                    <div className="text-right">
+                      <span className={cn("font-bold text-sm", netPnl >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                        {netPnl >= 0 ? "+" : ""}{formatCurrency(netPnl)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-[10px] font-semibold text-muted-foreground uppercase">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/60">Lots (Qty)</p>
+                      <p className="text-foreground/90 font-mono mt-0.5">{trade.quantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/60">Entry Price</p>
+                      <p className="text-foreground/90 font-mono mt-0.5">{trade.entry_price}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/60">Exit Price</p>
+                      <p className="text-foreground/90 font-mono mt-0.5">{trade.exit_price || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/60">Commission</p>
+                      <p className="text-rose-400 font-mono mt-0.5">-${trade.commission ? trade.commission.toFixed(2) : "0.00"}</p>
+                    </div>
+                  </div>
+
+                  {trade.notes && (
+                    <div className="bg-neutral-900/40 rounded-lg p-2.5 border border-border/10 text-[10px] font-medium leading-relaxed text-foreground/80">
+                      {trade.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 1/4 Grid: Monthly summaries & Breakdown lists */}
       <div className="space-y-6">

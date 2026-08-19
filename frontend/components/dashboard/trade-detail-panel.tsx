@@ -48,6 +48,7 @@ interface Trade {
   stop_loss?: number | null;
   take_profit?: number | null;
   broker_account_id?: string | null;
+  commission?: number | null;
 }
 
 interface TradeDetailPanelProps {
@@ -78,6 +79,9 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
   );
   const [editTakeProfit, setEditTakeProfit] = useState(
     trade.take_profit ? trade.take_profit.toString() : ""
+  );
+  const [editCommission, setEditCommission] = useState(
+    trade.commission ? trade.commission.toString() : ""
   );
 
   const formatInitialDate = (dateStr: string | null) => {
@@ -116,6 +120,7 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
     setEditExitPrice(trade.exit_price_text || (trade.exit_price ? trade.exit_price.toString() : ""));
     setEditStopLoss(trade.stop_loss ? trade.stop_loss.toString() : "");
     setEditTakeProfit(trade.take_profit ? trade.take_profit.toString() : "");
+    setEditCommission(trade.commission ? trade.commission.toString() : "");
     setEditEntryDate(formatInitialDate(trade.entry_date));
     setEditExitDate(formatInitialDate(trade.exit_date));
     setEditStrategyName(trade.strategy_name || "");
@@ -208,6 +213,7 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
         screenshot_url: finalScreenshotUrl,
         pnl,
         pnl_percentage: pnlPercentage,
+        commission: editStatus === "closed" && editCommission ? Number.parseFloat(editCommission) : 0,
       };
 
       const { error } = await updateTrade(trade.id, updateData);
@@ -312,7 +318,7 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 </Select>
               </div>
 
-              {/* Entry & Exit Prices */}
+              {/* Entry & Exit Prices, Commission, and SL */}
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Entry Price</Label>
                 <Input
@@ -337,7 +343,19 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 />
               </div>
 
-              {/* SL & TP */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Commission ($)</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  disabled={editStatus === "open"}
+                  value={editCommission}
+                  onChange={(e) => setEditCommission(e.target.value)}
+                  className="bg-muted/10 border-primary/20 hover:border-primary/40 focus:border-primary text-xs h-9 rounded-lg disabled:opacity-50"
+                  placeholder={editStatus === "open" ? "Unavailable" : "0.00"}
+                />
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Stop Loss (SL)</Label>
                 <Input
@@ -350,6 +368,7 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 />
               </div>
 
+              {/* TP, Dates & Strategy Tag */}
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Take Profit (TP)</Label>
                 <Input
@@ -362,7 +381,6 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 />
               </div>
 
-              {/* Dates & Strategy */}
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Opened Date</Label>
                 <Input
@@ -384,7 +402,7 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 />
               </div>
 
-              <div className="space-y-1.5 md:col-span-2">
+              <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-black text-muted-foreground/95">Strategy Tag</Label>
                 <Input
                   value={editStrategyName}
@@ -466,6 +484,34 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                   </span>
                 )}
               </div>
+
+              {trade.status === "closed" && (
+                <div className="bg-secondary/20 rounded-xl p-3.5 border border-primary/10 space-y-2 animate-in fade-in duration-200">
+                  <h6 className="text-[9px] uppercase font-black tracking-widest text-muted-foreground">
+                    Financial Breakdown
+                  </h6>
+                  <div className="space-y-1.5 text-xs font-semibold">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground uppercase text-[10px]">Gross P&L</span>
+                      <span className={cn((trade.pnl || 0) >= 0 ? "text-emerald-500" : "text-destructive")}>
+                        {(trade.pnl || 0) >= 0 ? "+" : ""}${trade.pnl ? trade.pnl.toFixed(2) : "0.00"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground uppercase text-[10px]">Commission</span>
+                      <span className="text-rose-400">
+                        -${trade.commission ? trade.commission.toFixed(2) : "0.00"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-border/20 pt-1.5 font-bold">
+                      <span className="text-foreground uppercase text-[10px]">Net P&L</span>
+                      <span className={cn(((trade.pnl || 0) - (trade.commission || 0)) >= 0 ? "text-emerald-500" : "text-destructive")}>
+                        {((trade.pnl || 0) - (trade.commission || 0)) >= 0 ? "+" : ""}${((trade.pnl || 0) - (trade.commission || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Notes Column */}

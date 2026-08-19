@@ -31,6 +31,7 @@ interface Trade {
   stop_loss?: number | null;
   take_profit?: number | null;
   broker_account_id?: string | null;
+  commission?: number | null;
 }
 
 interface StrategyDetailsViewProps {
@@ -55,11 +56,11 @@ export function StrategyDetailsView({ account, trades, strategyName }: StrategyD
   // 2. Compute performance metrics for this strategy
   const metrics = useMemo(() => {
     const total = strategyClosedTrades.length;
-    const wins = strategyClosedTrades.filter((t) => (t.pnl || 0) > 0);
-    const losses = strategyClosedTrades.filter((t) => (t.pnl || 0) <= 0);
+    const wins = strategyClosedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0);
+    const losses = strategyClosedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) <= 0);
     
     const winRate = total > 0 ? (wins.length / total) * 100 : 0;
-    const totalPnL = strategyClosedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const totalPnL = strategyClosedTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
     const totalPct = strategyClosedTrades.reduce((sum, t) => sum + (t.pnl_percentage || 0), 0);
     const avgPct = total > 0 ? totalPct / total : 0;
 
@@ -157,19 +158,22 @@ export function StrategyDetailsView({ account, trades, strategyName }: StrategyD
       }
     };
 
-    const rows = filteredStrategyTrades.map((t) => [
-      t.symbol,
-      t.trade_type.toUpperCase(),
-      t.quantity,
-      t.entry_price_text || t.entry_price,
-      t.exit_price_text || t.exit_price || "—",
-      t.stop_loss || "—",
-      t.take_profit || "—",
-      formatCompactDate(t.entry_date),
-      t.exit_date ? formatCompactDate(t.exit_date) : "—",
-      t.pnl ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "0.00",
-      t.pnl_percentage ? `${t.pnl_percentage >= 0 ? "+" : ""}${t.pnl_percentage.toFixed(2)}%` : "0.00%"
-    ]);
+    const rows = filteredStrategyTrades.map((t) => {
+      const netPnl = (t.pnl || 0) - (t.commission || 0);
+      return [
+        t.symbol,
+        t.trade_type.toUpperCase(),
+        t.quantity,
+        t.entry_price_text || t.entry_price,
+        t.exit_price_text || t.exit_price || "—",
+        t.stop_loss || "—",
+        t.take_profit || "—",
+        formatCompactDate(t.entry_date),
+        t.exit_date ? formatCompactDate(t.exit_date) : "—",
+        t.pnl ? `${netPnl >= 0 ? "+" : ""}${netPnl.toFixed(2)}` : "0.00",
+        t.pnl_percentage ? `${t.pnl_percentage >= 0 ? "+" : ""}${t.pnl_percentage.toFixed(2)}%` : "0.00%"
+      ];
+    });
 
     autoTable(doc, {
       startY: 42,
@@ -436,11 +440,26 @@ export function StrategyDetailsView({ account, trades, strategyName }: StrategyD
                         <td className="py-4 px-6 font-mono text-foreground">
                           {t.exit_price ? `$${t.exit_price}` : "—"}
                         </td>
-                        <td className={cn(
-                          "py-4 px-6 font-mono",
-                          (t.pnl || 0) >= 0 ? "text-emerald-500" : "text-rose-500"
-                        )}>
-                          {t.pnl !== null ? `${t.pnl >= 0 ? "+" : ""}${formatCurrency(t.pnl)}` : "—"}
+                        <td className="py-4 px-6">
+                          <div className="flex flex-col gap-0.5 font-mono text-left">
+                            {t.commission ? (
+                              <>
+                                <span className="text-[10px] text-muted-foreground leading-none">
+                                  Gross: {(t.pnl || 0) >= 0 ? "+" : ""}{t.pnl ? formatCurrency(t.pnl) : "—"}
+                                </span>
+                                <span className="text-[10px] text-rose-400 font-semibold leading-none">
+                                  Comm: -${t.commission.toFixed(2)}
+                                </span>
+                                <span className={cn("font-bold mt-0.5 border-t border-border/10 pt-0.5", ((t.pnl || 0) - t.commission) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                  Net: {((t.pnl || 0) - t.commission) >= 0 ? "+" : ""}{formatCurrency((t.pnl || 0) - t.commission)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className={cn("font-bold", (t.pnl || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                {(t.pnl || 0) >= 0 ? "+" : ""}{t.pnl ? formatCurrency(t.pnl) : "—"}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className={cn(
                           "py-4 px-6 font-mono",

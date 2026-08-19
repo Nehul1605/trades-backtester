@@ -39,6 +39,7 @@ export async function createTrade(data: {
   stop_loss?: number | null;
   take_profit?: number | null;
   broker_account_id?: string | null;
+  commission?: number | null;
 }): Promise<{ error?: string }> {
   try {
     const authHeader = await getAuthHeader();
@@ -63,6 +64,7 @@ export async function createTrade(data: {
       stopLoss: data.stop_loss,
       takeProfit: data.take_profit,
       brokerAccountId: data.broker_account_id || null,
+      commission: data.commission ?? 0,
     };
 
     const res = await fetch(`${BACKEND_URL}/api/trades`, {
@@ -131,6 +133,7 @@ export async function updateTrade(
       stop_loss: "stopLoss",
       take_profit: "takeProfit",
       broker_account_id: "brokerAccountId",
+      commission: "commission",
     };
 
     Object.keys(data).forEach((key) => {

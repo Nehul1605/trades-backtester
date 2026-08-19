@@ -21,6 +21,7 @@ interface Trade {
   trade_type: string;
   pnl: number | null;
   status: string;
+  commission?: number | null;
 }
 
 interface TradeTypeDistributionProps {
@@ -37,8 +38,8 @@ export function TradeTypeDistribution({ trades }: TradeTypeDistributionProps) {
   const longTrades = closedTrades.filter((t) => t.trade_type === "long");
   const shortTrades = closedTrades.filter((t) => t.trade_type === "short");
 
-  const longPnL = longTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const shortPnL = shortTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const longPnL = longTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
+  const shortPnL = shortTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
 
   const data = [
     { name: "Long Trades", value: longTrades.length, pnl: longPnL },

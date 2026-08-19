@@ -23,6 +23,7 @@ interface Trade {
   entry_date: string;
   pnl: number | null;
   status: string;
+  commission?: number | null;
 }
 
 interface PerformanceChartProps {
@@ -39,7 +40,7 @@ export function PerformanceChart({ trades }: PerformanceChartProps) {
 
   let cumulativePnL = 0;
   const chartData = closedTrades.map((trade) => {
-    cumulativePnL += trade.pnl || 0;
+    cumulativePnL += (trade.pnl || 0) - (trade.commission || 0);
     return {
       date: new Date(trade.entry_date).toLocaleDateString("en-US", {
         month: "short",

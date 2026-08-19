@@ -109,6 +109,7 @@ router.post("/", protect, async (req, res) => {
     stopLoss,
     takeProfit,
     brokerAccountId,
+    commission,
   } = req.body;
 
   try {
@@ -132,14 +133,17 @@ router.post("/", protect, async (req, res) => {
       stopLoss: stopLoss ?? null,
       takeProfit: takeProfit ?? null,
       brokerAccountId: brokerAccountId || null,
+      commission: commission ?? 0,
     });
 
     // If a broker account is linked and trade has P&L, update the account balance
     if (brokerAccountId && pnl) {
       const account = await BrokerAccount.findById(brokerAccountId);
       if (account) {
-        account.balance = (account.balance || 0) + Number(pnl);
-        account.equity = (account.equity || 0) + Number(pnl);
+        const comm = Number(commission || 0);
+        const netPnl = Number(pnl) - comm;
+        account.balance = (account.balance || 0) + netPnl;
+        account.equity = (account.equity || 0) + netPnl;
         await account.save();
       }
     }
@@ -181,6 +185,7 @@ router.put("/:id", protect, async (req, res) => {
     }
 
     const originalPnl = trade.pnl || 0;
+    const originalCommission = trade.commission || 0;
     const originalAccountId = trade.brokerAccountId;
 
     // Fields that can be updated
@@ -203,6 +208,7 @@ router.put("/:id", protect, async (req, res) => {
       "stopLoss",
       "takeProfit",
       "brokerAccountId",
+      "commission",
     ];
 
     updateFields.forEach((field) => {
@@ -213,17 +219,21 @@ router.put("/:id", protect, async (req, res) => {
 
     const updatedTrade = await trade.save();
 
-    // Adjust broker balance if P&L or account has changed
+    // Adjust broker balance if P&L or commission or account has changed
     const newPnl = updatedTrade.pnl || 0;
+    const newCommission = updatedTrade.commission || 0;
     const newAccountId = updatedTrade.brokerAccountId;
 
+    const originalNetPnl = originalPnl - originalCommission;
+    const newNetPnl = newPnl - newCommission;
+
     if (originalAccountId && originalAccountId.toString() === newAccountId?.toString()) {
-      const pnlDiff = newPnl - originalPnl;
-      if (pnlDiff !== 0) {
+      const netPnlDiff = newNetPnl - originalNetPnl;
+      if (netPnlDiff !== 0) {
         const account = await BrokerAccount.findById(originalAccountId);
         if (account) {
-          account.balance = (account.balance || 0) + pnlDiff;
-          account.equity = (account.equity || 0) + pnlDiff;
+          account.balance = (account.balance || 0) + netPnlDiff;
+          account.equity = (account.equity || 0) + netPnlDiff;
           await account.save();
         }
       }
@@ -232,16 +242,16 @@ router.put("/:id", protect, async (req, res) => {
       if (originalAccountId) {
         const origAccount = await BrokerAccount.findById(originalAccountId);
         if (origAccount) {
-          origAccount.balance = (origAccount.balance || 0) - originalPnl;
-          origAccount.equity = (origAccount.equity || 0) - originalPnl;
+          origAccount.balance = (origAccount.balance || 0) - originalNetPnl;
+          origAccount.equity = (origAccount.equity || 0) - originalNetPnl;
           await origAccount.save();
         }
       }
       if (newAccountId) {
         const newAccount = await BrokerAccount.findById(newAccountId);
         if (newAccount) {
-          newAccount.balance = (newAccount.balance || 0) + newPnl;
-          newAccount.equity = (newAccount.equity || 0) + newPnl;
+          newAccount.balance = (newAccount.balance || 0) + newNetPnl;
+          newAccount.equity = (newAccount.equity || 0) + newNetPnl;
           await newAccount.save();
         }
       }
@@ -269,8 +279,9 @@ router.delete("/:id", protect, async (req, res) => {
     if (trade.brokerAccountId && trade.pnl) {
       const account = await BrokerAccount.findById(trade.brokerAccountId);
       if (account) {
-        account.balance = (account.balance || 0) - trade.pnl;
-        account.equity = (account.equity || 0) - trade.pnl;
+        const netPnl = (trade.pnl || 0) - (trade.commission || 0);
+        account.balance = (account.balance || 0) - netPnl;
+        account.equity = (account.equity || 0) - netPnl;
         await account.save();
       }
     }

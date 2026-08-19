@@ -27,6 +27,7 @@ interface Trade {
   pnl: number | null;
   pnl_percentage: number | null;
   status: string;
+  commission?: number | null;
 }
 
 interface StrategyBreakdownProps {
@@ -57,9 +58,9 @@ export function StrategyBreakdown({ trades, accountId }: StrategyBreakdownProps)
 
     strategyMap.set(strategy, {
       count: existing.count + 1,
-      totalPnL: existing.totalPnL + (trade.pnl || 0),
+      totalPnL: existing.totalPnL + ((trade.pnl || 0) - (trade.commission || 0)),
       totalPct: existing.totalPct + (trade.pnl_percentage || 0),
-      wins: existing.wins + ((trade.pnl || 0) > 0 ? 1 : 0),
+      wins: existing.wins + (((trade.pnl || 0) - (trade.commission || 0)) > 0 ? 1 : 0),
     });
   });
 

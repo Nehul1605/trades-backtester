@@ -68,6 +68,7 @@ interface Trade {
   stop_loss?: number | null;
   take_profit?: number | null;
   broker_account_id?: string | null;
+  commission?: number | null;
 }
 
 interface TradeListProps {
@@ -187,7 +188,9 @@ export function TradeList({ trades }: TradeListProps) {
       "TP",
       "Opened",
       "Closed",
-      "P&L ($)",
+      "Gross P&L",
+      "Comm ($)",
+      "Net P&L",
       "P&L (%)"
     ];
 
@@ -204,19 +207,24 @@ export function TradeList({ trades }: TradeListProps) {
       }
     };
 
-    const rows = closedTrades.map((t) => [
-      t.symbol,
-      t.trade_type.toUpperCase(),
-      t.quantity,
-      t.entry_price_text || t.entry_price,
-      t.exit_price_text || t.exit_price || "—",
-      t.stop_loss || "—",
-      t.take_profit || "—",
-      formatCompactDate(t.entry_date),
-      t.exit_date ? formatCompactDate(t.exit_date) : "—",
-      t.pnl ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "0.00",
-      t.pnl_percentage ? `${t.pnl_percentage >= 0 ? "+" : ""}${t.pnl_percentage.toFixed(2)}%` : "0.00%"
-    ]);
+    const rows = closedTrades.map((t) => {
+      const netPnl = (t.pnl || 0) - (t.commission || 0);
+      return [
+        t.symbol,
+        t.trade_type.toUpperCase(),
+        t.quantity,
+        t.entry_price_text || t.entry_price,
+        t.exit_price_text || t.exit_price || "—",
+        t.stop_loss || "—",
+        t.take_profit || "—",
+        formatCompactDate(t.entry_date),
+        t.exit_date ? formatCompactDate(t.exit_date) : "—",
+        t.pnl ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "0.00",
+        t.commission ? `-${t.commission.toFixed(2)}` : "0.00",
+        `${netPnl >= 0 ? "+" : ""}${netPnl.toFixed(2)}`,
+        t.pnl_percentage ? `${t.pnl_percentage >= 0 ? "+" : ""}${t.pnl_percentage.toFixed(2)}%` : "0.00%"
+      ];
+    });
 
     autoTable(doc, {
       startY: 42,
@@ -238,8 +246,10 @@ export function TradeList({ trades }: TradeListProps) {
       },
       columnStyles: {
         0: { fontStyle: "bold" },
-        9: { fontStyle: "bold", halign: "right" },
-        10: { fontStyle: "bold", halign: "right" }
+        9: { halign: "right" },
+        10: { halign: "right" },
+        11: { fontStyle: "bold", halign: "right" },
+        12: { fontStyle: "bold", halign: "right" }
       },
       alternateRowStyles: {
         fillColor: [250, 248, 245] // very soft gold/white tint
@@ -482,7 +492,7 @@ export function TradeList({ trades }: TradeListProps) {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                className="h-8 w-8 text-rose-500 hover:text-red-500 hover:bg-rose-500/10 transition-colors"
                                 onClick={() => handleDelete(trade.id)}
                                 disabled={deletingId === trade.id}
                                 title="Delete Trade"
@@ -555,7 +565,9 @@ export function TradeList({ trades }: TradeListProps) {
                         <th className="py-3 px-4">TP</th>
                         <th className="py-3 px-4">Opened</th>
                         <th className="py-3 px-4">Closed</th>
-                        <th className="py-3 px-4">P&L ($)</th>
+                        <th className="py-3 px-4">Gross P&L</th>
+                        <th className="py-3 px-4">Comm ($)</th>
+                        <th className="py-3 px-4">Net P&L</th>
                         <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -595,17 +607,28 @@ export function TradeList({ trades }: TradeListProps) {
                             <td className="py-3 px-4 font-mono text-muted-foreground/80">{trade.take_profit ?? "—"}</td>
                             <td className="py-3 px-4 text-muted-foreground/75 font-mono">{formatDate(trade.entry_date)}</td>
                             <td className="py-3 px-4 text-muted-foreground/75 font-mono">{trade.exit_date ? formatDate(trade.exit_date) : "—"}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex flex-col gap-0.5 font-mono">
-                                <span className={cn("font-bold", (trade.pnl || 0) >= 0 ? "text-emerald-500" : "text-destructive")}>
-                                  {(trade.pnl || 0) >= 0 ? "+" : ""}{trade.pnl ? formatCurrency(trade.pnl) : "—"}
-                                </span>
-                                {trade.pnl_percentage && (
-                                  <span className={cn("text-[9px] font-semibold opacity-85", (trade.pnl_percentage || 0) >= 0 ? "text-emerald-500/90" : "text-destructive/90")}>
-                                    {(trade.pnl_percentage || 0) >= 0 ? "+" : ""}{trade.pnl_percentage.toFixed(2)}%
-                                  </span>
-                                )}
-                              </div>
+                            <td className={cn("py-3 px-4 font-mono", (trade.pnl || 0) >= 0 ? "text-emerald-500/80" : "text-destructive/80")}>
+                              {(trade.pnl || 0) >= 0 ? "+" : ""}{trade.pnl ? formatCurrency(trade.pnl) : "—"}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-rose-400/80">
+                              {trade.commission ? `-$${trade.commission.toFixed(2)}` : "—"}
+                            </td>
+                            <td className="py-3 px-4 font-mono">
+                              {(() => {
+                                const netPnl = (trade.pnl || 0) - (trade.commission || 0);
+                                return (
+                                  <div className="flex flex-col gap-0.5 text-left">
+                                    <span className={cn("font-bold", netPnl >= 0 ? "text-emerald-500" : "text-destructive")}>
+                                      {netPnl >= 0 ? "+" : ""}{formatCurrency(netPnl)}
+                                    </span>
+                                    {trade.pnl_percentage && (
+                                      <span className={cn("text-[9px] font-semibold opacity-85", (trade.pnl_percentage || 0) >= 0 ? "text-emerald-500/90" : "text-destructive/90")}>
+                                        {(trade.pnl_percentage || 0) >= 0 ? "+" : ""}{trade.pnl_percentage.toFixed(2)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -625,7 +648,7 @@ export function TradeList({ trades }: TradeListProps) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                  className="h-8 w-8 text-rose-500 hover:text-red-500 hover:bg-rose-500/10 transition-colors"
                                   onClick={() => handleDelete(trade.id)}
                                   disabled={deletingId === trade.id}
                                   title="Delete Trade"
@@ -639,7 +662,7 @@ export function TradeList({ trades }: TradeListProps) {
                             <TradeDetailPanel
                               key={`${trade.id}-details`}
                               trade={trade}
-                              colSpan={10}
+                              colSpan={12}
                               onUpdate={() => router.refresh()}
                             />
                           )
@@ -696,6 +719,7 @@ function CloseTradeButton({
   const [open, setOpen] = useState(false);
   const [exitPrice, setExitPrice] = useState<string>("");
   const [exitDate, setExitDate] = useState<string>(today);
+  const [commission, setCommission] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   const handleClose = async () => {
@@ -716,6 +740,7 @@ function CloseTradeButton({
         exit_date: exitDate || null,
         pnl,
         pnl_percentage: pnlPct,
+        commission: Number.parseFloat(commission) || 0,
       });
 
       if (error) throw error;
@@ -759,6 +784,18 @@ function CloseTradeButton({
               max={today}
               value={exitDate}
               onChange={(e) => setExitDate(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="commission">Commission ($)</Label>
+            <Input
+              id="commission"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              value={commission}
+              onChange={(e) => setCommission(e.target.value)}
+              placeholder="0.00"
             />
           </div>
         </div>

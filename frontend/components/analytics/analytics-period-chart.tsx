@@ -34,6 +34,7 @@ interface Trade {
   quantity: number;
   entry_date: string;
   status: string;
+  commission?: number | null;
 }
 
 interface AnalyticsPeriodChartProps {
@@ -151,7 +152,7 @@ export function AnalyticsPeriodChart({
       const tradeDate = new Date(t.entry_date);
       if (tradeDate.getTime() < startDate.getTime() && period !== "1y") return;
 
-      const pnlVal = t.pnl || 0;
+      const pnlVal = (t.pnl || 0) - (t.commission || 0);
       const volVal = t.quantity || 0;
 
       if (period === "1y") {
@@ -198,7 +199,7 @@ export function AnalyticsPeriodChart({
     let cumulative = initialBalance;
     const pnlBeforeStart = closedTrades
       .filter((t) => new Date(t.entry_date).getTime() < startDate.getTime())
-      .reduce((sum, t) => sum + (t.pnl || 0), 0);
+      .reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
 
     cumulative += pnlBeforeStart;
 

@@ -22,6 +22,7 @@ interface Trade {
   status: string;
   broker_account_id?: string;
   quantity: number;
+  commission?: number | null;
 }
 
 interface RecentTradesProps {
@@ -137,10 +138,22 @@ export function RecentTrades({ trades }: RecentTradesProps) {
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-sm font-mono font-bold ${(trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"}`}>
-                  {(trade.pnl || 0) >= 0 ? "+" : ""}{formatCurrency(trade.pnl || 0)}
-                </p>
-                <p className={`text-[11px] font-mono font-bold opacity-80 ${(trade.pnl_percentage || 0) >= 0 ? "text-profit" : "text-loss"}`}>
+                {(() => {
+                  const netPnl = (trade.pnl || 0) - (trade.commission || 0);
+                  return (
+                    <>
+                      <p className={`text-sm font-mono font-bold ${netPnl >= 0 ? "text-profit" : "text-loss"}`}>
+                        {netPnl >= 0 ? "+" : ""}{formatCurrency(netPnl)}
+                      </p>
+                      {trade.commission ? (
+                        <p className="text-[9px] text-muted-foreground font-semibold leading-none mt-0.5">
+                          Comm: -${trade.commission.toFixed(2)}
+                        </p>
+                      ) : null}
+                    </>
+                  );
+                })()}
+                <p className={`text-[11px] font-mono font-bold opacity-80 ${(trade.pnl_percentage || 0) >= 0 ? "text-profit" : "text-loss"} mt-0.5`}>
                   {trade.pnl_percentage ? `${(trade.pnl_percentage >= 0 ? "+" : "")}${trade.pnl_percentage.toFixed(2)}%` : "0.00%"}
                 </p>
               </div>

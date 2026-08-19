@@ -160,11 +160,12 @@ export function TradeForm({ userId, defaultAccountId, onSuccess }: TradeFormProp
     stop_loss: "",
     take_profit: "",
     broker_account_id: defaultAccountId || "",
+    commission: "",
   });
 
   useEffect(() => {
     if (formData.status === "open") {
-      setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "" }));
+      setFormData((prev) => ({ ...prev, exit_price: "", exit_date: "", commission: "" }));
     } else if (formData.status === "closed" && !formData.exit_date) {
       setFormData((prev) => ({
         ...prev,
@@ -291,6 +292,7 @@ export function TradeForm({ userId, defaultAccountId, onSuccess }: TradeFormProp
         stop_loss: formData.stop_loss ? Number.parseFloat(formData.stop_loss) : null,
         take_profit: formData.take_profit ? Number.parseFloat(formData.take_profit) : null,
         broker_account_id: formData.broker_account_id || null,
+        commission: formData.status === "closed" && formData.commission ? Number.parseFloat(formData.commission) : 0,
       });
 
       if (result.error) throw new Error(result.error);
@@ -451,7 +453,7 @@ export function TradeForm({ userId, defaultAccountId, onSuccess }: TradeFormProp
             </div>
 
             {/* Entry, Quantity, and Exit Fields */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className={cn("grid gap-4", formData.status === "closed" ? "md:grid-cols-4" : "md:grid-cols-3")}>
               <div className="space-y-1">
                 <Label htmlFor="quantity" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lot size / Volume</Label>
                 <Input
@@ -491,6 +493,21 @@ export function TradeForm({ userId, defaultAccountId, onSuccess }: TradeFormProp
                   className="bg-muted/10 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg disabled:opacity-50"
                 />
               </div>
+
+              {formData.status === "closed" && (
+                <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <Label htmlFor="commission" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Commission ($)</Label>
+                  <Input
+                    id="commission"
+                    type="number"
+                    placeholder="0.00"
+                    step="any"
+                    value={formData.commission}
+                    onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
+                    className="bg-muted/10 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                  />
+                </div>
+              )}
             </div>
 
             {/* SL & TP Collapsible Switches */}

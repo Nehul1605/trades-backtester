@@ -46,6 +46,7 @@ interface Trade {
   status: string;
   trade_type: string;
   broker_account_id?: string | null;
+  commission?: number | null;
 }
 
 interface TraderStatsProps {
@@ -97,30 +98,31 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
-    const wins = filteredTrades.filter((t) => (t.pnl || 0) > 0);
-    const losses = filteredTrades.filter((t) => (t.pnl || 0) < 0);
-    const netPnL = filteredTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const wins = filteredTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0);
+    const losses = filteredTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) < 0);
+    const netPnL = filteredTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
 
     const winRate = total > 0 ? (wins.length / total) * 100 : 0;
     const avgWin =
       wins.length > 0
-        ? wins.reduce((sum, t) => sum + (t.pnl || 0), 0) / wins.length
+        ? wins.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0) / wins.length
         : 0;
     const avgLoss =
       losses.length > 0
         ? Math.abs(
-            losses.reduce((sum, t) => sum + (t.pnl || 0), 0) / losses.length,
+            losses.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0) / losses.length,
           )
         : 0;
 
-    const bestTrade =
-      filteredTrades.length > 0
-        ? Math.max(...filteredTrades.map((t) => t.pnl || 0))
-        : 0;
-    const worstTrade =
-      filteredTrades.length > 0
-        ? Math.min(...filteredTrades.map((t) => t.pnl || 0))
-        : 0;
+    const winningNetPnLs = filteredTrades
+      .map((t) => (t.pnl || 0) - (t.commission || 0))
+      .filter((pnl) => pnl > 0);
+    const losingNetPnLs = filteredTrades
+      .map((t) => (t.pnl || 0) - (t.commission || 0))
+      .filter((pnl) => pnl < 0);
+
+    const bestTrade = winningNetPnLs.length > 0 ? Math.max(...winningNetPnLs) : 0;
+    const worstTrade = losingNetPnLs.length > 0 ? Math.min(...losingNetPnLs) : 0;
 
     // Calculate streakes
     let currentStreak = 0;
@@ -140,14 +142,14 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
     let tempLossStreak = 0;
 
     sortedTrades.forEach((t) => {
-      const pnl = Number(t.pnl) || 0;
-      if (pnl > 0) {
-        totalWinsPnL += pnl;
+      const netPnl = (Number(t.pnl) || 0) - (Number(t.commission) || 0);
+      if (netPnl > 0) {
+        totalWinsPnL += netPnl;
         tempWinStreak++;
         tempLossStreak = 0;
         if (tempWinStreak > maxWinStreak) maxWinStreak = tempWinStreak;
-      } else if (pnl < 0) {
-        totalLossesPnL += Math.abs(pnl);
+      } else if (netPnl < 0) {
+        totalLossesPnL += Math.abs(netPnl);
         tempLossStreak++;
         tempWinStreak = 0;
         if (tempLossStreak > maxLossStreak) maxLossStreak = tempLossStreak;
@@ -171,13 +173,13 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
     );
     const longWinRate =
       longTrades.length > 0
-        ? (longTrades.filter((t) => (t.pnl || 0) > 0).length /
+        ? (longTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0).length /
             longTrades.length) *
           100
         : 0;
     const shortWinRate =
       shortTrades.length > 0
-        ? (shortTrades.filter((t) => (t.pnl || 0) > 0).length /
+        ? (shortTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0).length /
             shortTrades.length) *
           100
         : 0;
@@ -189,7 +191,7 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
         const dateObj = new Date(t.entry_date);
         if (isNaN(dateObj.getTime())) return acc; // Skip invalid dates
         const date = getLocalDateString(dateObj);
-        acc[date] = (acc[date] || 0) + (Number(t.pnl) || 0);
+        acc[date] = (acc[date] || 0) + ((Number(t.pnl) || 0) - (Number(t.commission) || 0));
         return acc;
       },
       {} as Record<string, number>,
@@ -222,11 +224,11 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
       ["Net Profit ($)", `$${stats.netPnL.toFixed(2)}`],
       ["Win Rate (%)", stats.winRate.toFixed(2) + "%"],
       ["Profit Factor", stats.profitFactor.toFixed(2)],
-      ["Average Win ($)", `$${stats.avgWin.toFixed(2)}`],
-      ["Average Loss ($)", `$${stats.avgLoss.toFixed(2)}`],
+      ["Average Win ($)", stats.avgWin > 0 ? `+$${stats.avgWin.toFixed(2)}` : "—"],
+      ["Average Loss ($)", stats.avgLoss > 0 ? `-$${stats.avgLoss.toFixed(2)}` : "—"],
       ["Risk/Reward Ratio", stats.rrRatio.toFixed(2)],
-      ["Largest Win ($)", `$${stats.bestTrade.toFixed(2)}`],
-      ["Largest Loss ($)", `$${stats.worstTrade.toFixed(2)}`],
+      ["Largest Win ($)", stats.bestTrade > 0 ? `+$${stats.bestTrade.toFixed(2)}` : "—"],
+      ["Largest Loss ($)", stats.worstTrade < 0 ? `-$${Math.abs(stats.worstTrade).toFixed(2)}` : "—"],
       ["Max Winning Streak", String(stats.maxWinStreak)],
       ["Max Losing Streak", String(stats.maxLossStreak)],
       ["Long Trades Win Rate (%)", stats.longWinRate.toFixed(2) + "%"],
@@ -540,22 +542,22 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
             {[
               {
                 label: "Avg Winner",
-                value: `$${stats.avgWin.toFixed(2)}`,
+                value: stats.avgWin > 0 ? `+$${stats.avgWin.toFixed(2)}` : "—",
                 color: "text-emerald-500",
               },
               {
                 label: "Avg Loser",
-                value: `-$${stats.avgLoss.toFixed(2)}`,
+                value: stats.avgLoss > 0 ? `-$${stats.avgLoss.toFixed(2)}` : "—",
                 color: "text-rose-500",
               },
               {
                 label: "Best Trade",
-                value: `$${stats.bestTrade.toLocaleString()}`,
+                value: stats.bestTrade > 0 ? `+$${stats.bestTrade.toLocaleString()}` : "—",
                 color: "text-emerald-500",
               },
               {
                 label: "Worst Trade",
-                value: `$${stats.worstTrade.toLocaleString()}`,
+                value: stats.worstTrade < 0 ? `-$${Math.abs(stats.worstTrade).toLocaleString()}` : "—",
                 color: "text-rose-500",
               },
               {
@@ -610,7 +612,7 @@ export function TraderStats({ initialTrades, hideAccountSelector = false }: Trad
                       (t) => t.symbol === symbol,
                     );
                     const symbPnL = symbTrades.reduce(
-                      (sum, t) => sum + (t.pnl || 0),
+                      (sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)),
                       0,
                     );
                     return (

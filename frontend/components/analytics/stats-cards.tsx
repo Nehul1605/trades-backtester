@@ -7,6 +7,7 @@ interface Trade {
   id: string;
   pnl: number | null;
   status: string;
+  commission?: number | null;
 }
 
 interface StatsCardsProps {
@@ -19,11 +20,11 @@ export function StatsCards({ trades }: StatsCardsProps) {
   );
 
   const totalPnL = closedTrades.reduce(
-    (sum, trade) => sum + (trade.pnl || 0),
+    (sum, trade) => sum + ((trade.pnl || 0) - (trade.commission || 0)),
     0,
   );
-  const winningTrades = closedTrades.filter((t) => (t.pnl || 0) > 0);
-  const losingTrades = closedTrades.filter((t) => (t.pnl || 0) < 0);
+  const winningTrades = closedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0);
+  const losingTrades = closedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) < 0);
   const winRate =
     closedTrades.length > 0
       ? (winningTrades.length / closedTrades.length) * 100
@@ -31,13 +32,13 @@ export function StatsCards({ trades }: StatsCardsProps) {
 
   const avgWin =
     winningTrades.length > 0
-      ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) /
+      ? winningTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0) /
         winningTrades.length
       : 0;
   const avgLoss =
     losingTrades.length > 0
       ? Math.abs(
-          losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) /
+          losingTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0) /
             losingTrades.length,
         )
       : 0;

@@ -86,13 +86,16 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
   // Compute key account metrics
   const metrics = useMemo(() => {
     const total = closedTrades.length;
-    const wins = closedTrades.filter((t) => t.pnl > 0);
-    const losses = closedTrades.filter((t) => t.pnl <= 0);
+    const wins = closedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) > 0);
+    const losses = closedTrades.filter((t) => ((t.pnl || 0) - (t.commission || 0)) <= 0);
     
     const winRate = total > 0 ? (wins.length / total) * 100 : 0;
-    const netPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const netPnl = closedTrades.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0);
     const profitFactor = losses.length > 0 
-      ? Math.abs(wins.reduce((sum, t) => sum + t.pnl, 0) / losses.reduce((sum, t) => sum + t.pnl, 0)) 
+      ? Math.abs(
+          wins.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0) / 
+          losses.reduce((sum, t) => sum + ((t.pnl || 0) - (t.commission || 0)), 0)
+        ) 
       : 1;
 
     return { total, winsCount: wins.length, winRate, netPnl, profitFactor };
@@ -130,12 +133,13 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
       const d = new Date(t.entry_date);
       if (isNaN(d.getTime())) return;
       const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const netPnlVal = (t.pnl || 0) - (t.commission || 0);
       
       const existing = dayGroupedPnL.find((item) => item.date === dateStr);
       if (existing) {
-        existing.pnl += t.pnl || 0;
+        existing.pnl += netPnlVal;
       } else {
-        dayGroupedPnL.push({ date: dateStr, pnl: t.pnl || 0 });
+        dayGroupedPnL.push({ date: dateStr, pnl: netPnlVal });
       }
     });
 
@@ -175,7 +179,7 @@ export function AccountWorkspace({ account, initialTrades }: AccountWorkspacePro
       const date = new Date(t.entry_date);
       const dayName = days[date.getDay()];
       if (pnlMap[dayName] !== undefined) {
-        pnlMap[dayName] += t.pnl || 0;
+        pnlMap[dayName] += (t.pnl || 0) - (t.commission || 0);
       }
     });
 
