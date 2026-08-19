@@ -39,7 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { computePnlUSD } from "@/lib/pnl";
-import { cn, getLocalDateString } from "@/lib/utils";
+import { cn, getLocalDateString, getMediaUrl } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -640,7 +640,7 @@ export function TradeList({ trades }: TradeListProps) {
                                     asChild
                                     title="View Screenshot"
                                   >
-                                    <a href={trade.screenshot_url} target="_blank" rel="noopener noreferrer">
+                                    <a href={getMediaUrl(trade.screenshot_url)} target="_blank" rel="noopener noreferrer">
                                       <ExternalLink className="w-4 h-4" />
                                     </a>
                                   </Button>

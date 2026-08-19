@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { updateTrade, uploadTradeScreenshot, deleteTrade } from "@/lib/actions";
 import { computePnlUSD, TradeType } from "@/lib/pnl";
-import { cn, getLocalDateString } from "@/lib/utils";
+import { cn, getLocalDateString, getMediaUrl } from "@/lib/utils";
 
 interface Trade {
   id: string;
@@ -539,12 +539,12 @@ export function TradeDetailPanel({ trade, onUpdate, colSpan }: TradeDetailPanelP
                 {trade.screenshot_url ? (
                   <div className="relative group overflow-hidden rounded-lg border border-border/50 max-h-48 w-full flex items-center justify-center bg-black/40">
                     <img
-                      src={trade.screenshot_url}
+                      src={getMediaUrl(trade.screenshot_url)}
                       alt={`${trade.symbol} Chart`}
                       className="max-h-40 object-contain rounded transition-transform duration-300 group-hover:scale-105"
                     />
                     <a
-                      href={trade.screenshot_url}
+                      href={getMediaUrl(trade.screenshot_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs text-white font-bold"
