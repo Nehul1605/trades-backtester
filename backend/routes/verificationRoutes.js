@@ -146,6 +146,8 @@ router.get("/status", protect, async (req, res) => {
     let calculatedStatus = "pending";
     if (hasActivePremium || isBrokerVerified || hasActivePromo || isAdmin) {
       calculatedStatus = "approved";
+    } else if ((request && request.status === "rejected") || user.status === "rejected") {
+      calculatedStatus = "rejected";
     }
 
     // Determine custom membership tag
