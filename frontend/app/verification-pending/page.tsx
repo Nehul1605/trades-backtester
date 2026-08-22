@@ -55,10 +55,10 @@ export default function VerificationPendingPage() {
     if (isAdmin) {
       router.replace("/dashboard");
       router.refresh();
-    } else {
+    } else if (session?.user?.id) {
       fetchStatus();
     }
-  }, [isAdmin, session]);
+  }, [isAdmin, session?.user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
