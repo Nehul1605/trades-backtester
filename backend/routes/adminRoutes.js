@@ -30,7 +30,7 @@ router.get("/verifications", protect, protectAdmin, async (req, res) => {
   try {
     const requests = await VerificationRequest.find()
       .populate("user", "name email status role")
-      .sort({ createdAt: -1 });
+      .sort({ updatedAt: -1 });
     res.json(requests);
   } catch (error) {
     console.error("Get verifications error:", error);
