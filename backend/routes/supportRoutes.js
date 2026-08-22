@@ -44,7 +44,15 @@ router.post("/", optionalProtect, async (req, res) => {
     // 2. Send via Resend API (Direct REST Call)
     const supportEmail = process.env.SUPPORT_EMAIL || "support@tradetrackerpro.in";
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "Support Ticket <onboarding@resend.dev>";
+    let fromEmail = process.env.RESEND_FROM_EMAIL || "Support Ticket <onboarding@resend.dev>";
+
+    // Clean wrapping quotes that hosting providers might pass literally
+    if (fromEmail.startsWith('"') && fromEmail.endsWith('"')) {
+      fromEmail = fromEmail.slice(1, -1);
+    }
+    if (fromEmail.startsWith("'") && fromEmail.endsWith("'")) {
+      fromEmail = fromEmail.slice(1, -1);
+    }
 
     if (resendApiKey) {
       console.log(`Sending email notification to ${supportEmail} using Resend...`);

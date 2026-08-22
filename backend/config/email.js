@@ -13,7 +13,15 @@ dotenv.config();
  */
 export async function sendEmail({ to, subject, text, html, reply_to }) {
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "TradeTracker Pro <noreply@tradetrackerpro.com>";
+  let fromEmail = process.env.RESEND_FROM_EMAIL || "TradeTracker Pro <noreply@tradetrackerpro.com>";
+
+  // Clean wrapping quotes that hosting providers might pass literally
+  if (fromEmail.startsWith('"') && fromEmail.endsWith('"')) {
+    fromEmail = fromEmail.slice(1, -1);
+  }
+  if (fromEmail.startsWith("'") && fromEmail.endsWith("'")) {
+    fromEmail = fromEmail.slice(1, -1);
+  }
 
   if (!resendApiKey) {
     console.warn("⚠️ RESEND_API_KEY is not defined in backend .env. Email skipped.");
