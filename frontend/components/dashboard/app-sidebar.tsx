@@ -112,7 +112,7 @@ export function AppSidebar() {
     {
       label: "Trading Tools",
       items: [
-        { title: "Position Calculator", url: "/position-calculator", icon: Scale, badge: "SOON" },
+        { title: "Position Calculator", url: "/position-calculator", icon: Scale },
         { title: "P&L Calculator", url: "/pl-calculator", icon: Calculator },
         { title: "Consistency Calculator", url: "/consistency-calculator", icon: Percent },
       ],

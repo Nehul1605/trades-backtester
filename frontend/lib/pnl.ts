@@ -42,11 +42,10 @@ function isIndex(sym: string) {
   const s = normalizeSymbol(sym);
   const indices = [
     "US30",
-    "USTECH",
+    "US100",
     "NAS100",
     "DE30",
     "GER30",
-    "DXY",
     "USDX",
     "SPX500",
     "US500",
@@ -96,9 +95,9 @@ function getMetalContractSize(sym: string) {
 
 function getIndexContractSize(sym: string) {
   const s = normalizeSymbol(sym);
-  if (s === "DXY" || s === "USDX") return new Decimal(1000);
+  if (s === "USDX") return new Decimal(1000);
   if (s === "DE30" || s === "GER30") return new Decimal(25);
-  return new Decimal(1); // Default for US30/USTECH often 1 per lot or 10
+  return new Decimal(1); // Default for US30/US100 often 1 per lot or 10
 }
 
 function getStockContractSize() {
