@@ -25,6 +25,7 @@ import SymbolCombobox, {
 } from "@/components/inputs/symbol-combobox";
 import { computePnlUSD } from "@/lib/pnl";
 import { cn } from "@/lib/utils";
+import { getInstrumentsAction } from "@/lib/actions";
 
 const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "ETHUSD", label: "ETHUSD" },
@@ -33,26 +34,85 @@ const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "XAUUSD", label: "XAUUSD (Gold)" },
   { value: "XAGUSD", label: "XAGUSD (Silver)" },
   { value: "DE30", label: "DE30" },
-  { value: "USTECH", label: "USTECH" },
+  { value: "US100", label: "US100 (Nasdaq)" },
   { value: "US30", label: "US30" },
   { value: "EURUSD", label: "EURUSD" },
   { value: "GBPUSD", label: "GBPUSD" },
   { value: "USDJPY", label: "USDJPY" },
-  { value: "DXY", label: "DXY" },
   { value: "USOIL", label: "USOIL" },
 ];
 
 export function PLCalculator() {
   const [direction, setDirection] = useState<"long" | "short">("long");
   const [symbol, setSymbol] = useState<string>("XAUUSD");
-  const [entryPrice, setEntryPrice] = useState<string>("2400");
-  const [exitPrice, setExitPrice] = useState<string>("2420");
-  const [quantity, setQuantity] = useState<string>("10");
+  const [entryPrice, setEntryPrice] = useState<string>("4500");
+  const [exitPrice, setExitPrice] = useState<string>("4550");
+  const [quantity, setQuantity] = useState<string>("1");
+  const [instruments, setInstruments] = useState<any[]>([]);
 
   const [result, setResult] = useState<{
     pnl: number;
     pnlPercent: number;
   } | null>(null);
+
+  const symbolOptions: SymbolOption[] = instruments.length > 0
+    ? instruments.map((i) => ({ value: i.symbol, label: i.label || i.symbol }))
+    : SYMBOL_OPTIONS;
+
+  function getDecimalsForSpec(spec: any) {
+    if (!spec) return 2;
+    if (spec.type === "Forex") {
+      return spec.decimals !== undefined ? spec.decimals : 5;
+    }
+    if (spec.type === "Metal" || spec.type === "Energy" || spec.symbol === "USOIL" || spec.type === "Stock") {
+      return 2;
+    }
+    if (spec.type === "Crypto" || spec.type === "Index") {
+      return 0;
+    }
+    return 2;
+  }
+
+  // Fetch instrument specifications on mount
+  useEffect(() => {
+    async function loadInstruments() {
+      const res = await getInstrumentsAction();
+      if (res.success && res.instruments) {
+        setInstruments(res.instruments);
+        
+        // Also pre-fill initial values for the default XAUUSD gold symbol
+        const goldInst = res.instruments.find((i: any) => i.symbol === "XAUUSD");
+        if (goldInst) {
+          const entry = goldInst.defaultEntry || 2400;
+          const sl = goldInst.defaultSL || (entry * 0.99);
+          const diff = Math.abs(entry - sl);
+          const decimals = getDecimalsForSpec(goldInst);
+          setEntryPrice(entry.toFixed(decimals));
+          setExitPrice((entry + diff * 1.5).toFixed(decimals));
+        }
+      }
+    }
+    loadInstruments();
+  }, []);
+
+  // Automatically update realistic entry/exit defaults when symbol or direction changes
+  useEffect(() => {
+    if (instruments.length === 0) return;
+    const spec = instruments.find((i) => i.symbol === symbol);
+    if (spec) {
+      const entry = spec.defaultEntry || 100;
+      const sl = spec.defaultSL || (entry * 0.99);
+      const diff = Math.abs(entry - sl);
+      const decimals = getDecimalsForSpec(spec);
+      
+      setEntryPrice(entry.toFixed(decimals));
+      if (direction === "long") {
+        setExitPrice((entry + diff * 1.5).toFixed(decimals));
+      } else {
+        setExitPrice((entry - diff * 1.5).toFixed(decimals));
+      }
+    }
+  }, [symbol, instruments, direction]);
 
   useEffect(() => {
     const entry = parseFloat(entryPrice);
@@ -115,7 +175,7 @@ export function PLCalculator() {
               <SymbolCombobox
                 value={symbol}
                 onChange={setSymbol}
-                options={SYMBOL_OPTIONS}
+                options={symbolOptions}
                 placeholder="Search instrument..."
               />
             </div>
@@ -193,7 +253,7 @@ export function PLCalculator() {
               <Input
                 id="quantity"
                 type="number"
-                placeholder="10"
+                placeholder="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 className="bg-background/40 border-border/40 text-xs font-semibold focus-visible:ring-primary/40 h-10 font-mono"

@@ -8,12 +8,11 @@ export const INSTRUMENT_SPECS = [
   { symbol: "XAUUSD", label: "XAUUSD (Gold)", pip: 0.01, type: "Metal", category: "Metals", contractMultiplier: 100, defaultEntry: 4200, defaultSL: 4194 },
   { symbol: "XAGUSD", label: "XAGUSD (Silver)", pip: 0.001, type: "Metal", category: "Metals", contractMultiplier: 5000, defaultEntry: 57.0, defaultSL: 56.5 },
   { symbol: "DE30", label: "DE30 (DAX)", pip: 0.1, type: "Index", category: "Indices", contractMultiplier: 27, defaultEntry: 26200, defaultSL: 26100 },
-  { symbol: "USTECH", label: "USTECH (Nasdaq)", pip: 0.1, type: "Index", category: "Indices", contractMultiplier: 20, defaultEntry: 29450, defaultSL: 29400 },
+  { symbol: "US100", label: "US100 (Nasdaq)", pip: 0.1, type: "Index", category: "Indices", contractMultiplier: 20, defaultEntry: 29450, defaultSL: 29400 },
   { symbol: "US30", label: "US30 (Dow Jones)", pip: 1, type: "Index", category: "Indices", contractMultiplier: 5, defaultEntry: 53850, defaultSL: 53750 },
   { symbol: "EURUSD", label: "EURUSD", pip: 0.0001, type: "Forex", category: "Forex", contractMultiplier: 100000, defaultEntry: 1.15440, defaultSL: 1.15400, decimals: 5 },
   { symbol: "GBPUSD", label: "GBPUSD", pip: 0.0001, type: "Forex", category: "Forex", contractMultiplier: 100000, defaultEntry: 1.34540, defaultSL: 1.34500, decimals: 5 },
   { symbol: "USDJPY", label: "USDJPY", pip: 0.01, type: "Forex", category: "Forex", contractMultiplier: 100000, defaultEntry: 158.420, defaultSL: 158.320, decimals: 3 },
-  { symbol: "DXY", label: "DXY (US Dollar Index)", pip: 0.01, type: "Index", category: "Indices", contractMultiplier: 1000, defaultEntry: 99.960, defaultSL: 99.900, decimals: 3 },
   { symbol: "USOIL", label: "USOIL (WTI Crude)", pip: 0.01, type: "Energy", category: "Commodities", contractMultiplier: 1000, defaultEntry: 77.820, defaultSL: 77.500, decimals: 3 },
 ];
 
@@ -37,7 +36,7 @@ export const getInstruments = async (req, res) => {
 export const calculatePositionSize = async (req, res) => {
   try {
     const {
-      symbol = "DXY",
+      symbol = "EURUSD",
       direction = "long",
       balance = 100000,
       riskPercent = 1,

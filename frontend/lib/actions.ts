@@ -1249,3 +1249,85 @@ export async function cancelPaymentOrder(orderId: string): Promise<{ error?: str
   }
 }
 
+export async function getInstrumentsAction(): Promise<{
+  success: boolean;
+  instruments?: any[];
+  error?: string;
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/calculator/instruments`, {
+      headers: {
+        ...authHeader,
+      },
+      cache: "no-store",
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { success: false, error: result.message || "Failed to fetch instruments" };
+    }
+    return result;
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to fetch instruments" };
+  }
+}
+
+export async function calculatePositionSizeAction(data: {
+  symbol: string;
+  direction: "long" | "short";
+  balance: number;
+  riskPercent: number;
+  entryPrice?: number;
+  stopLossPrice?: number;
+  stopLossPips?: number;
+  stopLossType: "price" | "pips";
+  takeProfitPrice?: number;
+  takeProfitPips?: number;
+  takeProfitType: "price" | "pips" | "rr";
+}): Promise<{
+  success: boolean;
+  calculation?: {
+    symbol: string;
+    instrumentType: string;
+    pipSize: number;
+    direction: "long" | "short";
+    balance: number;
+    riskPercent: number;
+    riskAmount: number;
+    entryPrice: number;
+    stopLossPrice: number;
+    stopLossPips: number;
+    takeProfitPrice: number | null;
+    takeProfitPips: number | null;
+    positionSizeStandard: number;
+    positionSizeMini: number;
+    positionSizeMicro: number;
+    pipValue: number;
+    potentialReward: number | null;
+    rewardToRiskRatio: number | null;
+  };
+  error?: string;
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/calculator/position-size`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { success: false, error: result.message || "Failed to calculate position size" };
+    }
+    return result;
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to calculate position size" };
+  }
+}
+
+

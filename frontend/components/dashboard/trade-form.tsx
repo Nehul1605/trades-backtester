@@ -45,12 +45,11 @@ const SYMBOL_OPTIONS: SymbolOption[] = [
   { value: "XAUUSD", label: "XAUUSD (Gold)" },
   { value: "XAGUSD", label: "XAGUSD (Silver)" },
   { value: "DE30", label: "DE30" },
-  { value: "USTECH", label: "USTECH" },
+  { value: "US100", label: "US100 (Nasdaq)" },
   { value: "US30", label: "US30" },
   { value: "EURUSD", label: "EURUSD" },
   { value: "GBPUSD", label: "GBPUSD" },
   { value: "USDJPY", label: "USDJPY" },
-  { value: "DXY", label: "DXY" },
   { value: "USOIL", label: "USOIL" },
 ];
 

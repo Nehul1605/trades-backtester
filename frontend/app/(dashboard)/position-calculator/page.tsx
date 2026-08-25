@@ -24,7 +24,7 @@ export default async function PositionCalculatorPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
       <div className="w-full">
-        <PositionCalculator />
+        <PositionCalculator userId={session?.user?.id} />
       </div>
     </div>
   );
