@@ -24,9 +24,16 @@ function calculatePips(symbol, direction, entryPrice, exitPrice) {
  */
 export const getOperatorTrades = async (req, res) => {
   try {
-    const trades = await OperatorTrade.find()
+    const rawTrades = await OperatorTrade.find()
       .populate("createdBy", "name email role")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1, _id: -1 });
+
+    // Explicitly sort in memory by createdAt descending, tie-breaking by _id descending (LIFO)
+    const trades = [...rawTrades].sort((a, b) => {
+      const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return String(b._id).localeCompare(String(a._id));
+    });
 
     // Helper to calculate stats for a list of trades
     const calculateStats = (tradeList) => {
@@ -84,15 +91,32 @@ export const getOperatorTrades = async (req, res) => {
       }
     }
 
+    // Ensure current running month is always present
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const currentMonthName = now.toLocaleString("en-US", { month: "long", year: "numeric" });
+    if (!monthGroups[currentMonthKey]) {
+      monthGroups[currentMonthKey] = {
+        monthKey: currentMonthKey,
+        monthName: currentMonthName,
+        trades: [],
+      };
+    }
+
     const monthlyData = Object.keys(monthGroups)
       .sort((a, b) => a.localeCompare(b)) // Chronological order starting from August 2026
       .map((monthKey) => {
         const group = monthGroups[monthKey];
+        const groupTrades = [...group.trades].sort((a, b) => {
+          const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          if (timeDiff !== 0) return timeDiff;
+          return String(b._id).localeCompare(String(a._id));
+        });
         return {
           monthKey: group.monthKey,
           monthName: group.monthName,
-          stats: calculateStats(group.trades),
-          trades: group.trades,
+          stats: calculateStats(groupTrades),
+          trades: groupTrades,
         };
       });
 
@@ -153,7 +177,13 @@ export const createOperatorTrade = async (req, res) => {
 
     let trade;
     if (createdAt) {
-      tradeData.createdAt = new Date(createdAt);
+      const inputDate = new Date(createdAt);
+      // If user passed a YYYY-MM-DD date without specific time, incorporate current time so intra-day sequence is preserved
+      if (typeof createdAt === "string" && createdAt.trim().length === 10) {
+        const now = new Date();
+        inputDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+      }
+      tradeData.createdAt = inputDate;
       trade = new OperatorTrade(tradeData);
       await trade.save({ timestamps: false });
     } else {

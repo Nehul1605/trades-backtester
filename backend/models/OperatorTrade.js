@@ -53,8 +53,8 @@ const operatorTradeSchema = new mongoose.Schema(
   }
 );
 
-// Index for query performance
-operatorTradeSchema.index({ createdAt: -1 });
+// Index for query performance & LIFO ordering
+operatorTradeSchema.index({ createdAt: -1, _id: -1 });
 operatorTradeSchema.index({ symbol: 1, status: 1 });
 
 const OperatorTrade = mongoose.model("OperatorTrade", operatorTradeSchema);
