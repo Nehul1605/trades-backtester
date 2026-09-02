@@ -94,7 +94,10 @@ export function OperatorHQ() {
 
   const [trades, setTrades] = useState<OperatorTrade[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyDataItem[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [stats, setStats] = useState({
     totalSignals: 0,
     openSignals: 0,
@@ -256,9 +259,27 @@ export function OperatorHQ() {
     setIsUpdateOpen(true);
   };
 
-  // Ensure month tabs start from August 2026 through December 2026
+  // Ensure month tabs start from August 2026 through December 2026, and always include current month
   const displayMonthlyData = React.useMemo(() => {
-    if (monthlyData.length > 0) return monthlyData;
+    const nowDate = new Date();
+    const curKey = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}`;
+    const curName = nowDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+    if (monthlyData.length > 0) {
+      if (!monthlyData.some((m) => m.monthKey === curKey)) {
+        return [
+          ...monthlyData,
+          {
+            monthKey: curKey,
+            monthName: curName,
+            stats: { totalSignals: 0, openSignals: 0, winCount: 0, lossCount: 0, closedCount: 0, accuracyPercent: 0, totalPips: 0 },
+            trades: [],
+          },
+        ].sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+      }
+      return monthlyData;
+    }
+
     const startYear = 2026;
     const result: MonthlyDataItem[] = [];
 
@@ -273,14 +294,25 @@ export function OperatorHQ() {
         trades: [],
       });
     }
+
+    if (!result.some((m) => m.monthKey === curKey)) {
+      result.push({
+        monthKey: curKey,
+        monthName: curName,
+        stats: { totalSignals: 0, openSignals: 0, winCount: 0, lossCount: 0, closedCount: 0, accuracyPercent: 0, totalPips: 0 },
+        trades: [],
+      });
+      result.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+    }
+
     return result;
   }, [monthlyData]);
 
   // Dynamically calculate index matching current real-world date (new Date())
   const initialCurrentMonthIndex = React.useMemo(() => {
-    const now = new Date();
-    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const foundIdx = displayMonthlyData.findIndex((m) => m.monthKey === currentKey);
+    const nowDate = new Date();
+    const curKey = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}`;
+    const foundIdx = displayMonthlyData.findIndex((m) => m.monthKey === curKey);
     return foundIdx !== -1 ? foundIdx : 0;
   }, [displayMonthlyData]);
 
@@ -296,8 +328,9 @@ export function OperatorHQ() {
 
   const handlePrevMonth = () => {
     if (selectedMonth === "all") {
-      setSelectedMonth(displayMonthlyData[0].monthKey);
-      setActiveMonthIndex(0);
+      const newIdx = Math.max(0, activeMonthIndex - 1);
+      setActiveMonthIndex(newIdx);
+      setSelectedMonth(displayMonthlyData[newIdx].monthKey);
     } else if (activeMonthIndex > 0) {
       const newIdx = activeMonthIndex - 1;
       setActiveMonthIndex(newIdx);
@@ -307,8 +340,9 @@ export function OperatorHQ() {
 
   const handleNextMonth = () => {
     if (selectedMonth === "all") {
-      setSelectedMonth(displayMonthlyData[0].monthKey);
-      setActiveMonthIndex(0);
+      const newIdx = Math.min(displayMonthlyData.length - 1, activeMonthIndex + 1);
+      setActiveMonthIndex(newIdx);
+      setSelectedMonth(displayMonthlyData[newIdx].monthKey);
     } else if (activeMonthIndex < displayMonthlyData.length - 1) {
       const newIdx = activeMonthIndex + 1;
       setActiveMonthIndex(newIdx);
@@ -348,14 +382,22 @@ export function OperatorHQ() {
     };
   }, [baseTrades, filter]);
 
-  // Filtered trades list
-  const filteredTrades = baseTrades.filter((t) => {
-    if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
-    if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
-    if (filter === "open") return t.status === "open";
-    if (filter === "wins") return t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0);
-    return true;
-  });
+  // Filtered & strictly LIFO-sorted trades list (Newest trade call on top)
+  const filteredTrades = React.useMemo(() => {
+    return baseTrades
+      .filter((t) => {
+        if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
+        if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
+        if (filter === "open") return t.status === "open";
+        if (filter === "wins") return t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0);
+        return true;
+      })
+      .sort((a, b) => {
+        const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return (b._id || "").localeCompare(a._id || "");
+      });
+  }, [baseTrades, filter]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto w-full">
@@ -426,10 +468,10 @@ export function OperatorHQ() {
           {/* Left Arrow Button */}
           <button
             onClick={handlePrevMonth}
-            disabled={selectedMonth !== "all" && activeMonthIndex <= 0}
+            disabled={activeMonthIndex <= 0}
             className={cn(
               "p-1.5 rounded-lg bg-muted/40 text-muted-foreground transition-all shrink-0 cursor-pointer",
-              selectedMonth !== "all" && activeMonthIndex <= 0
+              activeMonthIndex <= 0
                 ? "opacity-30 cursor-not-allowed"
                 : "hover:bg-muted hover:text-foreground"
             )}
