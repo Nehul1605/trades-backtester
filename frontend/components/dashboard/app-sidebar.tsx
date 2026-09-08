@@ -247,7 +247,7 @@ export function AppSidebar() {
                 {group.items.map((item) => {
                   const isActive = pathname === item.url;
                   const isItemLocked =
-                    (isFullyLocked && !["/settings", "/help"].includes(item.url)) ||
+                    (isFullyLocked && !["/settings", "/help", "/premium"].includes(item.url)) ||
                     (isPromoTrial && ["/market", "/operator-hq", "/calendar"].includes(item.url));
 
                   return (

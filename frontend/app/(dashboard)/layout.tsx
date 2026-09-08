@@ -7,8 +7,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { LiveMeetingWrapper } from "@/components/live-market/LiveMeetingWrapper";
 
-import { headers } from "next/headers";
-import { LockedPlatformView } from "@/components/dashboard/LockedPlatformView";
+import { DashboardContentGuard } from "@/components/dashboard/dashboard-content-guard";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
 
@@ -28,10 +27,6 @@ export default async function DashboardLayout({
     process.env.REQUIRE_REFERRAL_VERIFICATION !== "false";
 
   const isAdmin = (session.user as any).role === "admin";
-
-  const headersList = await headers();
-  const currentPath = headersList.get("x-pathname") || "";
-  const isPremiumCheckoutPage = currentPath.startsWith("/premium");
 
   let statusData: any = null;
   let userStatus = (session.user as any).status || "pending";
@@ -68,11 +63,9 @@ export default async function DashboardLayout({
           <DashboardHeader statusData={statusData} isLocked={isLocked} />
           <LiveMeetingWrapper>
             <Suspense fallback={null}>
-              {isLocked && !isPremiumCheckoutPage ? (
-                <LockedPlatformView statusData={statusData} />
-              ) : (
-                children
-              )}
+              <DashboardContentGuard isLocked={isLocked} statusData={statusData}>
+                {children}
+              </DashboardContentGuard>
             </Suspense>
           </LiveMeetingWrapper>
         </SidebarInset>
