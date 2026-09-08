@@ -16,20 +16,23 @@ A user's profile badge in the dashboard sidebar dynamically displays one of the 
 
 ## 2. Promotional Trial Rules (`rdx10`)
 * **Code Activation:** Entering `rdx10` (case-insensitive) bypasses the onboarding gate.
-* **Capped Expiry (August 31, 2026 Cutoff):**
-  * Trials last for **10 days** from activation.
-  * **Absolute Hard Cutoff:** Trial access completely ceases for everyone on **August 31, 2026 UTC** regardless of activation date. (e.g., activating on August 29 results in a 2-day trial).
+* **Dynamic 10-Day Rolling Trial:**
+  * Every new user receives **10 full days** of trial access calculated from their individual activation timestamp (`Date.now() + 10 days`).
+  * **Auto-Revocation:** After 10 days, access is automatically revoked for that user ID and the account is redirected back to the verification/upgrade gate. Anti-abuse prevents re-applying the code on the same expired user ID.
 
 ---
 
-## 3. Feature Access Restriction Locks
-Promo Trial users are locked out of specific institutional trading features. If accessed, they render a modern lock card prompting upgrade or broker verification:
-- `/market` (Live streaming WebRTC chart room)
-- `/operator-hq` (Real-time operator signals feed)
-- `/calendar` (Institutional Economic Calendar)
-- `/position-calculator` (Position size lot calculator)
-
-*Note: In benefits list, the economic calendar has been swapped for **Trading Resources** (featuring educational PDF guides).*
+## 3. Feature Access Scope (`rdx10`)
+* **Unlocked & Accessible:**
+  - `/dashboard` (Trade logging, journaling, daily equity curve, metrics, and calendar breakdown)
+  - `/position-calculator` (Position size lot calculator)
+  - `/pl-calculator` (Target profit & loss lot calculator)
+  - `/consistency-calculator` (Prop firm consistency rule compliance calculator)
+  - `/settings` & `/help` (Account preferences and support documentation)
+* **Institutional Features Locked (FeatureLockedOverlay):**
+  - `/market` (Live streaming WebRTC chart room)
+  - `/operator-hq` (Real-time operator signals feed)
+  - `/calendar` (Institutional Economic Calendar)
 
 ---
 

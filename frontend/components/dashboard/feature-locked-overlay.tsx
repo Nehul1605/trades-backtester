@@ -54,7 +54,7 @@ export function FeatureLockedOverlay({ featureName }: FeatureLockedOverlayProps)
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          This feature is restricted under your **10-Day Promotional Trial**. To gain permanent full access to Live Stream, Operator Signals, Economic Calendar, and advanced calculators, choose one of the options below.
+          This feature is restricted under your **10-Day Promotional Trial**. To gain permanent full access to Live Stream, Operator Signals, and Economic Calendar, choose one of the options below.
         </p>
 
         {/* Benefits lists */}

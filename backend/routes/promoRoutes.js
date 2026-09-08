@@ -5,18 +5,30 @@ import protect from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Helper to seed a default promo code if none exist
+// Helper to seed a default promo code if none exist or update legacy fixed cutoffs
 const seedPromoCodes = async () => {
   try {
-    const hasRdx10 = await PromoCode.findOne({ code: "rdx10" });
-    if (!hasRdx10) {
-      await PromoCode.create({
-        code: "rdx10",
+    let rdxPromo = await PromoCode.findOne({
+      code: { $regex: /^rdx10$/i },
+    });
+
+    if (!rdxPromo) {
+      rdxPromo = await PromoCode.create({
+        code: "RDX10",
         durationDays: 10,
         isActive: true,
-        expiresAt: new Date(Date.UTC(2026, 7, 31, 23, 59, 59)), // Valid until August 31, 2026
+        expiresAt: null, // Dynamic rolling 10-day trial per user
       });
-      console.log("Seeded default promo code rdx10");
+      console.log("Seeded default promo code RDX10 with dynamic 10-day trial");
+    } else {
+      // If legacy promo had a fixed expiry (e.g. Aug 31) or inactive, update to evergreen rolling 10-day
+      if (rdxPromo.expiresAt !== null || !rdxPromo.isActive || rdxPromo.durationDays !== 10) {
+        rdxPromo.expiresAt = null;
+        rdxPromo.isActive = true;
+        rdxPromo.durationDays = 10;
+        await rdxPromo.save();
+        console.log("Updated RDX10 promo code: removed legacy cutoff, active 10-day rolling trial");
+      }
     }
   } catch (err) {
     console.error("Error seeding promo codes:", err);
@@ -37,8 +49,10 @@ router.post("/apply", protect, async (req, res) => {
   }
 
   try {
-    const cleanCode = code.trim().toLowerCase();
-    const promo = await PromoCode.findOne({ code: cleanCode });
+    const cleanCode = code.trim();
+    const promo = await PromoCode.findOne({
+      code: { $regex: new RegExp(`^${cleanCode}$`, "i") },
+    });
 
     if (!promo) {
       return res.status(404).json({ error: "Invalid promo code" });
@@ -62,14 +76,23 @@ router.post("/apply", protect, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Calculate trial expiry with hard cutoff of August 31, 2026
-    const durationMs = promo.durationDays * 24 * 60 * 60 * 1000;
-    let trialExpiry = new Date(Date.now() + durationMs);
-
-    const cutoffDate = new Date(Date.UTC(2026, 7, 31, 23, 59, 59));
-    if (trialExpiry > cutoffDate) {
-      trialExpiry = cutoffDate;
+    // Prevent repeated trial resets on the same user account
+    if (user.isPromoUser && user.promoActivatedAt) {
+      const now = new Date();
+      if (user.promoExpiresAt && user.promoExpiresAt <= now) {
+        return res.status(400).json({
+          error: "You have already used your 10-day promotional trial for this account. Please upgrade to Premium or submit your broker verification to continue.",
+        });
+      }
+      return res.status(400).json({
+        error: `Your promotional trial is already active until ${user.promoExpiresAt.toLocaleDateString()}.`,
+      });
     }
+
+    // Calculate dynamic trial expiry: 10 days from current activation time
+    const durationDays = promo.durationDays || 10;
+    const durationMs = durationDays * 24 * 60 * 60 * 1000;
+    const trialExpiry = new Date(Date.now() + durationMs);
 
     // Update user properties
     user.isPromoUser = true;
@@ -86,14 +109,14 @@ router.post("/apply", protect, async (req, res) => {
     await promo.save();
 
     res.json({
-      message: `Promo code applied successfully! Trial active until ${trialExpiry.toLocaleDateString()}.`,
+      message: `Promo code applied successfully! 10-day trial active until ${trialExpiry.toLocaleDateString()}.`,
       user: {
         id: user._id,
         email: user.email,
         status: user.status,
         isPromoUser: user.isPromoUser,
         promoExpiresAt: user.promoExpiresAt,
-      }
+      },
     });
 
   } catch (error) {

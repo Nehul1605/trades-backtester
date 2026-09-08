@@ -496,6 +496,14 @@ export async function reorderBrokerAccounts(accountIds: string[]): Promise<{ err
 export async function getVerificationStatus(): Promise<{
   status: string;
   role: string;
+  isPromoActive?: boolean;
+  isPremiumActive?: boolean;
+  isBrokerVerified?: boolean;
+  hasUsedPromo?: boolean;
+  membershipTag?: string;
+  promoExpiresAt?: string | null;
+  premiumExpiresAt?: string | null;
+  promoCode?: string;
   request?: any;
   error?: string;
 }> {

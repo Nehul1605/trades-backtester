@@ -22,6 +22,7 @@ import {
   Scale,
   Award,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -65,12 +66,14 @@ export function AppSidebar() {
   };
 
   const isAdmin = (session?.user as any)?.role === "admin";
+  const userStatus = (session?.user as any)?.status || "pending";
   const isPromo = (session?.user as any)?.isPromoActive;
   const isPremium = (session?.user as any)?.isPremiumActive;
   const membershipTag = (session?.user as any)?.membershipTag;
   
   const isBypassed = isAdmin || membershipTag === "OPERATOR HQ" || isPremium;
-  const isPromoTrial = isPromo && !isBypassed;
+  const isPromoTrial = isPromo && !isBypassed && userStatus === "approved";
+  const isFullyLocked = !isAdmin && !isBypassed && !isPromoTrial;
 
   const [viewMode, setViewMode] = React.useState<"admin" | "user">("admin");
   const [mounted, setMounted] = React.useState(false);
@@ -118,6 +121,12 @@ export function AppSidebar() {
       ],
     },
     {
+      label: "Membership & Plans",
+      items: [
+        { title: "Plans & Pricing", url: "/premium", icon: Sparkles, badge: "PRO" },
+      ],
+    },
+    {
       label: "Account & Support",
       items: [
         { title: "Account Settings", url: "/settings", icon: Settings },
@@ -129,16 +138,33 @@ export function AppSidebar() {
   let displayGroups = navGroups;
 
   if (isAdmin && viewMode === "admin") {
-    // In admin mode, ONLY show Owner Admin Console
+    // In admin mode, show Owner Admin Console + Membership Plans
     displayGroups = [
       {
         label: "Owner Admin",
         items: [
           { title: "Admin Console", url: "/admin", icon: ShieldCheck },
+          { title: "Plans & Pricing", url: "/premium", icon: Sparkles, badge: "PLANS" },
         ],
       },
     ];
   }
+
+  const getDisplayBadge = () => {
+    if (isAdmin) return "Admin";
+    if (isFullyLocked) return "Locked";
+    if (isPromoTrial || membershipTag === "PROMO TRIAL") return "Trial";
+    if (membershipTag === "PREMIUM" || isPremium) return "Premium";
+    if (membershipTag === "OPERATOR HQ") return "Operator HQ";
+    return membershipTag || "Free";
+  };
+
+  const getBadgeStyles = () => {
+    if (isAdmin) return "bg-amber-500/20 text-amber-400";
+    if (isFullyLocked) return "bg-red-500/10 text-red-400 border border-red-500/20";
+    if (isPromoTrial || membershipTag === "PROMO TRIAL") return "bg-yellow-500/10 text-yellow-400";
+    return "bg-primary/10 text-primary";
+  };
 
   return (
     <Sidebar
@@ -177,12 +203,17 @@ export function AppSidebar() {
                 <span className="font-semibold text-xs truncate text-foreground">
                   {user.name}
                 </span>
-                <Badge
-                  variant="secondary"
-                  className="text-[9px] h-3.5 px-1 leading-none bg-primary/10 text-primary border-none font-bold uppercase shrink-0"
-                >
-                  {isAdmin ? "Admin" : (session?.user as any)?.membershipTag || "FREE"}
-                </Badge>
+                <Link href="/premium" onClick={handleNavClick}>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "text-[9px] h-4 px-1.5 leading-none border-none font-bold uppercase shrink-0 whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer",
+                      getBadgeStyles()
+                    )}
+                  >
+                    {getDisplayBadge()}
+                  </Badge>
+                </Link>
               </div>
               <span className="text-[10px] text-muted-foreground truncate opacity-70">
                 {user.email}
@@ -215,6 +246,10 @@ export function AppSidebar() {
               <SidebarMenu className="gap-0.5 px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
                 {group.items.map((item) => {
                   const isActive = pathname === item.url;
+                  const isItemLocked =
+                    (isFullyLocked && !["/settings", "/help"].includes(item.url)) ||
+                    (isPromoTrial && ["/market", "/operator-hq", "/calendar"].includes(item.url));
+
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
@@ -239,19 +274,19 @@ export function AppSidebar() {
                           <span className="group-data-[collapsible=icon]:hidden text-[13px] tracking-tight">
                             {item.title}
                           </span>
-                          {isPromoTrial && ["/market", "/operator-hq", "/calendar", "/position-calculator"].includes(item.url) ? (
+                          {isItemLocked ? (
                             <Lock className="ml-auto h-3.5 w-3.5 text-amber-500/80 shrink-0 group-data-[collapsible=icon]:hidden animate-pulse" />
                           ) : (
-                            item.badge && (
+                            (item as any).badge && (
                               <Badge
                                 className={cn(
                                   "ml-auto text-[9px] h-4 px-1 group-data-[collapsible=icon]:hidden font-black",
-                                  item.badge === "PRO"
+                                  (item as any).badge === "PRO"
                                     ? "bg-primary-foreground text-primary"
                                     : "bg-muted text-muted-foreground",
                                 )}
                               >
-                                {item.badge}
+                                {(item as any).badge}
                               </Badge>
                             )
                           )}

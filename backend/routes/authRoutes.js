@@ -2,6 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import VerificationRequest from "../models/VerificationRequest.js";
 import protect from "../middleware/auth.js";
 import multer from "multer";
 import path from "path";
@@ -131,17 +132,58 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (isMatch) {
+      const now = new Date();
+      const isAdmin = user.role === "admin" || isAdminEmail(user.email);
+      const isDirectAccess = isDirectAccessEmail(user.email);
+      const hasActivePremium = Boolean(user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now);
+      const hasActivePromo = Boolean(user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now);
+      const hasUsedPromo = Boolean(user.isPromoUser && user.promoActivatedAt);
+      const verificationReq = await VerificationRequest.findOne({ user: user._id });
+      const isBrokerVerified = Boolean(verificationReq && verificationReq.status === "approved");
+
+      let calculatedStatus = "pending";
+      let membershipTag = "FREE";
+
+      if (isAdmin) {
+        calculatedStatus = "approved";
+        membershipTag = "ADMIN";
+      } else if (isDirectAccess) {
+        calculatedStatus = "approved";
+        membershipTag = "MEMBER";
+      } else if (hasActivePremium) {
+        calculatedStatus = "approved";
+        membershipTag = "PREMIUM";
+      } else if (isBrokerVerified) {
+        calculatedStatus = "approved";
+        membershipTag = "OPERATOR HQ";
+      } else if (hasActivePromo) {
+        calculatedStatus = "approved";
+        membershipTag = "PROMO TRIAL";
+      } else if ((verificationReq && verificationReq.status === "rejected") || user.status === "rejected") {
+        calculatedStatus = "rejected";
+      }
+
+      // Sync status back to user document if it changed from expired promo
+      if (user.status !== calculatedStatus) {
+        user.status = calculatedStatus;
+        await user.save();
+      }
+
       res.json({
         id: user._id.toString(),
         name: user.name,
         email: user.email,
         token: generateToken(user._id),
-        status: user.status,
+        status: calculatedStatus,
         role: user.role,
+        membershipTag,
+        isPromoActive: hasActivePromo,
+        isPremiumActive: hasActivePremium,
+        hasUsedPromo,
         image: user.image || "",
       });
     } else {
-      res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (error) {
     console.error("Login error:", error);
@@ -196,13 +238,53 @@ router.post("/google", async (req, res) => {
       }
     }
 
+    const now = new Date();
+    const isAdmin = user.role === "admin" || isAdminEmail(user.email);
+    const isDirectAccess = isDirectAccessEmail(user.email);
+    const hasActivePremium = Boolean(user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now);
+    const hasActivePromo = Boolean(user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now);
+    const hasUsedPromo = Boolean(user.isPromoUser && user.promoActivatedAt);
+    const verificationReq = await VerificationRequest.findOne({ user: user._id });
+    const isBrokerVerified = Boolean(verificationReq && verificationReq.status === "approved");
+
+    let calculatedStatus = "pending";
+    let membershipTag = "FREE";
+
+    if (isAdmin) {
+      calculatedStatus = "approved";
+      membershipTag = "ADMIN";
+    } else if (isDirectAccess) {
+      calculatedStatus = "approved";
+      membershipTag = "MEMBER";
+    } else if (hasActivePremium) {
+      calculatedStatus = "approved";
+      membershipTag = "PREMIUM";
+    } else if (isBrokerVerified) {
+      calculatedStatus = "approved";
+      membershipTag = "OPERATOR HQ";
+    } else if (hasActivePromo) {
+      calculatedStatus = "approved";
+      membershipTag = "PROMO TRIAL";
+    } else if ((verificationReq && verificationReq.status === "rejected") || user.status === "rejected") {
+      calculatedStatus = "rejected";
+    }
+
+    if (user.status !== calculatedStatus) {
+      user.status = calculatedStatus;
+      await user.save();
+    }
+
     res.json({
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
-      status: user.status,
+      status: calculatedStatus,
       role: user.role,
+      membershipTag,
+      isPromoActive: hasActivePromo,
+      isPremiumActive: hasActivePremium,
+      hasUsedPromo,
       image: user.image || "",
     });
   } catch (error) {

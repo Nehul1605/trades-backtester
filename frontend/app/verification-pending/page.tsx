@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Building, Hash, Send, LogOut, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Building, Hash, Send, LogOut, Clock, CheckCircle2, XCircle, Loader2, Sparkles, ArrowRight, CreditCard, AlertTriangle } from "lucide-react";
 import { getVerificationStatus, submitVerificationRequest, applyPromoCode } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -155,6 +155,10 @@ export default function VerificationPendingPage() {
   const userStatus = statusData?.status || "pending";
   const hasRequest = !!statusData?.request;
   const remarks = statusData?.request?.remarks || "";
+  const hasUsedPromo = Boolean(
+    statusData?.hasUsedPromo ||
+    (statusData?.promoExpiresAt && !statusData?.isPromoActive)
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 relative overflow-hidden trading-grid">
@@ -221,13 +225,31 @@ export default function VerificationPendingPage() {
                     Review typically takes less than 24 hours. We will grant instant site access as soon as your referral link status is confirmed.
                   </p>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
+                <CardFooter className="flex flex-col gap-2.5 pt-2 pb-6">
                   <Button
                     onClick={fetchStatus}
                     className="w-full bg-gold-gradient text-background font-bold text-xs uppercase"
                   >
                     Check Status Now
                   </Button>
+
+                  <div className="relative flex py-1 items-center w-full">
+                    <div className="flex-grow border-t border-border/40"></div>
+                    <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground/60">OR</span>
+                    <div className="flex-grow border-t border-border/40"></div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => router.push("/premium")}
+                    variant="outline"
+                    className="w-full h-10 border-primary/30 hover:bg-primary/10 text-primary font-bold text-xs uppercase flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Upgrade to Premium ($8.99/mo)
+                    <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                  </Button>
+
                   <Button
                     variant="ghost"
                     onClick={() => signOut({ callbackUrl: "/auth/login" })}
@@ -271,7 +293,7 @@ export default function VerificationPendingPage() {
                     Access to TradeTracker Pro is restricted to users who have joined through our YouTube, Instagram, or Telegram referral links.
                   </p>
                   <p className="text-foreground font-semibold">
-                    To resolve this, please resubmit correct details below or contact us.
+                    To resolve this, please resubmit correct details below or upgrade directly to Premium.
                   </p>
                 </CardContent>
 
@@ -329,7 +351,24 @@ export default function VerificationPendingPage() {
                   </Button>
                 </form>
 
-                <CardFooter className="flex flex-col gap-2 pt-2 pb-6 px-6">
+                <CardFooter className="flex flex-col gap-2.5 pt-2 pb-6 px-6">
+                  <div className="relative flex py-1 items-center w-full">
+                    <div className="flex-grow border-t border-border/40"></div>
+                    <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground/60">OR</span>
+                    <div className="flex-grow border-t border-border/40"></div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => router.push("/premium")}
+                    variant="outline"
+                    className="w-full h-10 border-primary/30 hover:bg-primary/10 text-primary font-bold text-xs uppercase flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Upgrade to Premium ($8.99/mo)
+                    <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                  </Button>
+
                   <Button
                     variant="ghost"
                     onClick={() => signOut({ callbackUrl: "/auth/login" })}
@@ -342,7 +381,7 @@ export default function VerificationPendingPage() {
             </motion.div>
           )}
 
-          {/* CASE 3: First Login / Submit Verification form */}
+          {/* CASE 3: First Login / Submit Verification form / Expired Trial */}
           {!hasRequest && userStatus === "pending" && (
             <motion.div
               key="submit-form"
@@ -354,44 +393,61 @@ export default function VerificationPendingPage() {
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gold-gradient" />
                 <CardHeader className="text-center pt-8 pb-4">
                   <CardTitle className="text-xl font-black uppercase tracking-wider">
-                    Activate Community Portal
+                    {hasUsedPromo ? "Trial Expired - Unlock Platform" : "Activate Community Portal"}
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground pt-1">
-                    Select your preferred activation method to unlock the site.
+                    {hasUsedPromo
+                      ? "Your 10-day promotional trial has ended. Select an option below to restore full access."
+                      : "Select your preferred activation method to unlock the platform."}
                   </CardDescription>
 
-                  {/* Activation Mode Selector */}
-                  <div className="grid grid-cols-2 gap-2 mt-4 p-1 bg-neutral-950/70 rounded-xl border border-border/20">
-                    <button
-                      type="button"
-                      onClick={() => setMode("broker")}
-                      className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
-                        mode === "broker"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
-                      }`}
-                    >
-                      Partner Broker (Free)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMode("promo")}
-                      className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
-                        mode === "promo"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
-                      }`}
-                    >
-                      Promo Code Trial
-                    </button>
-                  </div>
+                  {/* Expired Promo Alert Banner */}
+                  {hasUsedPromo && (
+                    <div className="mt-4 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-left space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-400">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        10-Day Promotional Trial Ended
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        All platform features (Dashboard Console, Trading Calculators, Operator HQ Signals, Live Market Stream) are currently locked because your 10-day trial has expired and this account has already claimed the promo code.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Mode Selector - Only show for new users who have NOT used promo code yet */}
+                  {!hasUsedPromo && (
+                    <div className="grid grid-cols-2 gap-2 mt-4 p-1 bg-neutral-950/70 rounded-xl border border-border/20">
+                      <button
+                        type="button"
+                        onClick={() => setMode("broker")}
+                        className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
+                          mode === "broker"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
+                        }`}
+                      >
+                        Partner Broker (Free)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode("promo")}
+                        className={`py-2 px-3 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
+                          mode === "promo"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-neutral-900/40"
+                        }`}
+                      >
+                        Promo Code Trial
+                      </button>
+                    </div>
+                  )}
                 </CardHeader>
 
-                {mode === "broker" ? (
+                {mode === "broker" || hasUsedPromo ? (
                   <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4 py-4">
                       <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500/90 rounded-xl p-3.5 text-[11px] leading-relaxed text-left">
-                        ℹ️ <strong>Note:</strong> Here, the info to be filled is that with which account you are affiliated under Lala Operator.
+                        ℹ️ <strong>Partner Broker Verification:</strong> Fill in your broker details affiliated under Lala Operator to unlock lifetime free access.
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="broker" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -441,15 +497,33 @@ export default function VerificationPendingPage() {
                         </div>
                       </div>
                     </CardContent>
-                    <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
+                    <CardFooter className="flex flex-col gap-2.5 pt-2 pb-6">
                       <Button
                         type="submit"
                         disabled={submitting}
                         className="w-full bg-gold-gradient text-background font-bold text-xs uppercase"
                       >
                         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />}
-                        Request Verification
+                        Submit For Verification
                       </Button>
+
+                      <div className="relative flex py-1 items-center w-full">
+                        <div className="flex-grow border-t border-border/40"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground/60">OR</span>
+                        <div className="flex-grow border-t border-border/40"></div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => router.push("/premium")}
+                        variant="outline"
+                        className="w-full h-10 border-primary/30 hover:bg-primary/10 text-primary font-bold text-xs uppercase flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Upgrade to Premium ($8.99/mo)
+                        <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                      </Button>
+
                       <Button
                         type="button"
                         variant="ghost"
@@ -471,7 +545,7 @@ export default function VerificationPendingPage() {
                           <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
                           <Input
                             id="promoCode"
-                            placeholder=""
+                            placeholder="Enter Code (e.g. RDX10)"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
                             className="pl-9 bg-muted/30 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg uppercase"
@@ -482,7 +556,7 @@ export default function VerificationPendingPage() {
                         Enter the promo code mentioned in our YouTube video to unlock a 10-day trial of the core trading journal console and stats features.
                       </p>
                     </CardContent>
-                    <CardFooter className="flex flex-col gap-2 pt-2 pb-6">
+                    <CardFooter className="flex flex-col gap-2.5 pt-2 pb-6">
                       <Button
                         type="submit"
                         disabled={promoLoading}
@@ -491,6 +565,24 @@ export default function VerificationPendingPage() {
                         {promoLoading && <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />}
                         Activate 10-Day Trial
                       </Button>
+
+                      <div className="relative flex py-1 items-center w-full">
+                        <div className="flex-grow border-t border-border/40"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground/60">OR</span>
+                        <div className="flex-grow border-t border-border/40"></div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => router.push("/premium")}
+                        variant="outline"
+                        className="w-full h-10 border-primary/30 hover:bg-primary/10 text-primary font-bold text-xs uppercase flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Upgrade to Premium ($8.99/mo)
+                        <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                      </Button>
+
                       <Button
                         type="button"
                         variant="ghost"

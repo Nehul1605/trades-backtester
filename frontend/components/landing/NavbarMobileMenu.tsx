@@ -46,6 +46,7 @@ export function NavbarMobileMenu({ isLoggedIn = false }: { isLoggedIn?: boolean 
               { label: "Operator Signals", href: "/signals" },
               { label: "Features", href: "#features" },
               { label: "How It Works", href: "#how-it-works" },
+              { label: "Pricing", href: "#pricing" },
               { label: "Reviews", href: "#reviews" },
             ].map((link) => (
               <Link

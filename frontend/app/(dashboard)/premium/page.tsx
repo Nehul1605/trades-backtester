@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ declare global {
 
 export default function PremiumCheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { data: session, update: updateSession } = useSession();
 
@@ -50,6 +51,13 @@ export default function PremiumCheckoutPage() {
   const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [showMt5Announcement, setShowMt5Announcement] = useState(false);
+
+  useEffect(() => {
+    const planParam = searchParams.get("plan");
+    if (planParam === "monthly" || planParam === "annual") {
+      setPlan(planParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchRates = async () => {

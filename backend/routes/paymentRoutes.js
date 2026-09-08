@@ -393,6 +393,12 @@ router.get("/subscriptions", protect, async (req, res) => {
       membershipTag = "PROMO TRIAL";
     }
 
+    // Auto-update any abandoned or uncompleted PENDING transactions to FAILED
+    await Transaction.updateMany(
+      { user: req.userId, status: "PENDING" },
+      { $set: { status: "FAILED" } }
+    );
+
     // Find all transactions for this user, sorted newest first
     const transactions = await Transaction.find({ user: req.userId }).sort({ createdAt: -1 });
 

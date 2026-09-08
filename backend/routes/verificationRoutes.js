@@ -129,7 +129,7 @@ router.get("/status", protect, async (req, res) => {
   try {
     const request = await VerificationRequest.findOne({ user: req.userId });
     const user = await User.findById(req.userId).select(
-      "status role isPromoUser promoExpiresAt isPremiumUser premiumExpiresAt promoCode"
+      "status role isPromoUser promoActivatedAt promoExpiresAt isPremiumUser premiumExpiresAt promoCode"
     );
 
     if (!user) {
@@ -140,6 +140,7 @@ router.get("/status", protect, async (req, res) => {
     const isAdmin = user.role === "admin";
     const hasActivePremium = user.isPremiumUser && user.premiumExpiresAt && user.premiumExpiresAt > now;
     const hasActivePromo = user.isPromoUser && user.promoExpiresAt && user.promoExpiresAt > now;
+    const hasUsedPromo = Boolean(user.isPromoUser && user.promoActivatedAt);
     const isBrokerVerified = request && request.status === "approved";
 
     // Access is approved if premium, active promo, approved broker verification, or admin exists
@@ -162,6 +163,16 @@ router.get("/status", protect, async (req, res) => {
       membershipTag = "PROMO TRIAL";
     }
 
+    if (user.status !== calculatedStatus) {
+      user.status = calculatedStatus;
+      await user.save();
+    }
+
+    let daysRemainingInTrial = 0;
+    if (hasActivePromo && user.promoExpiresAt) {
+      daysRemainingInTrial = Math.max(0, Math.ceil((user.promoExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    }
+
     res.json({
       status: calculatedStatus,
       role: user.role,
@@ -169,6 +180,8 @@ router.get("/status", protect, async (req, res) => {
       isPremiumActive: hasActivePremium,
       isBrokerVerified: !!isBrokerVerified,
       membershipTag,
+      hasUsedPromo,
+      daysRemainingInTrial,
       promoExpiresAt: user.promoExpiresAt,
       premiumExpiresAt: user.premiumExpiresAt,
       promoCode: user.promoCode,

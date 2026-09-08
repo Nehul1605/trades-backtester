@@ -31,6 +31,8 @@ import {
   Clock,
   Sparkles,
   HelpCircle,
+  Check,
+  CreditCard,
 } from "lucide-react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -138,7 +140,7 @@ export default async function HomePage() {
             >
               Operator Signals
             </Link>
-            {["Features", "How It Works", "Reviews"].map((label) => (
+            {["Features", "How It Works", "Pricing", "Reviews"].map((label) => (
               <a
                 key={label}
                 href={`#${label.toLowerCase().replace(/ /g, "-")}`}
@@ -583,6 +585,189 @@ export default async function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing Section ── */}
+      <section id="pricing" className="py-20 md:py-28 border-t border-border/30 relative overflow-hidden bg-background">
+        {/* Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-140 h-140 bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="container mx-auto px-6 max-w-7xl relative z-10">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3.5 py-1 text-[11px] font-black text-primary uppercase tracking-widest mb-3">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Transparent Plans
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+              Simple Pricing. <span className="text-primary">Zero Hidden Fees.</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+              Start completely free with partner broker verification or upgrade to instant permanent institutional access to live streaming chart rooms and operator signal feeds.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+            {/* Plan 1: Partner Broker Community (Free) */}
+            <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-md p-6 lg:p-8 flex flex-col justify-between hover:border-border/80 transition-all duration-300">
+              <div className="space-y-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-muted/60 text-muted-foreground text-[10px] font-black uppercase tracking-wider">
+                  Community Access
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground">Partner Verified</h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    100% Free Lifetime access when opening an account via our broker links.
+                  </p>
+                </div>
+                <div className="pt-2 pb-4 border-b border-border/30">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-black font-mono text-foreground">$0</span>
+                    <span className="text-xs font-bold uppercase text-muted-foreground">/ lifetime</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-500 font-semibold mt-1 block">
+                    ✓ Verified via partner broker account
+                  </span>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Included Features:</p>
+                  {[
+                    "Multi-Account Broker Workspaces (MT5 / Exness)",
+                    "Complete Trade Journal & Metrics Breakdown",
+                    "Day-Wise Equity Curves & Monthly Heatmaps",
+                    "Position Size, P&L & Consistency Calculators",
+                    "Client-Side Auto-Compressed Screenshots",
+                    "10-Day Instant Trial with code rdx10",
+                  ].map((feat, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-xs text-foreground/90 font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-8">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full h-11 border-border/60 hover:border-primary/40 hover:bg-primary/5 text-xs font-bold uppercase tracking-wider rounded-xl cursor-pointer"
+                >
+                  <Link href={isLoggedIn ? "/dashboard" : "/auth/sign-up"}>
+                    {isLoggedIn ? "Access Dashboard" : "Start Free With Broker"}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Plan 2: Monthly Launch Plan */}
+            <div className="rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 lg:p-8 flex flex-col justify-between relative hover:border-primary/40 transition-all duration-300">
+              <div className="space-y-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider">
+                  Launch Offer · 40% Off
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground">Monthly Premium</h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    Full institutional platform access billed monthly. Cancel anytime.
+                  </p>
+                </div>
+                <div className="pt-2 pb-4 border-b border-border/30">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black font-mono text-gold-gradient">$8.99</span>
+                    <span className="text-xs font-bold uppercase text-muted-foreground">/ month</span>
+                    <span className="text-xs text-muted-foreground line-through font-mono">$15.00</span>
+                  </div>
+                  <span className="text-[11px] text-primary font-semibold mt-1 block">
+                    Auto-applies code LAUNCH40 at checkout
+                  </span>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Everything in Free, plus:</p>
+                  {[
+                    "Live Market WebRTC Stream & Chart Co-Hosting",
+                    "Operator HQ Real-Time Signal Feed & Pips Log",
+                    "Institutional Macro Economic Release Calendar",
+                    "Unlimited Account Workspaces & Unlimited Trades",
+                    "Priority Platform Support",
+                  ].map((feat, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-xs text-foreground font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-8">
+                <Button
+                  asChild
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/15 cursor-pointer"
+                >
+                  <Link href={isLoggedIn ? "/premium" : "/auth/sign-up?redirect=/premium"}>
+                    Upgrade Monthly <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Plan 3: Annual Launch Plan (Best Value / Featured) */}
+            <div className="rounded-2xl border-2 border-primary/50 bg-neutral-950/80 backdrop-blur-xl p-6 lg:p-8 flex flex-col justify-between relative shadow-2xl gold-glow-subtle hover:border-primary transition-all duration-300">
+              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black text-[9px] uppercase tracking-widest py-1 px-3 rounded-full shadow-md">
+                ★ Most Popular · Save 55%
+              </div>
+
+              <div className="space-y-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                  Annual Pass ($6.67/mo)
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-foreground">Annual Access</h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    12 months of unrestricted access with maximum savings & VIP benefits.
+                  </p>
+                </div>
+                <div className="pt-2 pb-4 border-b border-border/30">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black font-mono text-gold-gradient">$80</span>
+                    <span className="text-xs font-bold uppercase text-muted-foreground">/ year</span>
+                    <span className="text-xs text-muted-foreground line-through font-mono">$180.00</span>
+                  </div>
+                  <span className="text-[11px] text-yellow-400 font-semibold mt-1 block">
+                    Auto-applies code LAUNCH55 (Save $100/yr)
+                  </span>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Everything in Monthly, plus:</p>
+                  {[
+                    "Full 12 Months Permanent Platform Access",
+                    "Early Beta Access to MT5 Auto-Sync History",
+                    "Live Market Co-Host Broadcast Capability",
+                    "VIP Discord/WhatsApp Strategy Discussion",
+                    "Direct 1-on-1 Founder Support Channel",
+                  ].map((feat, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-xs text-foreground font-semibold">
+                      <CheckCircle2 className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-8">
+                <Button
+                  asChild
+                  className="w-full h-11 bg-gold-gradient hover:opacity-95 text-background font-black text-xs uppercase tracking-wider rounded-xl shadow-xl shadow-primary/20 cursor-pointer"
+                >
+                  <Link href={isLoggedIn ? "/premium" : "/auth/sign-up?redirect=/premium"}>
+                    Get Annual Access <Sparkles className="w-3.5 h-3.5 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

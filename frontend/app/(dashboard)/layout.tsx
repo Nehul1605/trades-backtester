@@ -7,6 +7,9 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { LiveMeetingWrapper } from "@/components/live-market/LiveMeetingWrapper";
 
+import { headers } from "next/headers";
+import { LockedPlatformView } from "@/components/dashboard/LockedPlatformView";
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
 
 export default async function DashboardLayout({
@@ -26,44 +29,51 @@ export default async function DashboardLayout({
 
   const isAdmin = (session.user as any).role === "admin";
 
-  if (isVerificationRequired && !isAdmin) {
-    let userStatus = (session.user as any).status;
-    const token = (session.user as any).accessToken;
+  const headersList = await headers();
+  const currentPath = headersList.get("x-pathname") || "";
+  const isPremiumCheckoutPage = currentPath.startsWith("/premium");
 
-    // Always fetch live status from backend to sync MongoDB in real-time
-    if (token) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/verification/status`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+  let statusData: any = null;
+  let userStatus = (session.user as any).status || "pending";
+  const token = (session.user as any).accessToken;
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status) {
-            userStatus = data.status;
-          }
+  // Always fetch live status from backend to sync MongoDB and real-time trial state
+  if (token) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/verification/status`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        statusData = await res.json();
+        if (statusData.status) {
+          userStatus = statusData.status;
         }
-      } catch (error) {
-        console.error("Dashboard layout live verification check error:", error);
       }
-    }
-
-    if (userStatus !== "approved") {
-      redirect("/verification-pending");
+    } catch (error) {
+      console.error("Dashboard layout live verification check error:", error);
     }
   }
+
+  const isLocked = isVerificationRequired && !isAdmin && userStatus !== "approved";
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex flex-col min-h-screen">
-          <DashboardHeader />
+          <DashboardHeader statusData={statusData} isLocked={isLocked} />
           <LiveMeetingWrapper>
-            <Suspense fallback={null}>{children}</Suspense>
+            <Suspense fallback={null}>
+              {isLocked && !isPremiumCheckoutPage ? (
+                <LockedPlatformView statusData={statusData} />
+              ) : (
+                children
+              )}
+            </Suspense>
           </LiveMeetingWrapper>
         </SidebarInset>
       </div>

@@ -785,11 +785,9 @@ export default function SettingsPage() {
                                     <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                                       tx.status === "PAID"
                                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                        : tx.status === "PENDING"
-                                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                                         : "bg-red-500/20 text-red-400 border border-red-500/30"
                                     }`}>
-                                      {tx.status}
+                                      {tx.status === "PAID" ? "PAID" : "FAILED"}
                                     </span>
                                   </td>
                                   <td className="p-4 text-center">
