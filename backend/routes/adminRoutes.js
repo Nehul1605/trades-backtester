@@ -1,6 +1,7 @@
 import express from "express";
 import VerificationRequest from "../models/VerificationRequest.js";
 import User from "../models/User.js";
+import Transaction from "../models/Transaction.js";
 import { sendEmail } from "../config/email.js";
 import Trade from "../models/Trade.js";
 import BrokerAccount from "../models/BrokerAccount.js";
@@ -563,6 +564,131 @@ router.get("/users/:id/accounts", protect, protectAdmin, async (req, res) => {
   } catch (error) {
     console.error("Get user accounts admin error:", error);
     res.status(500).json({ error: "Failed to fetch user accounts" });
+  }
+});
+
+// @desc    Get all paid plan subscriptions with search, filter, pagination, and metrics
+// @route   GET /api/admin/subscriptions
+// @access  Admin/Owner
+router.get("/subscriptions", protect, protectAdmin, async (req, res) => {
+  try {
+    const {
+      search,
+      planType, // "all", "monthly", "annual"
+      status, // "all", "active", "expired"
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Filter for paid transactions
+    const query = { status: "PAID" };
+
+    if (planType && planType !== "all") {
+      query.planType = planType;
+    }
+
+    // Match search query against user name/email or transaction orderId/paymentId
+    if (search && search.trim().length > 0) {
+      const regex = new RegExp(search.trim(), "i");
+      const matchedUsers = await User.find({
+        $or: [{ name: regex }, { email: regex }],
+      }).select("_id");
+      const matchingUserIds = matchedUsers.map((u) => u._id);
+
+      query.$or = [
+        { user: { $in: matchingUserIds } },
+        { orderId: regex },
+        { razorpayPaymentId: regex },
+      ];
+    }
+
+    const sort = {};
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    const totalSubscriptions = await Transaction.countDocuments(query);
+    const transactions = await Transaction.find(query)
+      .populate("user", "name email image role status isPremiumUser premiumExpiresAt createdAt")
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const now = new Date();
+    const formatted = transactions.map((tx) => {
+      const user = tx.user || {};
+      const fallbackDays = tx.planType === "annual" ? 365 : 30;
+      const expiresAt =
+        user.premiumExpiresAt ||
+        (tx.createdAt
+          ? new Date(new Date(tx.createdAt).getTime() + fallbackDays * 24 * 60 * 60 * 1000)
+          : null);
+      const isActive = expiresAt ? new Date(expiresAt) > now : false;
+
+      return {
+        _id: tx._id,
+        orderId: tx.orderId,
+        paymentId: tx.razorpayPaymentId || "N/A",
+        amount: tx.amount,
+        currency: tx.currency || "INR",
+        planType: tx.planType, // "monthly" | "annual"
+        status: tx.status,
+        activatedOn: tx.createdAt,
+        expiresAt,
+        isActive,
+        user: {
+          _id: user._id || tx.user,
+          name: user.name || "Unknown User",
+          email: user.email || "",
+          image: user.image || "",
+          role: user.role || "user",
+          status: user.status || "approved",
+          isPremiumUser: user.isPremiumUser,
+          premiumExpiresAt: user.premiumExpiresAt || expiresAt,
+          createdAt: user.createdAt,
+        },
+      };
+    });
+
+    // Optional status filter (active/expired)
+    let finalItems = formatted;
+    if (status === "active") {
+      finalItems = formatted.filter((item) => item.isActive);
+    } else if (status === "expired") {
+      finalItems = formatted.filter((item) => !item.isActive);
+    }
+
+    // Calculate aggregated overview stats for paid plans
+    const allPaid = await Transaction.find({ status: "PAID" }).lean();
+    const totalRevenueInr = allPaid.reduce((acc, t) => {
+      if (t.currency === "USD") {
+        return acc + (t.amount || 0) * 85;
+      }
+      return acc + (t.amount || 0);
+    }, 0);
+    const monthlyCount = allPaid.filter((t) => t.planType === "monthly").length;
+    const annualCount = allPaid.filter((t) => t.planType === "annual").length;
+
+    res.json({
+      subscriptions: finalItems,
+      totalPages: Math.ceil(totalSubscriptions / limitNum) || 1,
+      currentPage: pageNum,
+      totalSubscriptions,
+      stats: {
+        totalPaidCount: allPaid.length,
+        monthlyCount,
+        annualCount,
+        totalRevenueInr: Math.round(totalRevenueInr),
+      },
+    });
+  } catch (error) {
+    console.error("Get admin subscriptions error:", error);
+    res.status(500).json({ error: "Failed to fetch subscriptions" });
   }
 });
 

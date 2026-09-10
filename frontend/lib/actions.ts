@@ -712,6 +712,63 @@ export async function getAdminUsers(params: {
   }
 }
 
+export async function getAdminSubscriptions(params: {
+  search?: string;
+  planType?: string;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  subscriptions: any[];
+  totalPages: number;
+  currentPage: number;
+  totalSubscriptions: number;
+  stats?: {
+    totalPaidCount: number;
+    monthlyCount: number;
+    annualCount: number;
+    totalRevenueInr: number;
+  };
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const queryParts: string[] = [];
+    if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+    if (params.planType) queryParts.push(`planType=${encodeURIComponent(params.planType)}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    if (params.sortBy) queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
+    if (params.sortOrder) queryParts.push(`sortOrder=${encodeURIComponent(params.sortOrder)}`);
+    if (params.page) queryParts.push(`page=${params.page}`);
+    if (params.limit) queryParts.push(`limit=${params.limit}`);
+
+    const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+
+    const res = await fetch(`${BACKEND_URL}/api/admin/subscriptions${queryString}`, {
+      method: "GET",
+      headers: authHeader,
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to fetch subscriptions (HTTP ${res.status})`);
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("getAdminSubscriptions error:", err);
+    return {
+      subscriptions: [],
+      totalPages: 0,
+      currentPage: 1,
+      totalSubscriptions: 0,
+      stats: { totalPaidCount: 0, monthlyCount: 0, annualCount: 0, totalRevenueInr: 0 },
+    };
+  }
+}
+
 export async function updateUserStatus(
   id: string,
   status: string,

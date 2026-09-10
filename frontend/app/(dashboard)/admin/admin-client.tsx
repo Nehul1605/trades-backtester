@@ -44,6 +44,11 @@ import {
   Clock,
   Activity,
   Ticket,
+  Crown,
+  CreditCard,
+  Sparkles,
+  DollarSign,
+  Receipt,
 } from "lucide-react";
 import {
   approveVerificationRequest,
@@ -51,6 +56,7 @@ import {
   searchUsers,
   updateUserRole,
   getAdminUsers,
+  getAdminSubscriptions,
   updateUserStatus,
   getAdminUserTrades,
   getAdminUserAccounts,
@@ -66,7 +72,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const { toast } = useToast();
   
   // Navigation / View Modes
-  const [activeTab, setActiveTab] = useState<"verifications" | "roles" | "users" | "promo">("verifications");
+  const [activeTab, setActiveTab] = useState<"verifications" | "roles" | "users" | "promo" | "subscriptions">("verifications");
   const [mounted, setMounted] = useState(false);
 
   // Tab 1: Verifications State
@@ -107,6 +113,24 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const [promoSortBy, setPromoSortBy] = useState("promoActivatedAt");
   const [promoSortOrder, setPromoSortOrder] = useState("desc");
   const [promoLoading, setPromoLoading] = useState(false);
+
+  // Tab 5: Paid Subscriptions State
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subTotalCount, setSubTotalCount] = useState(0);
+  const [subTotalPages, setSubTotalPages] = useState(1);
+  const [subCurrentPage, setSubCurrentPage] = useState(1);
+  const [subSearch, setSubSearch] = useState("");
+  const [subPlanType, setSubPlanType] = useState("all");
+  const [subStatus, setSubStatus] = useState("all");
+  const [subSortBy, setSubSortBy] = useState("createdAt");
+  const [subSortOrder, setSubSortOrder] = useState("desc");
+  const [subLoading, setSubLoading] = useState(false);
+  const [subStats, setSubStats] = useState({
+    totalPaidCount: 0,
+    monthlyCount: 0,
+    annualCount: 0,
+    totalRevenueInr: 0,
+  });
 
   // User Details Modal State (stats/trades)
   const [detailsUser, setDetailsUser] = useState<any | null>(null);
@@ -252,6 +276,42 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
       fetchPromoUsers();
     }
   }, [activeTab, promoSearch, promoSortBy, promoSortOrder, promoCurrentPage, mounted]);
+
+  const fetchSubscriptions = async () => {
+    setSubLoading(true);
+    try {
+      const res = await getAdminSubscriptions({
+        search: subSearch,
+        planType: subPlanType,
+        status: subStatus,
+        sortBy: subSortBy,
+        sortOrder: subSortOrder,
+        page: subCurrentPage,
+        limit: 10,
+      });
+      setSubscriptions(res.subscriptions || []);
+      setSubTotalPages(res.totalPages || 1);
+      setSubTotalCount(res.totalSubscriptions || 0);
+      if (res.stats) {
+        setSubStats(res.stats);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch subscriptions:", err);
+      toast({
+        variant: "destructive",
+        title: "Fetch Failed",
+        description: err.message || "Could not retrieve subscriptions list.",
+      });
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "subscriptions" && mounted) {
+      fetchSubscriptions();
+    }
+  }, [activeTab, subSearch, subPlanType, subStatus, subSortBy, subSortOrder, subCurrentPage, mounted]);
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
     if (newStatus === "rejected") {
@@ -511,6 +571,20 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
           }`}
         >
           Promo Access Logs
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("subscriptions");
+            setSubCurrentPage(1);
+          }}
+          className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 ${
+            activeTab === "subscriptions"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Crown className="w-3.5 h-3.5" />
+          Paid Subscriptions
         </button>
       </div>
 
@@ -1207,6 +1281,340 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                       variant="outline"
                       disabled={promoCurrentPage === promoTotalPages || promoLoading}
                       onClick={() => setPromoCurrentPage((prev) => prev + 1)}
+                      className="text-xs border-primary/10"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── TAB 5: PAID SUBSCRIPTIONS LOGS ─── */}
+      {activeTab === "subscriptions" && (
+        <div className="space-y-6">
+          {/* Top Quick Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-card/40 border-primary/20 backdrop-blur-md p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Total Paid Orders</p>
+                <h3 className="text-xl font-black text-foreground">{subStats.totalPaidCount || subTotalCount}</h3>
+              </div>
+            </Card>
+            <Card className="bg-card/40 border-primary/20 backdrop-blur-md p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Monthly Subscribers</p>
+                <h3 className="text-xl font-black text-foreground">{subStats.monthlyCount}</h3>
+              </div>
+            </Card>
+            <Card className="bg-card/40 border-primary/20 backdrop-blur-md p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Annual Subscribers</p>
+                <h3 className="text-xl font-black text-foreground">{subStats.annualCount}</h3>
+              </div>
+            </Card>
+            <Card className="bg-card/40 border-primary/20 backdrop-blur-md p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Total Volume</p>
+                <h3 className="text-xl font-black text-foreground">₹{(subStats.totalRevenueInr || 0).toLocaleString("en-IN")}</h3>
+              </div>
+            </Card>
+          </div>
+
+          {/* Search, Plan Type, and Status Filters */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-card/30 border border-border/40 p-4 rounded-xl backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row gap-2 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                <Input
+                  placeholder="Search by name, email, order ID, or payment ID..."
+                  value={subSearch}
+                  onChange={(e) => {
+                    setSubSearch(e.target.value);
+                    setSubCurrentPage(1);
+                  }}
+                  className="pl-9 bg-muted/20 border-primary/10 hover:border-primary/30 transition-all text-xs h-9 rounded-lg"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select
+                  value={subPlanType}
+                  onValueChange={(val) => {
+                    setSubPlanType(val);
+                    setSubCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-muted/20 border-primary/10">
+                    <SelectValue placeholder="Plan" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card">
+                    <SelectItem value="all" className="text-xs">All Plans</SelectItem>
+                    <SelectItem value="monthly" className="text-xs">Monthly Plan</SelectItem>
+                    <SelectItem value="annual" className="text-xs">Annual Plan</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={subStatus}
+                  onValueChange={(val) => {
+                    setSubStatus(val);
+                    setSubCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-[120px] h-9 text-xs bg-muted/20 border-primary/10">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card">
+                    <SelectItem value="all" className="text-xs">All Statuses</SelectItem>
+                    <SelectItem value="active" className="text-xs">Active</SelectItem>
+                    <SelectItem value="expired" className="text-xs">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Sort:</span>
+              <Select
+                value={subSortBy}
+                onValueChange={(val) => setSubSortBy(val)}
+              >
+                <SelectTrigger className="w-[150px] h-9 text-xs bg-muted/20 border-primary/10">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent className="bg-card">
+                  <SelectItem value="createdAt" className="text-xs">Activation Date</SelectItem>
+                  <SelectItem value="amount" className="text-xs">Amount</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-9 w-9 border-primary/10 bg-muted/20 text-muted-foreground hover:text-foreground"
+                onClick={() => setSubSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Paid Subscriptions Data Table */}
+          <Card className="bg-card/30 border-border/50 backdrop-blur-md overflow-hidden">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/40 bg-neutral-900/30 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+                      <th className="py-4 px-6">User Profile</th>
+                      <th className="py-4 px-6">Subscribed Plan</th>
+                      <th className="py-4 px-6">Activated On</th>
+                      <th className="py-4 px-6">Expire On</th>
+                      <th className="py-4 px-6">Payment / Status</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30 text-xs">
+                    {subLoading ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                          <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
+                          Loading paid subscriptions...
+                        </td>
+                      </tr>
+                    ) : subscriptions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-20 text-muted-foreground uppercase font-semibold">
+                          No paid plan subscriptions found matching query.
+                        </td>
+                      </tr>
+                    ) : (
+                      subscriptions.map((sub) => {
+                        const u = sub.user || {};
+                        const isAnnual = sub.planType === "annual";
+                        const now = new Date();
+                        const expiresDate = sub.expiresAt ? new Date(sub.expiresAt) : null;
+                        const isExpired = expiresDate ? expiresDate <= now : false;
+
+                        let remainingBadge;
+                        if (!expiresDate) {
+                          remainingBadge = (
+                            <span className="text-muted-foreground text-[11px]">N/A</span>
+                          );
+                        } else if (isExpired) {
+                          remainingBadge = (
+                            <Badge className="bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Expired
+                            </Badge>
+                          );
+                        } else {
+                          const diffMs = expiresDate.getTime() - now.getTime();
+                          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                          const remainingText = diffDays > 1 ? `${diffDays} days left` : diffDays === 1 ? `1 day left` : `expires today`;
+                          remainingBadge = (
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5">
+                              Active ({remainingText})
+                            </Badge>
+                          );
+                        }
+
+                        return (
+                          <tr
+                            key={sub._id}
+                            className="hover:bg-neutral-900/10 cursor-pointer transition-colors"
+                            onClick={() => handleViewUserDetail(u)}
+                          >
+                            {/* User Profile */}
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0">
+                                  {u.name ? u.name.charAt(0) : "U"}
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                                    {u.name || "N/A"}
+                                    {u.role === "admin" && (
+                                      <Badge className="bg-red-500/10 text-red-400 border-red-500/25 text-[8px] uppercase font-black px-1.5 py-0">
+                                        Admin
+                                      </Badge>
+                                    )}
+                                  </span>
+                                  <span className="text-muted-foreground text-[10px]">{u.email}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Plan (Monthly / Annual) */}
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  {isAnnual ? (
+                                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] uppercase font-black px-2 py-0.5 gap-1">
+                                      <Sparkles className="w-3 h-3" />
+                                      Annual Plan
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] uppercase font-black px-2 py-0.5 gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      Monthly Plan
+                                    </Badge>
+                                  )}
+                                  <span className="font-mono text-xs font-bold text-foreground">
+                                    {sub.currency === "USD" ? `$${sub.amount}` : `₹${sub.amount?.toLocaleString("en-IN")}`}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  {sub.orderId}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Activated On */}
+                            <td className="py-4 px-6 text-muted-foreground font-mono text-[11px]">
+                              {sub.activatedOn ? (
+                                <div className="flex flex-col">
+                                  <span className="text-foreground font-semibold">
+                                    {new Date(sub.activatedOn).toLocaleDateString(undefined, {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(sub.activatedOn).toLocaleTimeString(undefined, {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                              ) : (
+                                "N/A"
+                              )}
+                            </td>
+
+                            {/* Expire On */}
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-foreground font-mono text-[11px] font-semibold">
+                                  {expiresDate ? expiresDate.toLocaleDateString(undefined, {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  }) : "N/A"}
+                                </span>
+                                <div>{remainingBadge}</div>
+                              </div>
+                            </td>
+
+                            {/* Payment / Status */}
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-1">
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] uppercase font-extrabold px-2 py-0.5 w-fit">
+                                  PAID
+                                </Badge>
+                                {sub.paymentId && sub.paymentId !== "N/A" && (
+                                  <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[120px]">
+                                    {sub.paymentId}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Actions: View Details same as rest */}
+                            <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewUserDetail(u)}
+                                className="text-[10px] font-bold uppercase h-7 px-2.5 rounded-lg border-primary/20 hover:border-primary/50 text-primary"
+                              >
+                                View Details
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {subTotalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-border/40 p-4 bg-neutral-900/10">
+                  <span className="text-[11px] text-muted-foreground">
+                    Showing page {subCurrentPage} of {subTotalPages} ({subTotalCount} subscribers total)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={subCurrentPage === 1 || subLoading}
+                      onClick={() => setSubCurrentPage((prev) => prev - 1)}
+                      className="text-xs border-primary/10"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={subCurrentPage === subTotalPages || subLoading}
+                      onClick={() => setSubCurrentPage((prev) => prev + 1)}
                       className="text-xs border-primary/10"
                     >
                       Next
