@@ -47,7 +47,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  statusData?: any;
+  isLocked?: boolean;
+  initialUser?: any;
+}
+
+export function AppSidebar({
+  statusData,
+  isLocked: propIsLocked,
+  initialUser,
+}: AppSidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -59,21 +69,23 @@ export function AppSidebar() {
     }
   };
 
+  const activeUser = session?.user || initialUser;
+
   const user = {
-    name: session?.user?.name || "User",
-    email: session?.user?.email || "",
-    avatar: session?.user?.image || "",
+    name: activeUser?.name || "User",
+    email: activeUser?.email || "",
+    avatar: activeUser?.image || "",
   };
 
-  const isAdmin = (session?.user as any)?.role === "admin";
-  const userStatus = (session?.user as any)?.status || "pending";
-  const isPromo = (session?.user as any)?.isPromoActive;
-  const isPremium = (session?.user as any)?.isPremiumActive;
-  const membershipTag = (session?.user as any)?.membershipTag;
+  const isAdmin = (activeUser as any)?.role === "admin" || statusData?.role === "admin";
+  const userStatus = statusData?.status || (activeUser as any)?.status || "pending";
+  const isPromo = statusData?.isPromoActive ?? (activeUser as any)?.isPromoActive;
+  const isPremium = statusData?.isPremiumActive ?? (activeUser as any)?.isPremiumActive;
+  const membershipTag = statusData?.membershipTag || (activeUser as any)?.membershipTag;
   
   const isBypassed = isAdmin || membershipTag === "OPERATOR HQ" || isPremium;
   const isPromoTrial = isPromo && !isBypassed && userStatus === "approved";
-  const isFullyLocked = !isAdmin && !isBypassed && !isPromoTrial;
+  const isFullyLocked = propIsLocked ?? (!isAdmin && !isBypassed && !isPromoTrial);
 
   const [viewMode, setViewMode] = React.useState<"admin" | "user">("admin");
   const [mounted, setMounted] = React.useState(false);

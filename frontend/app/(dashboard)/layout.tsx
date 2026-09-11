@@ -58,9 +58,17 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar />
+        <AppSidebar
+          statusData={statusData}
+          isLocked={isLocked}
+          initialUser={session.user}
+        />
         <SidebarInset className="flex flex-col min-h-screen">
-          <DashboardHeader statusData={statusData} isLocked={isLocked} />
+          <DashboardHeader
+            statusData={statusData}
+            isLocked={isLocked}
+            initialUser={session.user}
+          />
           <LiveMeetingWrapper>
             <Suspense fallback={null}>
               <DashboardContentGuard isLocked={isLocked} statusData={statusData}>

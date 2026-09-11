@@ -11,17 +11,22 @@ import { Badge } from "@/components/ui/badge";
 interface DashboardHeaderProps {
   statusData?: any;
   isLocked?: boolean;
+  initialUser?: any;
 }
 
-export function DashboardHeader({ statusData, isLocked: propIsLocked }: DashboardHeaderProps) {
+export function DashboardHeader({
+  statusData,
+  isLocked: propIsLocked,
+  initialUser,
+}: DashboardHeaderProps) {
   const { data: session } = useSession();
-  const user = session?.user;
+  const user = session?.user || initialUser;
   const router = useRouter();
   const pathname = usePathname();
 
   const sidebarContext = useSidebar();
 
-  const isAdmin = (user as any)?.role === "admin";
+  const isAdmin = (user as any)?.role === "admin" || statusData?.role === "admin";
   const userStatus = statusData?.status || (user as any)?.status || "pending";
   const isPromo = statusData?.isPromoActive ?? (user as any)?.isPromoActive;
   const isPremium = statusData?.isPremiumActive ?? (user as any)?.isPremiumActive;
