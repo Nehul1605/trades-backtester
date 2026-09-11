@@ -334,7 +334,7 @@ export default function PremiumCheckoutPage() {
           Premium <span className="text-primary not-italic">Subscriptions</span>
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-          Gain full permanent access to live market sessions, operator trading signals, and institutional tools.
+          Gain full permanent access to live market sessions, operator past trades data with accuracy records, and institutional tools.
         </p>
       </div>
 
@@ -385,7 +385,7 @@ export default function PremiumCheckoutPage() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
               {[
                 { icon: Tv, title: "Live Market Stream", desc: "Co-host and watch charts live." },
-                { icon: Award, title: "Operator HQ Signals", desc: "Real-time verified trading feeds." },
+                { icon: Award, title: "Operator HQ Trades", desc: "Past trades data with verified accuracy %." },
                 { icon: BookOpen, title: "Trading Resources", desc: "Access premium templates, PDFs, and guides." },
                 { icon: Scale, title: "Position Calculator", desc: "Properly unlock precise lot size sizing." },
               ].map((item, i) => (

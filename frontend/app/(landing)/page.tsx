@@ -326,11 +326,11 @@ export default async function HomePage() {
                 </div>
 
                 <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-                  Operator HQ Signals &amp; Verified Win Accuracy
+                  Operator HQ Trades &amp; Verified Win Accuracy
                 </h2>
 
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  Track real-time signal calls posted by senior operators. See historical win rates, stop-loss / take-profit executions, and total pips gained — transparently open for public inspection without needing to sign in or verify an account.
+                  Inspect verified past trades data posted by senior operators. See historical win rates, stop-loss / take-profit executions, and total pips gained — transparently open for public inspection without needing to sign in or verify an account.
                 </p>
 
                 <div className="flex flex-wrap gap-4 pt-2">
@@ -340,7 +340,7 @@ export default async function HomePage() {
                     className="bg-gold-gradient text-background hover:opacity-90 font-bold text-xs uppercase px-6"
                   >
                     <Link href="/signals">
-                      View Live Signal Feed &amp; Accuracy <ArrowRight className="w-4 h-4 ml-2" />
+                      View Past Trades Data &amp; Accuracy <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
                   <Button
@@ -370,12 +370,12 @@ export default async function HomePage() {
                 <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
                   <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Accuracy</div>
                   <div className="text-xl sm:text-2xl font-black text-gold-gradient">VERIFIED</div>
-                  <div className="text-[10px] text-muted-foreground">Real-time pips tracking</div>
+                  <div className="text-[10px] text-muted-foreground">Historical pips &amp; accuracy</div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-card/60 border border-border/50 text-center space-y-1">
-                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Signals Feed</div>
-                  <div className="text-xl sm:text-2xl font-black text-blue-400">LIVE</div>
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Trades Log</div>
+                  <div className="text-xl sm:text-2xl font-black text-blue-400">HISTORICAL</div>
                   <div className="text-[10px] text-muted-foreground">Forex &amp; Gold setups</div>
                 </div>
 
@@ -603,7 +603,7 @@ export default async function HomePage() {
               Simple Pricing. <span className="text-primary">Zero Hidden Fees.</span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-              Start completely free with partner broker verification or upgrade to instant permanent institutional access to live streaming chart rooms and operator signal feeds.
+              Start completely free with partner broker verification or upgrade to instant permanent institutional access to live streaming chart rooms and operator past trades data with accuracy records.
             </p>
           </div>
 
@@ -688,7 +688,7 @@ export default async function HomePage() {
                   <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Everything in Free, plus:</p>
                   {[
                     "Live Market WebRTC Stream & Chart Co-Hosting",
-                    "Operator HQ Real-Time Signal Feed & Pips Log",
+                    "Operator HQ Past Trades Data & Accuracy Records",
                     "Institutional Macro Economic Release Calendar",
                     "Unlimited Account Workspaces & Unlimited Trades",
                     "Priority Platform Support",

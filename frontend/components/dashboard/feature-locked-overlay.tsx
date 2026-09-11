@@ -54,14 +54,14 @@ export function FeatureLockedOverlay({ featureName }: FeatureLockedOverlayProps)
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          This feature is restricted under your **10-Day Promotional Trial**. To gain permanent full access to Live Stream, Operator Signals, and Economic Calendar, choose one of the options below.
+          This feature is restricted under your **10-Day Promotional Trial**. To gain permanent full access to Live Stream, Operator Past Trades Data & Accuracy Records, and Economic Calendar, choose one of the options below.
         </p>
 
         {/* Benefits lists */}
         <div className="bg-neutral-900/60 rounded-xl p-4 border border-border/40 text-left max-w-sm mx-auto space-y-2">
           {[
             "Live Market Stream & Co-Hosting",
-            "Operator HQ Real-Time Signal Feed",
+            "Operator HQ Past Trades Data & Accuracy",
             "Trading Resources & PDF Guides",
             "Unlimited Account Workspaces & Ledgers"
           ].map((benefit, i) => (

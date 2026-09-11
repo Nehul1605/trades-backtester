@@ -350,7 +350,7 @@ export function LockedPlatformView({ statusData: initialStatusData }: LockedPlat
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-neutral-900/40 p-3.5 rounded-xl border border-border/20">
                     {[
                       "Dashboard Console & Unlimited Ledgers",
-                      "Operator HQ Real-Time Signal Stream",
+                      "Operator HQ Past Trades Data & Accuracy Log",
                       "Live Market Stream & Co-Hosting",
                       "Position, P&L & Consistency Calculators",
                       "Economic News Calendar & Sentiment",
