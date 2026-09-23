@@ -28,15 +28,19 @@ import {
   Radio,
   Maximize2,
   Minimize2,
+  Minus,
   Volume2,
   VolumeX,
   Loader2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { streamSFX } from "@/lib/soundEffects";
+import { useLiveMeeting } from "./LiveMeetingProvider";
 
 interface LiveMarketStageProps {
   sessionData: any;
@@ -58,6 +62,7 @@ export function LiveMarketStage({
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
+  const { setIsMinimized, leaveSession } = useLiveMeeting();
 
   // Local state for media toggles
   const [isMicOn, setIsMicOn] = useState(false);
@@ -137,6 +142,7 @@ export function LiveMarketStage({
           if (!localParticipant.isMicrophoneEnabled) return;
           await localParticipant.setMicrophoneEnabled(false);
           setIsMicOn(false);
+          streamSFX.playMuteSound();
           toast.info("The host has muted your microphone.");
         } else if (cmd.action === "unmute") {
           if (localParticipant.isMicrophoneEnabled) return;
@@ -149,6 +155,7 @@ export function LiveMarketStage({
                 try {
                   await localParticipant.setMicrophoneEnabled(true);
                   setIsMicOn(true);
+                  streamSFX.playUnmuteSound();
                   toast.success("Microphone Unmuted");
                 } catch (err: any) {
                   toast.error("Failed to unmute: " + (err.message || err));
@@ -179,6 +186,11 @@ export function LiveMarketStage({
     try {
       const encoded = new TextEncoder().encode(JSON.stringify(packet));
       send(encoded, { reliable: true });
+      if (action === "mute") {
+        streamSFX.playMuteSound();
+      } else {
+        streamSFX.playUnmuteSound();
+      }
       if (targetIdentity === "all") {
         toast.success(`Requested everyone to ${action}.`);
       } else {
@@ -242,6 +254,11 @@ export function LiveMarketStage({
       const nextState = !isMicOn;
       await localParticipant.setMicrophoneEnabled(nextState);
       setIsMicOn(nextState);
+      if (nextState) {
+        streamSFX.playUnmuteSound();
+      } else {
+        streamSFX.playMuteSound();
+      }
       toast.success(nextState ? "Microphone Unmuted" : "Microphone Muted");
     } catch (err: any) {
       toast.error("Failed to toggle microphone: " + (err.message || err));
@@ -278,6 +295,11 @@ export function LiveMarketStage({
         systemAudio: "include",
       });
       setIsScreenSharing(nextState);
+      if (nextState) {
+        streamSFX.playScreenShareStartSound();
+      } else {
+        streamSFX.playScreenShareStopSound();
+      }
       toast.success(nextState ? "Screen Share Started" : "Screen Share Stopped");
     } catch (err: any) {
       toast.error("Failed to toggle screen share: " + (err.message || err));
@@ -546,11 +568,30 @@ export function LiveMarketStage({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => {
+                const nextMuted = !isMuted;
+                setIsMuted(nextMuted);
+                if (nextMuted) {
+                  streamSFX.playMuteSound();
+                } else {
+                  streamSFX.playUnmuteSound();
+                }
+              }}
               title={isMuted ? "Unmute Audio" : "Mute Audio"}
               className="rounded-full text-muted-foreground hover:text-foreground"
             >
               {isMuted ? <VolumeX className="w-4 h-4 text-destructive" /> : <Volume2 className="w-4 h-4" />}
+            </Button>
+
+            {/* Minimize stage to floating mini-player */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMinimized(true)}
+              title="Minimize Stage (Floating Mini-Player)"
+              className="rounded-full text-muted-foreground hover:text-foreground hover:bg-primary/10"
+            >
+              <Minus className="w-4 h-4" />
             </Button>
 
             <Button
@@ -583,7 +624,7 @@ export function LiveMarketStage({
               <MessageSquare className="w-4 h-4" />
             </Button>
 
-            {isHostOrCoHost && isLive && (
+            {isHostOrCoHost && isLive ? (
               <Button
                 variant="destructive"
                 size="sm"
@@ -591,6 +632,18 @@ export function LiveMarketStage({
                 className="rounded-full px-4 text-xs font-bold uppercase gap-1.5 shadow-md shadow-destructive/20"
               >
                 <Square className="w-3.5 h-3.5 fill-current" /> End Session
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  streamSFX.playUserLeaveSound();
+                  leaveSession();
+                }}
+                className="rounded-full px-3 text-xs font-bold text-muted-foreground hover:text-destructive hover:border-destructive/40 gap-1"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Leave
               </Button>
             )}
           </div>

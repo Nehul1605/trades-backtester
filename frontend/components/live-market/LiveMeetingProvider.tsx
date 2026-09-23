@@ -9,11 +9,12 @@ import React, {
   useEffect,
 } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LiveKitRoom } from "@livekit/components-react";
 import { Room, RoomEvent, DisconnectReason } from "livekit-client";
 import { toast } from "sonner";
 import { MiniPlayer } from "./MiniPlayer";
+import { streamSFX } from "@/lib/soundEffects";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
 
@@ -27,6 +28,8 @@ interface LiveMeetingContextType {
   isHost: boolean;
   isBroadcaster: boolean;
   room: Room | null;
+  isMinimized: boolean;
+  soundEnabled: boolean;
 
   // Actions
   joinSession: (session: any) => Promise<void>;
@@ -37,6 +40,9 @@ interface LiveMeetingContextType {
   sessions: any[];
   loadingSessions: boolean;
   connectingLivekit: boolean;
+  setIsMinimized: (val: boolean) => void;
+  toggleMinimize: () => void;
+  setSoundEnabled: (val: boolean) => void;
 }
 
 const LiveMeetingContext = createContext<LiveMeetingContextType | null>(null);
@@ -56,6 +62,7 @@ export function LiveMeetingProvider({
 }) {
   const { data: session, status: authStatus, update: updateSession } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [activeSession, setActiveSession] = useState<any | null>(null);
@@ -64,12 +71,23 @@ export function LiveMeetingProvider({
   const [isHostOrCoHost, setIsHostOrCoHost] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [soundEnabled, setSoundEnabledState] = useState(true);
 
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [connectingLivekit, setConnectingLivekit] = useState(false);
 
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
   const [currentUserStatus, setCurrentUserStatus] = useState<string>("");
+
+  const setSoundEnabled = useCallback((val: boolean) => {
+    setSoundEnabledState(val);
+    streamSFX.setSoundEnabled(val);
+  }, []);
+
+  const toggleMinimize = useCallback(() => {
+    setIsMinimized((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -151,6 +169,7 @@ export function LiveMeetingProvider({
     setIsConnected(false);
     setIsHostOrCoHost(false);
     setIsHost(false);
+    setIsMinimized(false);
   }, []);
 
   // Join session
@@ -201,6 +220,8 @@ export function LiveMeetingProvider({
 
         const handleConnected = () => {
           setIsConnected(true);
+          // Play stream start / call connected sound
+          streamSFX.playStreamStartSound();
         };
 
         const handlePermissionsChanged = (arg1: any, arg2: any) => {
@@ -213,6 +234,8 @@ export function LiveMeetingProvider({
         };
 
         const handleParticipantConnected = (participant: any) => {
+          // Play Telegram/Discord style participant join sound
+          streamSFX.playUserJoinSound();
           toast.success(`${participant.name || participant.identity} joined the live stream!`, {
             description: "Say hello in the chat!",
             icon: "👋",
@@ -220,6 +243,8 @@ export function LiveMeetingProvider({
         };
 
         const handleParticipantDisconnected = (participant: any) => {
+          // Play Telegram/Discord style participant leave sound
+          streamSFX.playUserLeaveSound();
           toast.info(`${participant.name || participant.identity} left the live stream.`);
         };
 
@@ -270,6 +295,8 @@ export function LiveMeetingProvider({
       if (res.ok) {
         const updated = await res.json();
         setActiveSession(updated);
+        // Play pop / start stream sound (Discord/Telegram style)
+        streamSFX.playStreamStartSound();
         toast.success("Stream Started! You are live.");
         fetchSessions();
       } else {
@@ -293,6 +320,7 @@ export function LiveMeetingProvider({
         }
       );
       if (res.ok) {
+        streamSFX.playUserLeaveSound();
         leaveSession();
         toast.info("Session Ended");
         const remaining = await fetchSessions();
@@ -309,39 +337,59 @@ export function LiveMeetingProvider({
   }, [activeSession, userToken, fetchSessions, leaveSession, joinSession]);
 
   const isOnMarketPage = pathname === "/market";
+  const showMiniPlayer = (!isOnMarketPage || isMinimized) && isConnected && !!activeSession;
+
+  const handleMaximizeFromMini = useCallback(() => {
+    setIsMinimized(false);
+    if (!isOnMarketPage) {
+      router.push("/market");
+    }
+  }, [isOnMarketPage, router]);
+
+  const contextValue = {
+    activeSession,
+    livekitToken,
+    livekitUrl,
+    isConnected,
+    isHostOrCoHost,
+    isHost,
+    isBroadcaster,
+    joinSession,
+    leaveSession,
+    handleStartStream,
+    handleEndStream,
+    fetchSessions,
+    sessions,
+    loadingSessions,
+    connectingLivekit,
+    room: roomRef.current,
+    isMinimized,
+    setIsMinimized,
+    toggleMinimize,
+    soundEnabled,
+    setSoundEnabled,
+  };
 
   return (
-    <LiveMeetingContext.Provider
-      value={{
-        activeSession,
-        livekitToken,
-        livekitUrl,
-        isConnected,
-        isHostOrCoHost,
-        isHost,
-        isBroadcaster,
-        joinSession,
-        leaveSession,
-        handleStartStream,
-        handleEndStream,
-        fetchSessions,
-        sessions,
-        loadingSessions,
-        connectingLivekit,
-        room: roomRef.current,
-      }}
-    >
-      {children}
-      {!isOnMarketPage && isConnected && activeSession && roomRef.current && (
+    <LiveMeetingContext.Provider value={contextValue}>
+      {roomRef.current && livekitToken ? (
         <LiveKitRoom
           room={roomRef.current}
           data-lk-theme="default"
         >
-          <MiniPlayer
-            sessionData={activeSession}
-            onLeave={leaveSession}
-          />
+          {children}
+          {showMiniPlayer && (
+            <MiniPlayer
+              sessionData={activeSession}
+              onLeave={leaveSession}
+              onMaximize={handleMaximizeFromMini}
+            />
+          )}
         </LiveKitRoom>
+      ) : (
+        <>
+          {children}
+        </>
       )}
     </LiveMeetingContext.Provider>
   );
