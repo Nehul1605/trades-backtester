@@ -15,6 +15,11 @@ const liveSessionSchema = new mongoose.Schema(
       type: String,
       default: "General Market Analysis",
     },
+    targetAudience: {
+      type: String,
+      enum: ["TTP", "HQ"],
+      default: "TTP",
+    },
     host: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

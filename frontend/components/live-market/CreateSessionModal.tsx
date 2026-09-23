@@ -29,6 +29,7 @@ interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSessionCreated: (session: any) => void;
+  defaultAudience?: "TTP" | "HQ";
 }
 
 const CATEGORIES = [
@@ -43,12 +44,20 @@ export function CreateSessionModal({
   isOpen,
   onClose,
   onSessionCreated,
+  defaultAudience = "TTP",
 }: CreateSessionModalProps) {
   const { data: session } = useSession();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [targetAudience, setTargetAudience] = useState<"TTP" | "HQ">(defaultAudience);
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (defaultAudience) {
+      setTargetAudience(defaultAudience);
+    }
+  }, [defaultAudience]);
 
   const token = (session?.user as any)?.accessToken;
 
@@ -74,6 +83,7 @@ export function CreateSessionModal({
             title: title.trim(),
             description: description.trim(),
             category,
+            targetAudience,
             scheduledAt: new Date().toISOString(),
           }),
         }
@@ -105,11 +115,44 @@ export function CreateSessionModal({
             <Radio className="w-5 h-5 text-primary" /> Start Live Stream
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Create an active broadcast room. All viewers will see your stream instantly.
+            Create an active broadcast room. Only one stream can run at a time.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 my-2">
+          {/* Target Audience Selector */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Broadcast Audience / Channel *
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setTargetAudience("TTP")}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  targetAudience === "TTP"
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                    : "border-border/60 bg-background/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <p className="text-xs font-black uppercase tracking-tight">🌐 TTP Community</p>
+                <p className="text-[10px] opacity-75">All Paying & HQ Members</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetAudience("HQ")}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  targetAudience === "HQ"
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                    : "border-border/60 bg-background/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <p className="text-xs font-black uppercase tracking-tight">🛡️ Operator HQ</p>
+                <p className="text-[10px] opacity-75">HQ Referral Members Only</p>
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Stream Title *

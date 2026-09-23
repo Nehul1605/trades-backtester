@@ -23,6 +23,7 @@ import {
   Award,
   Lock,
   Sparkles,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -257,10 +258,10 @@ export function AppSidebar({
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5 px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.url;
+                  const isActive = pathname === item.url.split("?")[0];
                   const isItemLocked =
                     (isFullyLocked && !["/settings", "/help", "/premium"].includes(item.url)) ||
-                    (isPromoTrial && ["/market", "/operator-hq", "/calendar"].includes(item.url));
+                    (isPromoTrial && (item.url.startsWith("/operator-hq") || item.url.startsWith("/calendar")));
 
                   return (
                     <SidebarMenuItem key={item.title}>

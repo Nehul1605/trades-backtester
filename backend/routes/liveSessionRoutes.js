@@ -2,6 +2,7 @@ import express from "express";
 import { AccessToken, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 import LiveSession from "../models/LiveSession.js";
 import User from "../models/User.js";
+import VerificationRequest from "../models/VerificationRequest.js";
 import protect from "../middleware/auth.js";
 
 const router = express.Router();
@@ -84,7 +85,7 @@ router.get("/users/search", protect, async (req, res) => {
 // @access  Private
 router.post("/", protect, async (req, res) => {
   try {
-    const { title, description, category, scheduledAt } = req.body;
+    const { title, description, category, targetAudience, scheduledAt } = req.body;
 
     if (!title || title.trim() === "") {
       return res.status(400).json({ error: "Title is required for the stream" });
@@ -102,12 +103,19 @@ router.post("/", protect, async (req, res) => {
       });
     }
 
+    // Only 1 stream can be live at a time: end any previous live streams
+    await LiveSession.updateMany(
+      { status: "live" },
+      { status: "ended", endedAt: new Date() }
+    );
+
     const roomName = `room-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     const session = new LiveSession({
       title: title.trim(),
       description: description ? description.trim() : "",
       category: category || "General Market Analysis",
+      targetAudience: targetAudience === "HQ" ? "HQ" : "TTP",
       host: req.userId,
       coHosts: [],
       status: "live",
@@ -165,6 +173,17 @@ router.post("/:id/token", protect, async (req, res) => {
 
     const isHostOrCoHost = await isHostOrCoHostUser(session, req.userId);
 
+    // Access control: If targetAudience is HQ, only Admins & Operator HQ members can join
+    if (session.targetAudience === "HQ" && !isHostOrCoHost && user.role !== "admin") {
+      const brokerReq = await VerificationRequest.findOne({ user: user._id, status: "approved" });
+      const isHQ = user.membershipTag === "OPERATOR HQ" || !!brokerReq;
+      if (!isHQ) {
+        return res.status(403).json({
+          error: "Access Denied: This live stream is exclusive to Operator HQ community members.",
+        });
+      }
+    }
+
     const apiKey = process.env.LIVEKIT_API_KEY || "devkey";
     const apiSecret =
       process.env.LIVEKIT_API_SECRET ||
@@ -196,6 +215,7 @@ router.post("/:id/token", protect, async (req, res) => {
       isHost: session.host.toString() === user._id.toString(),
       sessionStatus: session.status,
       roomName: session.roomName,
+      targetAudience: session.targetAudience || "TTP",
       livekitUrl: process.env.LIVEKIT_URL || "wss://demo.livekit.cloud",
     });
   } catch (error) {
