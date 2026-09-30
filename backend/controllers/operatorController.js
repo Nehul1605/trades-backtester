@@ -1,4 +1,5 @@
 import OperatorTrade from "../models/OperatorTrade.js";
+import User from "../models/User.js";
 
 /**
  * Helper to calculate pips gained/lost
@@ -38,7 +39,9 @@ export const getOperatorTrades = async (req, res) => {
     // Helper to calculate stats for a list of trades
     const calculateStats = (tradeList) => {
       const totalSignals = tradeList.length;
-      const openSignals = tradeList.filter((t) => t.status === "open").length;
+      const openSignals = tradeList.filter((t) => t.status === "open" || t.status === "triggered").length;
+      const waitingCount = tradeList.filter((t) => t.status === "waiting_for_trigger").length;
+      const triggeredCount = tradeList.filter((t) => t.status === "triggered").length;
       const winCount = tradeList.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
       const lossCount = tradeList.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
       const closedCount = winCount + lossCount;
@@ -48,6 +51,8 @@ export const getOperatorTrades = async (req, res) => {
       return {
         totalSignals,
         openSignals,
+        waitingCount,
+        triggeredCount,
         winCount,
         lossCount,
         closedCount,
@@ -57,6 +62,12 @@ export const getOperatorTrades = async (req, res) => {
     };
 
     const overallStats = calculateStats(trades);
+
+    const operatorHqTrades = trades.filter((t) => !t.tradeCategory || t.tradeCategory === "operator_hq");
+    const rdxGoldTrades = trades.filter((t) => t.tradeCategory === "rdx_gold");
+
+    const operatorHqStats = calculateStats(operatorHqTrades);
+    const rdxGoldStats = calculateStats(rdxGoldTrades);
 
     // Group trades by Month (e.g., "August 2026", "July 2026")
     const monthGroups = {};
@@ -123,8 +134,12 @@ export const getOperatorTrades = async (req, res) => {
     return res.status(200).json({
       success: true,
       stats: overallStats,
+      operatorHqStats,
+      rdxGoldStats,
       monthlyData,
       trades,
+      operatorHqTrades,
+      rdxGoldTrades,
     });
   } catch (error) {
     console.error("Get operator trades error:", error);
@@ -137,6 +152,10 @@ export const getOperatorTrades = async (req, res) => {
  */
 export const createOperatorTrade = async (req, res) => {
   try {
+    const user = await User.findById(req.userId);
+    if (!user || (user.role !== "admin" && user.role !== "broadcaster")) {
+      return res.status(403).json({ success: false, message: "Forbidden: Only admins and broadcasters can post trade signals" });
+    }
     const {
       symbol = "XAUUSD",
       direction = "long",
@@ -147,7 +166,17 @@ export const createOperatorTrade = async (req, res) => {
       status = "open",
       notes,
       createdAt,
+      tradeCategory = "operator_hq",
+      level1Price,
+      level2Price,
+      tp1,
+      tp2,
     } = req.body;
+
+    // RDX Gold Trades are exclusive to Admin (You)
+    if (tradeCategory === "rdx_gold" && user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Forbidden: Only the main Admin can post RDX Gold Trades" });
+    }
 
     if (!entryPrice || !stopLoss || !takeProfit) {
       return res.status(400).json({ success: false, message: "Entry price, Stop Loss, and Take Profit are required" });
@@ -172,6 +201,11 @@ export const createOperatorTrade = async (req, res) => {
       takeProfit: Number(takeProfit),
       status,
       pnlPips,
+      tradeCategory: tradeCategory === "rdx_gold" ? "rdx_gold" : "operator_hq",
+      level1Price: level1Price ? Number(level1Price) : null,
+      level2Price: level2Price ? Number(level2Price) : null,
+      tp1: tp1 ? Number(tp1) : null,
+      tp2: tp2 ? Number(tp2) : null,
       notes: notes || "",
     };
 
@@ -202,18 +236,32 @@ export const createOperatorTrade = async (req, res) => {
  */
 export const updateOperatorTrade = async (req, res) => {
   try {
+    const user = await User.findById(req.userId);
+    if (!user || (user.role !== "admin" && user.role !== "broadcaster")) {
+      return res.status(403).json({ success: false, message: "Forbidden: Only admins and broadcasters can update trade signals" });
+    }
     const { id } = req.params;
-    const { status, exitPrice, stopLoss, takeProfit, notes } = req.body;
+    const { status, exitPrice, stopLoss, takeProfit, notes, level1Price, level2Price, tp1, tp2, tradeCategory } = req.body;
 
     const trade = await OperatorTrade.findById(id);
     if (!trade) {
       return res.status(404).json({ success: false, message: "Trade signal call not found" });
     }
 
+    // RDX Gold Trades are exclusive to Admin (You)
+    if ((trade.tradeCategory === "rdx_gold" || tradeCategory === "rdx_gold") && user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Forbidden: Only the main Admin can update RDX Gold Trades" });
+    }
+
+    if (tradeCategory) trade.tradeCategory = tradeCategory;
     if (status) trade.status = status;
     if (exitPrice !== undefined) trade.exitPrice = exitPrice ? Number(exitPrice) : null;
     if (stopLoss !== undefined) trade.stopLoss = Number(stopLoss);
     if (takeProfit !== undefined) trade.takeProfit = Number(takeProfit);
+    if (level1Price !== undefined) trade.level1Price = level1Price ? Number(level1Price) : null;
+    if (level2Price !== undefined) trade.level2Price = level2Price ? Number(level2Price) : null;
+    if (tp1 !== undefined) trade.tp1 = tp1 ? Number(tp1) : null;
+    if (tp2 !== undefined) trade.tp2 = tp2 ? Number(tp2) : null;
     if (notes !== undefined) trade.notes = notes;
 
     // Recalculate pips based on status & exit price
@@ -242,10 +290,18 @@ export const updateOperatorTrade = async (req, res) => {
  */
 export const deleteOperatorTrade = async (req, res) => {
   try {
+    const user = await User.findById(req.userId);
+    if (!user || (user.role !== "admin" && user.role !== "broadcaster")) {
+      return res.status(403).json({ success: false, message: "Forbidden: Only admins and broadcasters can delete trade signals" });
+    }
     const { id } = req.params;
     const trade = await OperatorTrade.findById(id);
     if (!trade) {
       return res.status(404).json({ success: false, message: "Trade signal call not found" });
+    }
+
+    if (trade.tradeCategory === "rdx_gold" && user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Forbidden: Only the main Admin can delete RDX Gold Trades" });
     }
 
     await trade.deleteOne();

@@ -22,9 +22,9 @@ const isHostOrCoHostUser = async (session, userId) => {
     return true;
   }
 
-  // Check if Admin
+  // Check if Admin or Broadcaster
   const user = await User.findById(userId);
-  if (user && user.role === "admin") {
+  if (user && (user.role === "admin" || user.role === "broadcaster")) {
     return true;
   }
 

@@ -79,6 +79,11 @@ interface OperatorTrade {
   takeProfit: number;
   status: "open" | "tp_hit" | "sl_hit" | "closed" | "breakeven";
   pnlPips: number;
+  tradeCategory?: "operator_hq" | "rdx_gold";
+  level1Price?: number | null;
+  level2Price?: number | null;
+  tp1?: number | null;
+  tp2?: number | null;
   notes: string;
   createdAt: string;
   createdBy?: {
@@ -90,7 +95,8 @@ interface OperatorTrade {
 export function OperatorHQ() {
   const { data: session } = useSession();
   const { toast } = useToast();
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const userRole = (session?.user as any)?.role;
+  const canManageSignals = userRole === "admin" || userRole === "broadcaster";
 
   const [trades, setTrades] = useState<OperatorTrade[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyDataItem[]>([]);
@@ -117,10 +123,34 @@ export function OperatorHQ() {
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<OperatorTrade | null>(null);
 
-  // Form State
+  const [activeCategoryTab, setActiveCategoryTab] = useState<"rdx_gold" | "operator_hq">("rdx_gold");
+  const [rdxGoldStats, setRdxGoldStats] = useState({
+    totalSignals: 0,
+    openSignals: 0,
+    winCount: 0,
+    lossCount: 0,
+    closedCount: 0,
+    accuracyPercent: 0,
+    totalPips: 0,
+  });
+  const [operatorHqStats, setOperatorHqStats] = useState({
+    totalSignals: 0,
+    openSignals: 0,
+    winCount: 0,
+    lossCount: 0,
+    closedCount: 0,
+    accuracyPercent: 0,
+    totalPips: 0,
+  });
+
   const [createForm, setCreateForm] = useState({
     symbol: "XAUUSD",
     direction: "long" as "long" | "short",
+    tradeCategory: "rdx_gold" as "rdx_gold" | "operator_hq",
+    level1Price: "",
+    level2Price: "",
+    tp1: "",
+    tp2: "",
     entryPrice: "",
     stopLoss: "",
     takeProfit: "",
@@ -141,6 +171,8 @@ export function OperatorHQ() {
       const res = await getOperatorTrades();
       if (res.trades) setTrades(res.trades);
       if (res.stats) setStats(res.stats);
+      if ((res as any).rdxGoldStats) setRdxGoldStats((res as any).rdxGoldStats);
+      if ((res as any).operatorHqStats) setOperatorHqStats((res as any).operatorHqStats);
       if (res.monthlyData) setMonthlyData(res.monthlyData);
     } catch (err) {
       console.error("Failed to load operator HQ signals:", err);
@@ -172,6 +204,11 @@ export function OperatorHQ() {
       const result = await createOperatorTrade({
         symbol: createForm.symbol,
         direction: createForm.direction,
+        tradeCategory: createForm.tradeCategory,
+        level1Price: createForm.level1Price ? parseFloat(createForm.level1Price) : undefined,
+        level2Price: createForm.level2Price ? parseFloat(createForm.level2Price) : undefined,
+        tp1: createForm.tp1 ? parseFloat(createForm.tp1) : undefined,
+        tp2: createForm.tp2 ? parseFloat(createForm.tp2) : undefined,
         entryPrice: entry,
         stopLoss: sl,
         takeProfit: tp,
@@ -352,7 +389,9 @@ export function OperatorHQ() {
 
   // Active stats & base trades based on month selection
   const activeMonthGroup = displayMonthlyData.find((m) => m.monthKey === selectedMonth);
-  const baseTrades = selectedMonth === "all" ? trades : (activeMonthGroup?.trades || []);
+  const baseTrades = (selectedMonth === "all" ? trades : (activeMonthGroup?.trades || [])).filter(
+    (t) => !t.tradeCategory || t.tradeCategory === "operator_hq"
+  );
 
   // Dynamic active stats based on month selection and symbol filter (Gold, EURUSD, or All)
   const activeStats = React.useMemo(() => {
@@ -401,27 +440,34 @@ export function OperatorHQ() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto w-full">
-      {/* Header Banner */}
+      {/* HEADER BAR & ACTION BUTTON */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
-        <div className="space-y-1">
+        <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              Operator HQ
+            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider text-cyan-400 italic flex items-center gap-2">
+              <ShieldCheck className="w-7 h-7 text-cyan-400" />
+              Operator HQ <span className="text-foreground not-italic">Signals</span>
             </h1>
-            <Badge variant="outline" className="bg-gold-gradient text-background font-bold text-xs uppercase border-none px-2.5 py-0.5">
+            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 font-bold text-xs uppercase px-2.5 py-0.5">
               Official Signal Channel
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs md:text-sm">
-            Live verified signal calls & transparent accuracy performance for Gold (XAUUSD) & Forex
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">
+            Live verified signal calls & transparent accuracy performance for Operator HQ community (Managed by Broadcaster & Admin).
           </p>
         </div>
 
-        {/* Admin Post Button */}
-        {isAdmin && (
+        {/* Admin / Broadcaster Post Button */}
+        {canManageSignals && (
           <Button
-            onClick={() => setIsCreateOpen(true)}
-            className="bg-gold-gradient text-background hover:opacity-90 transition-all font-bold text-xs uppercase px-4 shadow-sm self-start md:self-auto"
+            onClick={() => {
+              setCreateForm((prev) => ({
+                ...prev,
+                tradeCategory: "operator_hq",
+              }));
+              setIsCreateOpen(true);
+            }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs uppercase px-4 shadow-sm self-start md:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-2" /> Post Signal Call
           </Button>
@@ -836,8 +882,8 @@ export function OperatorHQ() {
                           )}
                         </div>
 
-                        {/* Admin Control Buttons */}
-                        {isAdmin && (
+                        {/* Admin / Broadcaster Control Buttons */}
+                        {canManageSignals && (
                           <div className="flex items-center gap-1 border-l border-border/40 pl-2">
                             <Button
                               size="sm"

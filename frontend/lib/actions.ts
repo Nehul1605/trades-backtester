@@ -1093,6 +1093,11 @@ export async function createOperatorTrade(data: {
   status?: string;
   notes?: string;
   createdAt?: string;
+  tradeCategory?: string;
+  level1Price?: number | null;
+  level2Price?: number | null;
+  tp1?: number | null;
+  tp2?: number | null;
 }): Promise<{ error?: string; trade?: any }> {
   try {
     const authHeader = await getAuthHeader();
@@ -1123,6 +1128,11 @@ export async function updateOperatorTrade(
     stopLoss?: number;
     takeProfit?: number;
     notes?: string;
+    tradeCategory?: string;
+    level1Price?: number | null;
+    level2Price?: number | null;
+    tp1?: number | null;
+    tp2?: number | null;
   }
 ): Promise<{ error?: string; trade?: any }> {
   try {

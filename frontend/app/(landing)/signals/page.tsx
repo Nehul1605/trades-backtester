@@ -23,7 +23,7 @@ export default async function PublicSignalsPage() {
   const session = await auth();
   const isLoggedIn = !!session?.user;
   const data = await getOperatorTrades();
-  const stats = data?.stats || {
+  const stats = data?.operatorHqStats || data?.stats || {
     totalSignals: 0,
     openSignals: 0,
     winCount: 0,
@@ -33,7 +33,9 @@ export default async function PublicSignalsPage() {
     totalPips: 0,
   };
   const monthlyData = data?.monthlyData || [];
-  const trades = data?.trades || [];
+  const trades = (data?.operatorHqTrades || data?.trades || []).filter(
+    (t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq"
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground overflow-x-hidden">

@@ -384,9 +384,9 @@ export default function PremiumCheckoutPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
               {[
-                { icon: Tv, title: "Live Market Stream", desc: "Co-host and watch charts live." },
-                { icon: Award, title: "Operator HQ Trades", desc: "Past trades data with verified accuracy %." },
-                { icon: BookOpen, title: "Trading Resources", desc: "Access premium templates, PDFs, and guides." },
+                { icon: Tv, title: "Live Market Stream", desc: "Co-host and watch live chart broadcasts." },
+                { icon: Award, title: "Real-Time RDX Gold Trades", desc: "Daily 2-Level Gold strategy & live accuracy track record." },
+                { icon: BookOpen, title: "Operator HQ Signals", desc: "Past signals data with verified accuracy %." },
                 { icon: Scale, title: "Position Calculator", desc: "Properly unlock precise lot size sizing." },
               ].map((item, i) => (
                 <div key={i} className="flex gap-3 items-start p-3 bg-neutral-900/40 rounded-xl border border-border/20">

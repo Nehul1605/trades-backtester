@@ -36,12 +36,33 @@ const operatorTradeSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "tp_hit", "sl_hit", "closed", "breakeven"],
-      default: "open",
+      enum: ["waiting_for_trigger", "triggered", "open", "tp_hit", "sl_hit", "closed", "breakeven"],
+      default: "waiting_for_trigger",
     },
     pnlPips: {
       type: Number,
       default: 0,
+    },
+    tradeCategory: {
+      type: String,
+      enum: ["operator_hq", "rdx_gold"],
+      default: "operator_hq",
+    },
+    level1Price: {
+      type: Number,
+      default: null,
+    },
+    level2Price: {
+      type: Number,
+      default: null,
+    },
+    tp1: {
+      type: Number,
+      default: null,
+    },
+    tp2: {
+      type: Number,
+      default: null,
     },
     notes: {
       type: String,

@@ -24,6 +24,7 @@ import {
   Lock,
   Sparkles,
   Radio,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -120,6 +121,7 @@ export function AppSidebar({
       label: "Core Platform",
       items: [
         { title: "Dashboard Console", url: "/dashboard", icon: LayoutDashboard },
+        { title: "RDX Gold Trades", url: "/rdx-trades", icon: Zap, badge: "RDX" },
         { title: "Operator HQ Signals", url: "/operator-hq", icon: Award },
         { title: "Live Market Stream", url: "/market", icon: TrendingUp },
         { title: "Economic Calendar", url: "/calendar", icon: Calendar },
