@@ -85,6 +85,17 @@ export function LiveMarketStage({
   };
   const [chatMessage, setChatMessage] = useState("");
   const [messages, setMessages] = useState<Array<{ sender: string; text: string; time: string }>>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (activeTab === "chat") {
+      scrollToBottom();
+    }
+  }, [messages, activeTab]);
 
   const [refreshCounter, setRefreshCounter] = useState(0);
 
@@ -682,38 +693,46 @@ export function LiveMarketStage({
 
           {/* TAB CONTENT: CHAT */}
           {activeTab === "chat" && (
-            <div className="flex-1 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 flex flex-col justify-between overflow-hidden min-w-0">
               {/* CHAT MESSAGES STREAM */}
-              <ScrollArea className="flex-1 p-4 space-y-3">
-                {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-16 text-muted-foreground/60 space-y-2">
-                    <MessageSquare className="w-8 h-8 stroke-1 text-muted-foreground/45" />
-                    <p className="text-xs">No messages yet. Say hi to the traders!</p>
-                  </div>
-                ) : (
-                  messages.map((msg, idx) => (
-                    <div key={idx} className="mb-3 space-y-1">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-primary">{msg.sender}</span>
-                        <span className="text-muted-foreground/60">{msg.time}</span>
-                      </div>
-                      <div className="bg-card border border-border/50 rounded-lg p-2.5 text-xs text-foreground leading-relaxed break-words">
-                        {msg.text}
-                      </div>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3 min-w-0 max-w-full">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-16 text-muted-foreground/60 space-y-2">
+                      <MessageSquare className="w-8 h-8 stroke-1 text-muted-foreground/45" />
+                      <p className="text-xs">No messages yet. Say hi to the traders!</p>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    messages.map((msg, idx) => (
+                      <div key={idx} className="mb-3 space-y-1 min-w-0 max-w-full">
+                        <div className="flex items-center justify-between text-[10px] gap-2 min-w-0">
+                          <span className="font-bold text-primary truncate flex-1 min-w-0" title={msg.sender}>
+                            {msg.sender}
+                          </span>
+                          <span className="text-muted-foreground/60 shrink-0">
+                            {msg.time}
+                          </span>
+                        </div>
+                        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-xs text-foreground leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap max-w-full overflow-hidden">
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               </ScrollArea>
 
               {/* CHAT INPUT BOX */}
-              <form onSubmit={handleSendMessage} className="p-3 border-t border-border/40 bg-card/20 flex gap-2">
+              <form onSubmit={handleSendMessage} className="p-3 border-t border-border/40 bg-card/20 flex gap-2 shrink-0">
                 <Input
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="Send message..."
-                  className="text-xs bg-background/80 border-border/60 focus-visible:ring-primary h-9 rounded-lg"
+                  maxLength={1000}
+                  className="text-xs bg-background/80 border-border/60 focus-visible:ring-primary h-9 rounded-lg min-w-0 flex-1"
                 />
-                <Button type="submit" size="sm" className="h-9 px-3 text-xs font-bold uppercase bg-primary text-primary-foreground">
+                <Button type="submit" size="sm" className="h-9 px-3 text-xs font-bold uppercase bg-primary text-primary-foreground shrink-0">
                   Send
                 </Button>
               </form>
