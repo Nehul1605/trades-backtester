@@ -125,10 +125,15 @@ export const getOperatorTrades = async (req, res) => {
           if (timeDiff !== 0) return timeDiff;
           return String(b._id).localeCompare(String(a._id));
         });
+        const rdxGroupTrades = groupTrades.filter((t) => t.tradeCategory === "rdx_gold");
+        const hqGroupTrades = groupTrades.filter((t) => !t.tradeCategory || t.tradeCategory === "operator_hq");
+
         return {
           monthKey: group.monthKey,
           monthName: group.monthName,
           stats: calculateStats(groupTrades),
+          rdxGoldStats: calculateStats(rdxGroupTrades),
+          operatorHqStats: calculateStats(hqGroupTrades),
           trades: groupTrades,
         };
       });

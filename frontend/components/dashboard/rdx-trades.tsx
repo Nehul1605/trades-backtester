@@ -318,6 +318,32 @@ export function RdxTradesView() {
 
   const baseTrades = selectedMonth === "all" ? trades : (displayMonthlyData.find((m) => m.monthKey === selectedMonth)?.trades.filter((t) => t.tradeCategory === "rdx_gold") || trades);
 
+  const activeStats = React.useMemo(() => {
+    const totalSignals = baseTrades.length;
+    const openSignals = baseTrades.filter((t) => t.status === "open" || t.status === "triggered" || t.status === "active").length;
+    const waitingCount = baseTrades.filter((t) => t.status === "waiting_for_trigger").length;
+    const notTriggeredCount = baseTrades.filter((t) => t.status === "not_triggered" || t.status === "never_triggered").length;
+    const triggeredCount = baseTrades.filter((t) => t.status === "triggered" || t.status === "active" || t.status === "open").length;
+    const winCount = baseTrades.filter((t) => t.status === "tp_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips > 0)).length;
+    const lossCount = baseTrades.filter((t) => t.status === "sl_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips < 0)).length;
+    const closedCount = winCount + lossCount;
+    const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
+    const totalPips = Number(baseTrades.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
+
+    return {
+      totalSignals,
+      openSignals,
+      waitingCount,
+      notTriggeredCount,
+      triggeredCount,
+      winCount,
+      lossCount,
+      closedCount,
+      accuracyPercent,
+      totalPips,
+    };
+  }, [baseTrades]);
+
   const filteredTrades = baseTrades
     .filter((t) => {
       if (filter === "buy") return t.direction === "long";
@@ -420,20 +446,20 @@ export function RdxTradesView() {
             <Target className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-black text-primary mt-2">
-            {stats.accuracyPercent}%
+            {activeStats.accuracyPercent}%
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            {stats.winCount} Wins / {stats.closedCount} Closed Setups
+            {activeStats.winCount} Wins / {activeStats.closedCount} Closed Setups
           </p>
         </SpotlightCard>
 
         <SpotlightCard className="p-4 bg-card/40 border-emerald-500/20 rounded-2xl backdrop-blur-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-muted-foreground">Total Pips Gained</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <TrendingUp className={cn("w-4 h-4", activeStats.totalPips >= 0 ? "text-emerald-400" : "text-red-400")} />
           </div>
-          <div className="text-2xl font-black text-emerald-400 mt-2">
-            +{stats.totalPips} Pips
+          <div className={cn("text-2xl font-black mt-2", activeStats.totalPips > 0 ? "text-emerald-400" : activeStats.totalPips < 0 ? "text-red-400" : "text-muted-foreground")}>
+            {activeStats.totalPips > 0 ? `+${activeStats.totalPips} Pips` : `${activeStats.totalPips} Pips`}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
             Net Gold Pips Accumulation
@@ -446,7 +472,7 @@ export function RdxTradesView() {
             <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
           </div>
           <div className="text-2xl font-black text-cyan-400 mt-2">
-            {stats.triggeredCount || stats.openSignals} Active
+            {activeStats.triggeredCount} Active
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
             Levels Triggered & In Play
@@ -459,11 +485,8 @@ export function RdxTradesView() {
             <Hourglass className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black text-amber-400 mt-2">
-            {stats.waitingCount || 0} Pending
+            {activeStats.waitingCount} Pending
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Awaiting Price Entry Level
-          </p>
         </SpotlightCard>
       </div>
 
