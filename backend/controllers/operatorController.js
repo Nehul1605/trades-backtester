@@ -39,11 +39,12 @@ export const getOperatorTrades = async (req, res) => {
     // Helper to calculate stats for a list of trades
     const calculateStats = (tradeList) => {
       const totalSignals = tradeList.length;
-      const openSignals = tradeList.filter((t) => t.status === "open" || t.status === "triggered").length;
+      const openSignals = tradeList.filter((t) => t.status === "open" || t.status === "triggered" || t.status === "active").length;
       const waitingCount = tradeList.filter((t) => t.status === "waiting_for_trigger").length;
-      const triggeredCount = tradeList.filter((t) => t.status === "triggered").length;
-      const winCount = tradeList.filter((t) => t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0)).length;
-      const lossCount = tradeList.filter((t) => t.status === "sl_hit" || (t.status === "closed" && t.pnlPips < 0)).length;
+      const notTriggeredCount = tradeList.filter((t) => t.status === "not_triggered" || t.status === "never_triggered").length;
+      const triggeredCount = tradeList.filter((t) => t.status === "triggered" || t.status === "active" || t.status === "open").length;
+      const winCount = tradeList.filter((t) => t.status === "tp_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips > 0)).length;
+      const lossCount = tradeList.filter((t) => t.status === "sl_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips < 0)).length;
       const closedCount = winCount + lossCount;
       const accuracyPercent = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
       const totalPips = Number(tradeList.reduce((sum, t) => sum + (t.pnlPips || 0), 0).toFixed(1));
@@ -52,6 +53,7 @@ export const getOperatorTrades = async (req, res) => {
         totalSignals,
         openSignals,
         waitingCount,
+        notTriggeredCount,
         triggeredCount,
         winCount,
         lossCount,
@@ -183,12 +185,16 @@ export const createOperatorTrade = async (req, res) => {
     }
 
     let pnlPips = 0;
-    if (exitPrice && exitPrice > 0) {
-      pnlPips = calculatePips(symbol, direction, Number(entryPrice), Number(exitPrice));
+    if (status === "never_triggered" || status === "not_triggered" || status === "waiting_for_trigger" || status === "breakeven") {
+      pnlPips = 0;
     } else if (status === "tp_hit") {
-      pnlPips = calculatePips(symbol, direction, Number(entryPrice), Number(takeProfit));
+      const targetExit = exitPrice ? Number(exitPrice) : Number(takeProfit);
+      pnlPips = calculatePips(symbol, direction, Number(entryPrice), targetExit);
     } else if (status === "sl_hit") {
-      pnlPips = calculatePips(symbol, direction, Number(entryPrice), Number(stopLoss));
+      const targetExit = exitPrice ? Number(exitPrice) : Number(stopLoss);
+      pnlPips = calculatePips(symbol, direction, Number(entryPrice), targetExit);
+    } else if (exitPrice && Number(exitPrice) > 0) {
+      pnlPips = calculatePips(symbol, direction, Number(entryPrice), Number(exitPrice));
     }
 
     const tradeData = {
@@ -265,7 +271,9 @@ export const updateOperatorTrade = async (req, res) => {
     if (notes !== undefined) trade.notes = notes;
 
     // Recalculate pips based on status & exit price
-    if (trade.status === "tp_hit") {
+    if (trade.status === "never_triggered" || trade.status === "not_triggered" || trade.status === "waiting_for_trigger" || trade.status === "breakeven") {
+      trade.pnlPips = 0;
+    } else if (trade.status === "tp_hit") {
       const targetExit = trade.exitPrice || trade.takeProfit;
       trade.pnlPips = calculatePips(trade.symbol, trade.direction, trade.entryPrice, targetExit);
     } else if (trade.status === "sl_hit") {
@@ -273,7 +281,7 @@ export const updateOperatorTrade = async (req, res) => {
       trade.pnlPips = calculatePips(trade.symbol, trade.direction, trade.entryPrice, targetExit);
     } else if (trade.exitPrice && trade.exitPrice > 0) {
       trade.pnlPips = calculatePips(trade.symbol, trade.direction, trade.entryPrice, trade.exitPrice);
-    } else if (trade.status === "breakeven") {
+    } else {
       trade.pnlPips = 0;
     }
 

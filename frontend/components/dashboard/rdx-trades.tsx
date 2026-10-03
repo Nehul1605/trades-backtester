@@ -69,7 +69,18 @@ interface RdxTrade {
   exitPrice: number | null;
   stopLoss: number;
   takeProfit: number;
-  status: "waiting_for_trigger" | "triggered" | "open" | "tp_hit" | "sl_hit" | "closed" | "breakeven";
+  status:
+    | "waiting_for_trigger"
+    | "triggered"
+    | "open"
+    | "active"
+    | "tp_hit"
+    | "sl_hit"
+    | "closed"
+    | "close"
+    | "breakeven"
+    | "never_triggered"
+    | "not_triggered";
   pnlPips: number;
   tradeCategory?: "operator_hq" | "rdx_gold";
   notes: string;
@@ -105,7 +116,7 @@ export function RdxTradesView() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "buy" | "sell" | "waiting" | "triggered" | "wins">("all");
+  const [filter, setFilter] = useState<"all" | "buy" | "sell" | "waiting" | "never" | "triggered" | "wins">("all");
   const [isPending, startTransition] = useTransition();
 
   // Modals state
@@ -312,8 +323,9 @@ export function RdxTradesView() {
       if (filter === "buy") return t.direction === "long";
       if (filter === "sell") return t.direction === "short";
       if (filter === "waiting") return t.status === "waiting_for_trigger";
-      if (filter === "triggered") return t.status === "triggered" || t.status === "open";
-      if (filter === "wins") return t.status === "tp_hit" || (t.status === "closed" && t.pnlPips > 0);
+      if (filter === "never") return t.status === "never_triggered" || t.status === "not_triggered";
+      if (filter === "triggered") return t.status === "triggered" || t.status === "open" || t.status === "active";
+      if (filter === "wins") return t.status === "tp_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips > 0);
       return true;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -326,16 +338,19 @@ export function RdxTradesView() {
             <Hourglass className="w-3 h-3" /> Waiting for Trigger
           </Badge>
         );
-      case "triggered":
+      case "not_triggered":
+      case "never_triggered":
         return (
-          <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold text-xs uppercase px-2.5 py-0.5 animate-pulse flex items-center gap-1">
-            <Zap className="w-3 h-3" /> Triggered (Running)
+          <Badge className="bg-slate-500/10 text-slate-400 border border-slate-500/30 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
+            <XCircle className="w-3 h-3 text-slate-400" /> Not Triggered
           </Badge>
         );
+      case "active":
+      case "triggered":
       case "open":
         return (
-          <Badge className="bg-primary/20 text-primary border border-primary/30 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            <Radio className="w-3 h-3 animate-pulse text-primary" /> Active (Open)
+          <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold text-xs uppercase px-2.5 py-0.5 animate-pulse flex items-center gap-1">
+            <Zap className="w-3 h-3 text-cyan-400" /> Active
           </Badge>
         );
       case "tp_hit":
@@ -357,9 +372,10 @@ export function RdxTradesView() {
           </Badge>
         );
       case "closed":
+      case "close":
         return (
           <Badge className="bg-muted text-muted-foreground border border-border/40 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            🔒 Closed
+            🔒 Close
           </Badge>
         );
       default:
@@ -488,11 +504,19 @@ export function RdxTradesView() {
           </Button>
           <Button
             size="sm"
+            variant={filter === "never" ? "default" : "outline"}
+            onClick={() => setFilter("never")}
+            className="text-xs font-bold rounded-xl h-8 uppercase text-slate-400 border-slate-500/30"
+          >
+            Not Triggered
+          </Button>
+          <Button
+            size="sm"
             variant={filter === "triggered" ? "default" : "outline"}
             onClick={() => setFilter("triggered")}
             className="text-xs font-bold rounded-xl h-8 uppercase text-cyan-400 border-cyan-500/30"
           >
-            Triggered
+            Active / Triggered
           </Button>
           <Button
             size="sm"
@@ -742,12 +766,12 @@ export function RdxTradesView() {
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/30 text-foreground text-xs font-bold"
               >
                 <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="triggered">⚡ Triggered (Running)</option>
-                <option value="open">📡 Active (Open)</option>
-                <option value="tp_hit">✅ TP Hit (Win)</option>
-                <option value="sl_hit">❌ SL Hit (Loss)</option>
+                <option value="active">⚡ Active</option>
+                <option value="sl_hit">❌ SL Hit</option>
+                <option value="tp_hit">✅ TP Hit</option>
                 <option value="breakeven">⚖️ Breakeven</option>
-                <option value="closed">🔒 Closed</option>
+                <option value="closed">🔒 Close</option>
+                <option value="not_triggered">🚫 Not Triggered</option>
               </select>
             </div>
 
@@ -794,12 +818,12 @@ export function RdxTradesView() {
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/30 text-foreground text-xs font-bold"
               >
                 <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="triggered">⚡ Triggered (Running)</option>
-                <option value="tp_hit">✅ TP Hit (WIN)</option>
-                <option value="sl_hit">❌ SL Hit (LOSS)</option>
-                <option value="breakeven">⚖️ Breakeven (0 Pips)</option>
-                <option value="closed">🔒 Manually Closed</option>
-                <option value="open">📡 Active (Open)</option>
+                <option value="active">⚡ Active</option>
+                <option value="sl_hit">❌ SL Hit</option>
+                <option value="tp_hit">✅ TP Hit</option>
+                <option value="breakeven">⚖️ Breakeven</option>
+                <option value="closed">🔒 Close</option>
+                <option value="not_triggered">🚫 Not Triggered</option>
               </select>
             </div>
 

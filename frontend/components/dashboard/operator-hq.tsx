@@ -77,7 +77,18 @@ interface OperatorTrade {
   exitPrice: number | null;
   stopLoss: number;
   takeProfit: number;
-  status: "open" | "tp_hit" | "sl_hit" | "closed" | "breakeven";
+  status:
+    | "waiting_for_trigger"
+    | "triggered"
+    | "open"
+    | "active"
+    | "tp_hit"
+    | "sl_hit"
+    | "closed"
+    | "close"
+    | "breakeven"
+    | "never_triggered"
+    | "not_triggered";
   pnlPips: number;
   tradeCategory?: "operator_hq" | "rdx_gold";
   level1Price?: number | null;
@@ -845,6 +856,16 @@ export function OperatorHQ() {
                       {/* Right: Status, PnL Pips, Admin Controls */}
                       <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
                         {/* Status Badge */}
+                        {t.status === "waiting_for_trigger" && (
+                          <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs animate-pulse">
+                            <Clock className="w-3.5 h-3.5" /> WAITING
+                          </Badge>
+                        )}
+                        {(t.status === "not_triggered" || t.status === "never_triggered") && (
+                          <Badge className="bg-slate-500/10 text-slate-400 border border-slate-500/30 font-bold text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs">
+                            <XCircle className="w-3.5 h-3.5" /> NOT TRIGGERED
+                          </Badge>
+                        )}
                         {t.status === "tp_hit" && (
                           <Badge className="bg-emerald-600 text-white font-black text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs">
                             <CheckCircle2 className="w-3.5 h-3.5" /> TP HIT
@@ -855,9 +876,9 @@ export function OperatorHQ() {
                             <XCircle className="w-3.5 h-3.5" /> SL HIT
                           </Badge>
                         )}
-                        {t.status === "open" && (
+                        {(t.status === "open" || t.status === "triggered" || t.status === "active") && (
                           <Badge className="bg-blue-600 text-white font-black text-[10px] uppercase gap-1 px-2.5 py-1 shadow-xs animate-pulse">
-                            <Clock className="w-3.5 h-3.5" /> ACTIVE CALL
+                            <Clock className="w-3.5 h-3.5" /> ACTIVE
                           </Badge>
                         )}
                         {t.status === "breakeven" && (
@@ -865,9 +886,9 @@ export function OperatorHQ() {
                             BREAKEVEN
                           </Badge>
                         )}
-                        {t.status === "closed" && (
+                        {(t.status === "closed" || t.status === "close") && (
                           <Badge variant="secondary" className="text-[10px] font-bold uppercase">
-                            CLOSED
+                            CLOSE
                           </Badge>
                         )}
 
@@ -1014,9 +1035,13 @@ export function OperatorHQ() {
                 onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
                 className="w-full h-9 px-3 rounded-lg bg-muted/30 border border-primary/20 text-foreground text-sm font-medium"
               >
-                <option value="open">Active Call (Open)</option>
-                <option value="tp_hit">TP Hit (Win)</option>
-                <option value="sl_hit">SL Hit (Loss)</option>
+                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
+                <option value="active">⚡ Active</option>
+                <option value="sl_hit">❌ SL Hit</option>
+                <option value="tp_hit">✅ TP Hit</option>
+                <option value="breakeven">⚖️ Breakeven</option>
+                <option value="closed">🔒 Close</option>
+                <option value="not_triggered">🚫 Not Triggered</option>
               </select>
             </div>
 
@@ -1075,11 +1100,13 @@ export function OperatorHQ() {
                 onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/20 text-foreground text-sm font-medium"
               >
-                <option value="tp_hit">TP Hit (WIN)</option>
-                <option value="sl_hit">SL Hit (LOSS)</option>
-                <option value="breakeven">Breakeven (0 Pips)</option>
-                <option value="closed">Manually Closed</option>
-                <option value="open">Active (Open)</option>
+                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
+                <option value="active">⚡ Active</option>
+                <option value="sl_hit">❌ SL Hit</option>
+                <option value="tp_hit">✅ TP Hit</option>
+                <option value="breakeven">⚖️ Breakeven</option>
+                <option value="closed">🔒 Close</option>
+                <option value="not_triggered">🚫 Not Triggered</option>
               </select>
             </div>
 

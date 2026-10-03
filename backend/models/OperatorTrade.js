@@ -36,7 +36,19 @@ const operatorTradeSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["waiting_for_trigger", "triggered", "open", "tp_hit", "sl_hit", "closed", "breakeven"],
+      enum: [
+        "waiting_for_trigger",
+        "triggered",
+        "open",
+        "active",
+        "tp_hit",
+        "sl_hit",
+        "closed",
+        "close",
+        "breakeven",
+        "never_triggered",
+        "not_triggered",
+      ],
       default: "waiting_for_trigger",
     },
     pnlPips: {
