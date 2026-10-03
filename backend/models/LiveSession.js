@@ -1,5 +1,33 @@
 import mongoose from "mongoose";
 
+const chatMessageSchema = new mongoose.Schema(
+  {
+    messageId: {
+      type: String,
+      required: true,
+    },
+    sender: {
+      type: String,
+      required: true,
+    },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    text: {
+      type: String,
+      required: true,
+    },
+    time: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const liveSessionSchema = new mongoose.Schema(
   {
     title: {
@@ -41,6 +69,7 @@ const liveSessionSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    messages: [chatMessageSchema],
     startedAt: {
       type: Date,
       default: null,
@@ -61,3 +90,4 @@ const liveSessionSchema = new mongoose.Schema(
 
 const LiveSession = mongoose.model("LiveSession", liveSessionSchema);
 export default LiveSession;
+

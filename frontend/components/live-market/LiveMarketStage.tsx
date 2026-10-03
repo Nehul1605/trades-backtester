@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
   useTracks,
   VideoTrack,
@@ -29,6 +30,7 @@ import {
   Maximize2,
   Minimize2,
   Minus,
+  Volume1,
   Volume2,
   VolumeX,
   Loader2,
@@ -39,8 +41,15 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { streamSFX } from "@/lib/soundEffects";
 import { useLiveMeeting } from "./LiveMeetingProvider";
+
 
 interface LiveMarketStageProps {
   sessionData: any;
@@ -73,19 +82,24 @@ export function LiveMarketStage({
   const [showSidebar, setShowSidebar] = useState(true);
   const [activeTab, setActiveTab] = useState<"chat" | "participants">("chat");
 
-  const toggleTab = (tab: "chat" | "participants") => {
-    if (!showSidebar) {
-      setShowSidebar(true);
-      setActiveTab(tab);
-    } else if (activeTab === tab) {
-      setShowSidebar(false);
-    } else {
-      setActiveTab(tab);
-    }
-  };
+  const { data: session } = useSession();
+  const userToken = (session?.user as any)?.accessToken;
+
   const [chatMessage, setChatMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{ sender: string; text: string; time: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ messageId?: string; sender: string; text: string; time: string }>>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const seenMessageIdsRef = useRef<Set<string>>(new Set());
+
+  // Per-participant voice volume state (10% to 100% scale)
+  const [userVolumes, setUserVolumes] = useState<Record<string, number>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("live_stream_user_volumes");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {};
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,6 +112,39 @@ export function LiveMarketStage({
   }, [messages, activeTab]);
 
   const [refreshCounter, setRefreshCounter] = useState(0);
+
+  // Fetch stored chat history from backend on session mount
+  useEffect(() => {
+    if (!sessionData?._id || !userToken) return;
+
+    const fetchChatHistory = async () => {
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+        const res = await fetch(`${BACKEND_URL}/api/live-sessions/${sessionData._id}/messages`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const formatted: Array<{ messageId: string; sender: string; text: string; time: string }> = [];
+          data.forEach((m: any) => {
+            const mId = m.messageId || m._id || `msg_${Math.random()}`;
+            seenMessageIdsRef.current.add(mId);
+            formatted.push({
+              messageId: mId,
+              sender: m.sender || "Trader",
+              text: m.text,
+              time: m.time || new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            });
+          });
+          setMessages(formatted);
+        }
+      } catch (err) {
+        console.error("Failed to load live chat history:", err);
+      }
+    };
+
+    fetchChatHistory();
+  }, [sessionData?._id, userToken]);
 
   // Synchronize React states with actual track states of localParticipant on mount / changes
   useEffect(() => {
@@ -130,6 +177,38 @@ export function LiveMarketStage({
       room.off("participantDisconnected", triggerRefresh);
     };
   }, [room]);
+
+  // Synchronize per-participant voice volumes to LiveKit WebRTC Audio Tracks
+  useEffect(() => {
+    remoteParticipants.forEach((p) => {
+      const volPercent = userVolumes[p.identity] ?? 100;
+      p.audioTrackPublications.forEach((pub) => {
+        if (pub.track) {
+          pub.track.setVolume(volPercent / 100);
+        }
+      });
+    });
+  }, [remoteParticipants, userVolumes, refreshCounter]);
+
+  const handleParticipantVolumeChange = useCallback((identity: string, volPercent: number) => {
+    const targetVol = Math.max(10, Math.min(100, volPercent));
+    setUserVolumes((prev) => {
+      const updated = { ...prev, [identity]: targetVol };
+      try {
+        localStorage.setItem("live_stream_user_volumes", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    const p = remoteParticipants.find((rp) => rp.identity === identity);
+    if (p) {
+      p.audioTrackPublications.forEach((pub) => {
+        if (pub.track) {
+          pub.track.setVolume(targetVol / 100);
+        }
+      });
+    }
+  }, [remoteParticipants]);
 
   // Stream audio volume for viewers
   const [isMuted, setIsMuted] = useState(false);
@@ -212,38 +291,80 @@ export function LiveMarketStage({
     }
   };
 
+  // Receive DataChannel messages with strict ID deduplication
   useEffect(() => {
-    if (message) {
-      try {
-        const decoded = new TextDecoder().decode(message.payload);
-        const parsed = JSON.parse(decoded);
-        if (parsed.type === "moderation") {
-          handleModerationCommand(parsed);
-        } else {
-          setMessages((prev) => [...prev, parsed]);
+    if (!message) return;
+    try {
+      const decoded = new TextEncoder().decode(message.payload);
+      const parsed = JSON.parse(decoded);
+      if (parsed.type === "moderation") {
+        handleModerationCommand(parsed);
+      } else {
+        const msgId = parsed.messageId || parsed.id;
+        if (msgId && seenMessageIdsRef.current.has(msgId)) {
+          return; // Ignore duplicate
         }
-      } catch (err) {
-        console.error("Failed to parse message", err);
+        if (msgId) {
+          seenMessageIdsRef.current.add(msgId);
+        }
+        setMessages((prev) => {
+          if (msgId && prev.some((m: any) => (m.messageId || m.id) === msgId)) {
+            return prev;
+          }
+          return [...prev, parsed];
+        });
       }
+    } catch (err) {
+      console.error("Failed to parse chat message", err);
     }
   }, [message, handleModerationCommand]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
 
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
     const newMsg = {
-      sender: localParticipant?.name || localParticipant?.identity || "Trader",
+      type: "chat",
+      messageId: msgId,
+      sender: localParticipant?.name || localParticipant?.identity || (session?.user as any)?.name || "Trader",
       text: chatMessage.trim(),
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: timeStr,
     };
 
-    const encoded = new TextEncoder().encode(JSON.stringify(newMsg));
-    send(encoded, { reliable: true });
-
+    // 1. Mark as seen & update local state
+    seenMessageIdsRef.current.add(msgId);
     setMessages((prev) => [...prev, newMsg]);
     setChatMessage("");
+
+    // 2. Broadcast live via LiveKit DataChannel
+    try {
+      const encoded = new TextEncoder().encode(JSON.stringify(newMsg));
+      send(encoded, { reliable: true });
+    } catch (err) {
+      console.error("Failed to send LiveKit DataChannel message:", err);
+    }
+
+    // 3. Persist message in Mongoose Backend DB
+    if (sessionData?._id && userToken) {
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5555";
+        await fetch(`${BACKEND_URL}/api/live-sessions/${sessionData._id}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`,
+          },
+          body: JSON.stringify(newMsg),
+        });
+      } catch (err) {
+        console.error("Failed to save live message to database:", err);
+      }
+    }
   };
+
 
   // Tracks query
   const tracks = useTracks(
@@ -815,6 +936,52 @@ export function LiveMarketStage({
                         <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" title="Microphone Muted" />
                       )}
 
+                      {/* Telegram style Individual Voice Volume Slider (10% - 100%) */}
+                      {!p.isLocal && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              className="h-6 px-1.5 text-[10px] font-bold gap-1 text-muted-foreground hover:text-foreground bg-card/60 border border-border/40 rounded-md shrink-0"
+                              title={`Adjust ${p.name}'s voice volume (${userVolumes[p.identity] ?? 100}%)`}
+                            >
+                              {(userVolumes[p.identity] ?? 100) === 0 ? (
+                                <VolumeX className="w-3 h-3 text-destructive" />
+                              ) : (userVolumes[p.identity] ?? 100) < 50 ? (
+                                <Volume1 className="w-3 h-3 text-amber-400" />
+                              ) : (
+                                <Volume2 className="w-3 h-3 text-emerald-400" />
+                              )}
+                              <span>{userVolumes[p.identity] ?? 100}%</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-56 p-3 bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl z-[9999]" align="end">
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-foreground truncate max-w-[120px]">{p.name} Voice</span>
+                                <span className="font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">
+                                  {userVolumes[p.identity] ?? 100}%
+                                </span>
+                              </div>
+                              <Slider
+                                min={10}
+                                max={100}
+                                step={5}
+                                value={[userVolumes[p.identity] ?? 100]}
+                                onValueChange={(vals) => handleParticipantVolumeChange(p.identity, vals[0])}
+                                className="w-full cursor-pointer"
+                              />
+                              <div className="flex justify-between text-[9px] text-muted-foreground font-semibold pt-0.5">
+                                <span>10%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+
                       {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
                       {isHost && !p.isLocal && (
                         <Button
@@ -832,6 +999,7 @@ export function LiveMarketStage({
                         </Button>
                       )}
                     </div>
+
                   </div>
                 ))}
               </ScrollArea>

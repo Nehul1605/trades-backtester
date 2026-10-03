@@ -378,4 +378,70 @@ router.post("/:id/cohosts", protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/live-sessions/:id/messages
+// @desc    Get stored chat message history for a live stream session
+// @access  Private
+router.get("/:id/messages", protect, async (req, res) => {
+  try {
+    const session = await LiveSession.findById(req.params.id).select("messages");
+    if (!session) {
+      return res.status(404).json({ error: "Live session not found" });
+    }
+    res.json(session.messages || []);
+  } catch (error) {
+    console.error("Error fetching session messages:", error);
+    res.status(500).json({ error: "Failed to fetch session messages" });
+  }
+});
+
+// @route   POST /api/live-sessions/:id/messages
+// @desc    Save a new chat message to a live stream session
+// @access  Private
+router.post("/:id/messages", protect, async (req, res) => {
+  try {
+    const { text, messageId, time } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Message text is required" });
+    }
+
+    const session = await LiveSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: "Live session not found" });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const finalMessageId = messageId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const formattedTime = time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const newMsg = {
+      messageId: finalMessageId,
+      sender: user.name || user.email || "Trader",
+      senderId: user._id,
+      text: text.trim(),
+      time: formattedTime,
+    };
+
+    if (!session.messages) {
+      session.messages = [];
+    }
+    session.messages.push(newMsg);
+    // Keep max 500 recent messages per session
+    if (session.messages.length > 500) {
+      session.messages = session.messages.slice(-500);
+    }
+
+    await session.save();
+
+    res.status(201).json(newMsg);
+  } catch (error) {
+    console.error("Error saving chat message:", error);
+    res.status(500).json({ error: "Failed to save chat message" });
+  }
+});
+
 export default router;
+
