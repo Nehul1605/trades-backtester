@@ -140,6 +140,7 @@ export function RdxTradesView() {
     status: "tp_hit" as RdxTrade["status"],
     exitPrice: "",
     notes: "",
+    createdAt: "",
   });
 
   const fetchData = async () => {
@@ -242,6 +243,7 @@ export function RdxTradesView() {
         status: updateForm.status,
         exitPrice: updateForm.exitPrice ? parseFloat(updateForm.exitPrice) : null,
         notes: updateForm.notes,
+        createdAt: updateForm.createdAt || undefined,
       });
 
       if (result.error) {
@@ -285,10 +287,18 @@ export function RdxTradesView() {
 
   const openUpdateModal = (trade: RdxTrade) => {
     setSelectedTrade(trade);
+    let formattedDate = "";
+    if (trade.createdAt) {
+      const d = new Date(trade.createdAt);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toISOString().split("T")[0];
+      }
+    }
     setUpdateForm({
       status: trade.status,
       exitPrice: trade.exitPrice ? String(trade.exitPrice) : "",
       notes: trade.notes || "",
+      createdAt: formattedDate,
     });
     setIsUpdateOpen(true);
   };
@@ -382,26 +392,26 @@ export function RdxTradesView() {
       case "tp_hit":
         return (
           <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> ✅ TP Hit (Win)
+            <CheckCircle2 className="w-3 h-3" /> TP Hit
           </Badge>
         );
       case "sl_hit":
         return (
           <Badge className="bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            <XCircle className="w-3 h-3" /> ❌ SL Hit (Loss)
+            <XCircle className="w-3 h-3" /> SL Hit
           </Badge>
         );
       case "breakeven":
         return (
           <Badge className="bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            ⚖️ Breakeven
+            Breakeven
           </Badge>
         );
       case "closed":
       case "close":
         return (
           <Badge className="bg-muted text-muted-foreground border border-border/40 font-bold text-xs uppercase px-2.5 py-0.5 flex items-center gap-1">
-            🔒 Close
+            Close
           </Badge>
         );
       default:
@@ -591,119 +601,140 @@ export function RdxTradesView() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3">
           <AnimatePresence>
-            {filteredTrades.map((t) => (
-              <motion.div
-                key={t._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={cn(
-                  "bg-card/80 rounded-2xl p-5 space-y-4 shadow-xl backdrop-blur-xl relative overflow-hidden border transition-colors",
-                  t.direction === "long" ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-red-500/30 hover:border-red-500/50"
-                )}
-              >
-                {/* CARD TOP BAR */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-primary/20 text-primary border-primary/30 font-black text-xs uppercase px-2.5 py-0.5">
-                      XAUUSD (GOLD)
-                    </Badge>
-                    <Badge
-                      className={cn(
-                        "font-black text-xs uppercase px-3 py-1 flex items-center gap-1",
-                        t.direction === "long" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"
-                      )}
-                    >
-                      {t.direction === "long" ? (
-                        <>
-                          <ArrowUpRight className="w-3.5 h-3.5" /> BUY LEVEL
-                        </>
-                      ) : (
-                        <>
-                          <ArrowDownRight className="w-3.5 h-3.5" /> SELL LEVEL
-                        </>
-                      )}
-                    </Badge>
-                  </div>
+            {filteredTrades.map((t, idx) => {
+              const isWin = t.status === "tp_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips > 0);
+              const isLoss = t.status === "sl_hit" || ((t.status === "closed" || t.status === "close") && t.pnlPips < 0);
+              const slDist = Math.abs(t.entryPrice - t.stopLoss);
+              const tpDist = Math.abs(t.takeProfit - t.entryPrice);
+              const rrRatio = slDist > 0 ? (tpDist / slDist).toFixed(1) : "1.0";
 
-                  {getStatusBadge(t.status)}
-                </div>
+              return (
+                <motion.div
+                  key={t._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
+                >
+                  <div
+                    className={cn(
+                      "p-4 rounded-xl bg-card/40 border border-border/60 hover:border-primary/40 transition-all duration-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative",
+                      isWin && "border-emerald-500/30 bg-emerald-500/5",
+                      isLoss && "border-rose-500/30 bg-rose-500/5"
+                    )}
+                  >
+                    {/* Left: Symbol, Direction, Date (No Time) */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-xs tracking-wider uppercase px-3 py-1.5 shadow-xs">
+                        XAUUSD (GOLD)
+                      </Badge>
 
-                {/* ENTRY LEVEL DISPLAY */}
-                <div className="bg-neutral-900/60 p-3.5 rounded-xl border border-border/30 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider block">
-                      {t.direction === "long" ? "BUY Entry Price" : "SELL Entry Price"}
-                    </span>
-                    <p className="text-xl font-black font-mono text-foreground mt-0.5">
-                      ${t.entryPrice}
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider block">
-                      P&L Outcome
-                    </span>
-                    <span className={cn(
-                      "text-lg font-black font-mono block mt-0.5",
-                      t.pnlPips > 0 ? "text-emerald-400" : t.pnlPips < 0 ? "text-red-400" : "text-primary"
-                    )}>
-                      {t.pnlPips > 0 ? `+${t.pnlPips} Pips` : `${t.pnlPips} Pips`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* TP & SL GRID */}
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <span className="text-[10px] font-black uppercase text-red-400 block">Stop Loss (SL)</span>
-                    <span className="font-bold font-mono text-foreground text-sm">${t.stopLoss}</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <span className="text-[10px] font-black uppercase text-emerald-400 block">Take Profit (TP)</span>
-                    <span className="font-bold font-mono text-foreground text-sm">${t.takeProfit}</span>
-                  </div>
-                </div>
-
-                {/* NOTES & COMMENTARY */}
-                {t.notes && (
-                  <p className="text-xs text-muted-foreground bg-neutral-900/40 p-2.5 rounded-lg border border-border/20 italic">
-                    "{t.notes}"
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs">
-                  <span className="text-[10px] text-muted-foreground">
-                    Posted: {new Date(t.createdAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </span>
-
-                  {isAdmin && (
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        size="sm"
+                      <Badge
                         variant="outline"
-                        onClick={() => openUpdateModal(t)}
-                        className="h-7 text-[11px] font-bold px-2.5 rounded-md border-primary/30 text-primary hover:bg-primary/10 gap-1"
+                        className={cn(
+                          "text-xs font-bold gap-1 uppercase px-2.5 py-1",
+                          t.direction === "long"
+                            ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                            : "text-rose-400 border-rose-500/30 bg-rose-500/10"
+                        )}
                       >
-                        <Edit3 className="w-3 h-3" /> Update Status
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDeleteTrade(t._id)}
-                        className="h-7 w-7 text-rose-400 hover:bg-rose-500/10"
-                        title="Delete Setup"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                        {t.direction === "long" ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                        {t.direction === "long" ? "BUY LEVEL" : "SELL LEVEL"}
+                      </Badge>
+
+                      <span className="text-[11px] text-muted-foreground font-mono inline-block">
+                        {new Date(t.createdAt).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+
+                    {/* Middle: Price Levels Row */}
+                    <div className="flex items-center gap-3 sm:gap-6 bg-muted/30 px-3.5 py-2 rounded-lg text-sm font-mono shrink-0 overflow-x-auto">
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Entry</span>
+                        <span className="font-bold text-foreground">${t.entryPrice}</span>
+                      </div>
+                      <div className="h-6 w-[1px] bg-border/40" />
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Stop Loss</span>
+                        <span className="font-bold text-rose-400">${t.stopLoss}</span>
+                      </div>
+                      <div className="h-6 w-[1px] bg-border/40" />
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Take Profit</span>
+                        <span className="font-bold text-emerald-400">${t.takeProfit}</span>
+                      </div>
+                      {t.exitPrice && t.exitPrice > 0 && (
+                        <>
+                          <div className="h-6 w-[1px] bg-border/40" />
+                          <div>
+                            <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">Exit Price</span>
+                            <span className="font-bold text-cyan-400">${t.exitPrice}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="h-6 w-[1px] bg-border/40 hidden md:block" />
+                      <div className="hidden md:block">
+                        <span className="text-[10px] uppercase text-muted-foreground block font-sans font-semibold">R:R</span>
+                        <span className="font-bold text-muted-foreground">1:{rrRatio}</span>
+                      </div>
+                    </div>
+
+                    {/* Notes (if present) */}
+                    {t.notes && (
+                      <p className="text-xs text-muted-foreground italic truncate max-w-xs hidden xl:block" title={t.notes}>
+                        &quot;{t.notes}&quot;
+                      </p>
+                    )}
+
+                    {/* Right: Status, PnL Pips, Admin Controls */}
+                    <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
+                      {getStatusBadge(t.status)}
+
+                      {/* PnL Pips Display */}
+                      <div className="font-mono text-xs font-extrabold min-w-[70px] text-right">
+                        {t.pnlPips > 0 ? (
+                          <span className="text-emerald-400">+{t.pnlPips} Pips</span>
+                        ) : t.pnlPips < 0 ? (
+                          <span className="text-rose-400">{t.pnlPips} Pips</span>
+                        ) : (
+                          <span className="text-muted-foreground">0 Pips</span>
+                        )}
+                      </div>
+
+                      {/* Admin Control Buttons */}
+                      {isAdmin && (
+                        <div className="flex items-center gap-1 border-l border-border/40 pl-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openUpdateModal(t)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                            title="Update Status"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-primary" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteTrade(t._id)}
+                            className="h-8 w-8 p-0 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                            title="Delete Setup"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       )}
@@ -788,14 +819,24 @@ export function RdxTradesView() {
                 onChange={(e) => setCreateForm({ ...createForm, status: e.target.value as any })}
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/30 text-foreground text-xs font-bold"
               >
-                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="active">⚡ Active</option>
-                <option value="sl_hit">❌ SL Hit</option>
-                <option value="tp_hit">✅ TP Hit</option>
-                <option value="breakeven">⚖️ Breakeven</option>
-                <option value="closed">🔒 Close</option>
-                <option value="not_triggered">🚫 Not Triggered</option>
+                <option value="waiting_for_trigger">Waiting for Trigger</option>
+                <option value="active">Active</option>
+                <option value="sl_hit">SL Hit</option>
+                <option value="tp_hit">TP Hit</option>
+                <option value="breakeven">Breakeven</option>
+                <option value="closed">Close</option>
+                <option value="not_triggered">Not Triggered</option>
               </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Trade Date</Label>
+              <Input
+                type="date"
+                className="h-9 font-sans"
+                value={createForm.createdAt}
+                onChange={(e) => setCreateForm({ ...createForm, createdAt: e.target.value })}
+              />
             </div>
 
             <div className="space-y-1">
@@ -840,13 +881,13 @@ export function RdxTradesView() {
                 onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value as any })}
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/30 text-foreground text-xs font-bold"
               >
-                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="active">⚡ Active</option>
-                <option value="sl_hit">❌ SL Hit</option>
-                <option value="tp_hit">✅ TP Hit</option>
-                <option value="breakeven">⚖️ Breakeven</option>
-                <option value="closed">🔒 Close</option>
-                <option value="not_triggered">🚫 Not Triggered</option>
+                <option value="waiting_for_trigger">Waiting for Trigger</option>
+                <option value="active">Active</option>
+                <option value="sl_hit">SL Hit</option>
+                <option value="tp_hit">TP Hit</option>
+                <option value="breakeven">Breakeven</option>
+                <option value="closed">Close</option>
+                <option value="not_triggered">Not Triggered</option>
               </select>
             </div>
 
@@ -859,6 +900,16 @@ export function RdxTradesView() {
                 className="h-9 font-mono"
                 value={updateForm.exitPrice}
                 onChange={(e) => setUpdateForm({ ...updateForm, exitPrice: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Trade Date</Label>
+              <Input
+                type="date"
+                className="h-9 font-sans"
+                value={updateForm.createdAt}
+                onChange={(e) => setUpdateForm({ ...updateForm, createdAt: e.target.value })}
               />
             </div>
 

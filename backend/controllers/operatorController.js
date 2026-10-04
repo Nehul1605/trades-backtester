@@ -252,7 +252,7 @@ export const updateOperatorTrade = async (req, res) => {
       return res.status(403).json({ success: false, message: "Forbidden: Only admins and broadcasters can update trade signals" });
     }
     const { id } = req.params;
-    const { status, exitPrice, stopLoss, takeProfit, notes, level1Price, level2Price, tp1, tp2, tradeCategory } = req.body;
+    const { status, exitPrice, stopLoss, takeProfit, notes, level1Price, level2Price, tp1, tp2, tradeCategory, createdAt } = req.body;
 
     const trade = await OperatorTrade.findById(id);
     if (!trade) {
@@ -274,6 +274,7 @@ export const updateOperatorTrade = async (req, res) => {
     if (tp1 !== undefined) trade.tp1 = tp1 ? Number(tp1) : null;
     if (tp2 !== undefined) trade.tp2 = tp2 ? Number(tp2) : null;
     if (notes !== undefined) trade.notes = notes;
+    if (createdAt) trade.createdAt = new Date(createdAt);
 
     // Recalculate pips based on status & exit price
     if (trade.status === "never_triggered" || trade.status === "not_triggered" || trade.status === "waiting_for_trigger" || trade.status === "breakeven") {

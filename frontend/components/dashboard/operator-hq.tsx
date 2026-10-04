@@ -1035,13 +1035,13 @@ export function OperatorHQ() {
                 onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
                 className="w-full h-9 px-3 rounded-lg bg-muted/30 border border-primary/20 text-foreground text-sm font-medium"
               >
-                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="active">⚡ Active</option>
-                <option value="sl_hit">❌ SL Hit</option>
-                <option value="tp_hit">✅ TP Hit</option>
-                <option value="breakeven">⚖️ Breakeven</option>
-                <option value="closed">🔒 Close</option>
-                <option value="not_triggered">🚫 Not Triggered</option>
+                <option value="waiting_for_trigger">Waiting for Trigger</option>
+                <option value="active">Active</option>
+                <option value="sl_hit">SL Hit</option>
+                <option value="tp_hit">TP Hit</option>
+                <option value="breakeven">Breakeven</option>
+                <option value="closed">Close</option>
+                <option value="not_triggered">Not Triggered</option>
               </select>
             </div>
 
@@ -1100,13 +1100,13 @@ export function OperatorHQ() {
                 onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
                 className="w-full h-10 px-3 rounded-lg bg-muted/30 border border-primary/20 text-foreground text-sm font-medium"
               >
-                <option value="waiting_for_trigger">⏳ Waiting for Trigger</option>
-                <option value="active">⚡ Active</option>
-                <option value="sl_hit">❌ SL Hit</option>
-                <option value="tp_hit">✅ TP Hit</option>
-                <option value="breakeven">⚖️ Breakeven</option>
-                <option value="closed">🔒 Close</option>
-                <option value="not_triggered">🚫 Not Triggered</option>
+                <option value="waiting_for_trigger">Waiting for Trigger</option>
+                <option value="active">Active</option>
+                <option value="sl_hit">SL Hit</option>
+                <option value="tp_hit">TP Hit</option>
+                <option value="breakeven">Breakeven</option>
+                <option value="closed">Close</option>
+                <option value="not_triggered">Not Triggered</option>
               </select>
             </div>
 
