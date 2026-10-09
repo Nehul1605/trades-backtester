@@ -182,6 +182,8 @@ router.post("/verify-signature", protect, async (req, res) => {
         isPremiumUser: true,
         premiumExpiresAt,
         status: "approved", // Bypass gate
+        planWarningEmailSent: false,
+        planEndedEmailSent: false,
       },
       { new: true }
     );
@@ -348,6 +350,8 @@ router.post("/webhook", async (req, res) => {
           isPremiumUser: true,
           premiumExpiresAt,
           status: "approved",
+          planWarningEmailSent: false,
+          planEndedEmailSent: false,
         });
         console.log(`[Webhook] User upgraded to premium for order: ${orderId}`);
       }

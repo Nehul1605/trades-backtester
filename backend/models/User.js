@@ -73,6 +73,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    planWarningEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+    planEndedEmailSent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

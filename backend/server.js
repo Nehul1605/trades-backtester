@@ -17,6 +17,7 @@ import operatorRoutes from "./routes/operatorRoutes.js";
 import promoRoutes from "./routes/promoRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import { startTrialCheckScheduler } from "./utils/trialScheduler.js";
+import { startPlanCheckScheduler } from "./utils/planScheduler.js";
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,9 @@ connectDB();
 
 // Start trial expiry background scheduler
 startTrialCheckScheduler();
+
+// Start paid plan expiry background scheduler
+startPlanCheckScheduler();
 
 const app = express();
 
