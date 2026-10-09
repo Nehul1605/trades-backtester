@@ -11,11 +11,12 @@ export const checkPaidPlanExpiries = async () => {
   console.log("⏰ [Plan Check] Running paid subscription expiry check job...");
   try {
     const now = new Date();
-    const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Look ahead 36 hours so anyone expiring tomorrow gets notified today
+    const warningWindow = new Date(Date.now() + 36 * 60 * 60 * 1000);
 
-    // 1. Check for 1-Day Warning Emails (Plan expires within 24 hours, warning not sent yet)
+    // 1. Check for 1-Day Warning Emails (Plan expires within ~1 day / 36 hours, warning not sent yet)
     const warningUsers = await User.find({
-      premiumExpiresAt: { $gt: now, $lte: oneDayFromNow },
+      premiumExpiresAt: { $gt: now, $lte: warningWindow },
       planWarningEmailSent: { $ne: true },
       isPremiumUser: true,
     });
