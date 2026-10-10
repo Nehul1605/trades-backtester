@@ -956,7 +956,7 @@ export function LiveMarketStage({
                               <span>{userVolumes[p.identity] ?? 100}%</span>
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-56 p-3 bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl z-[9999]" align="end">
+                          <PopoverContent container={stageRef.current} className="w-56 p-3 bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl z-[9999]" align="end">
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between text-xs">
                                 <span className="font-bold text-foreground truncate max-w-[120px]">{p.name} Voice</span>
