@@ -25,7 +25,23 @@ function calculatePips(symbol, direction, entryPrice, exitPrice) {
  */
 export const getOperatorTrades = async (req, res) => {
   try {
-    const rawTrades = await OperatorTrade.find()
+    const { category } = req.query;
+
+    let query = {};
+    if (category === "operator_hq") {
+      query = {
+        $or: [
+          { tradeCategory: "operator_hq" },
+          { tradeCategory: { $exists: false } },
+          { tradeCategory: null },
+          { tradeCategory: "" },
+        ],
+      };
+    } else if (category === "rdx_gold") {
+      query = { tradeCategory: "rdx_gold" };
+    }
+
+    const rawTrades = await OperatorTrade.find(query)
       .populate("createdBy", "name email role")
       .sort({ createdAt: -1, _id: -1 });
 
@@ -131,20 +147,20 @@ export const getOperatorTrades = async (req, res) => {
         return {
           monthKey: group.monthKey,
           monthName: group.monthName,
-          stats: calculateStats(groupTrades),
+          stats: category === "operator_hq" ? calculateStats(hqGroupTrades) : category === "rdx_gold" ? calculateStats(rdxGroupTrades) : calculateStats(groupTrades),
           rdxGoldStats: calculateStats(rdxGroupTrades),
           operatorHqStats: calculateStats(hqGroupTrades),
-          trades: groupTrades,
+          trades: category === "operator_hq" ? hqGroupTrades : category === "rdx_gold" ? rdxGroupTrades : groupTrades,
         };
       });
 
     return res.status(200).json({
       success: true,
-      stats: overallStats,
+      stats: category === "operator_hq" ? operatorHqStats : category === "rdx_gold" ? rdxGoldStats : overallStats,
       operatorHqStats,
       rdxGoldStats,
       monthlyData,
-      trades,
+      trades: category === "operator_hq" ? operatorHqTrades : category === "rdx_gold" ? rdxGoldTrades : trades,
       operatorHqTrades,
       rdxGoldTrades,
     });

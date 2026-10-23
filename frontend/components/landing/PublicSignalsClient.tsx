@@ -58,10 +58,18 @@ export function PublicSignalsClient({
     const curKey = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}`;
     const curName = nowDate.toLocaleString("en-US", { month: "long", year: "numeric" });
 
-    if (monthlyData.length > 0) {
-      if (!monthlyData.some((m) => m.monthKey === curKey)) {
+    const sanitizedMonthlyData = monthlyData.map((m) => ({
+      ...m,
+      trades: (m.trades || []).filter(
+        (t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq"
+      ),
+      stats: (m as any).operatorHqStats || m.stats,
+    }));
+
+    if (sanitizedMonthlyData.length > 0) {
+      if (!sanitizedMonthlyData.some((m) => m.monthKey === curKey)) {
         return [
-          ...monthlyData,
+          ...sanitizedMonthlyData,
           {
             monthKey: curKey,
             monthName: curName,
@@ -70,7 +78,7 @@ export function PublicSignalsClient({
           },
         ].sort((a, b) => a.monthKey.localeCompare(b.monthKey));
       }
-      return monthlyData;
+      return sanitizedMonthlyData;
     }
 
     const startYear = 2026;
@@ -146,7 +154,9 @@ export function PublicSignalsClient({
   const [filter, setFilter] = useState<"all" | "gold" | "eur">("all");
 
   const activeMonthGroup = displayMonthlyData.find((m) => m.monthKey === selectedMonth);
-  const displayTrades = selectedMonth === "all" ? allTrades : (activeMonthGroup?.trades || []);
+  const displayTrades = (selectedMonth === "all" ? allTrades : (activeMonthGroup?.trades || [])).filter(
+    (t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq"
+  );
 
   const activeStats = React.useMemo(() => {
     const tradesForStats = displayTrades.filter((t) => {
@@ -177,6 +187,7 @@ export function PublicSignalsClient({
   const displayMonthlyDataFiltered = React.useMemo(() => {
     return displayMonthlyData.map((mGroup) => {
       const filteredGroupTrades = mGroup.trades
+        .filter((t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq")
         .filter((t) => {
           if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
           if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
@@ -254,7 +265,7 @@ export function PublicSignalsClient({
           >
             <span>All Months</span>
             <span className="opacity-80">
-              ({allTrades.filter((t) => {
+              ({allTrades.filter((t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq").filter((t) => {
                 if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
                 if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
                 return true;
@@ -293,7 +304,7 @@ export function PublicSignalsClient({
           >
             <span>{currentVisibleMonth.monthName}</span>
             <span className="opacity-80">
-              ({currentVisibleMonth.trades.filter((t) => {
+              ({currentVisibleMonth.trades.filter((t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq").filter((t) => {
                 if (filter === "gold") return t.symbol.toUpperCase().includes("XAU") || t.symbol.toUpperCase().includes("GOLD");
                 if (filter === "eur") return t.symbol.toUpperCase().includes("EUR");
                 return true;

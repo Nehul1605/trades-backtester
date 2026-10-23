@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function PublicSignalsPage() {
   const session = await auth();
   const isLoggedIn = !!session?.user;
-  const data = await getOperatorTrades();
+  const data = await getOperatorTrades("operator_hq");
   const stats = data?.operatorHqStats || data?.stats || {
     totalSignals: 0,
     openSignals: 0,
@@ -32,7 +32,14 @@ export default async function PublicSignalsPage() {
     accuracyPercent: 0,
     totalPips: 0,
   };
-  const monthlyData = data?.monthlyData || [];
+  const rawMonthlyData = data?.monthlyData || [];
+  const monthlyData = rawMonthlyData.map((m: any) => ({
+    ...m,
+    trades: (m.trades || []).filter(
+      (t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq"
+    ),
+    stats: m.operatorHqStats || m.stats,
+  }));
   const trades = (data?.operatorHqTrades || data?.trades || []).filter(
     (t: any) => !t.tradeCategory || t.tradeCategory === "operator_hq"
   );

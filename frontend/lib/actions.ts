@@ -1040,7 +1040,7 @@ export async function updateUserPassword(data: {
 
 // ─── Operator HQ Actions ───────────────────────────────────────────────────
 
-export async function getOperatorTrades(): Promise<{
+export async function getOperatorTrades(category?: string): Promise<{
   stats?: {
     totalSignals: number;
     openSignals: number;
@@ -1050,6 +1050,8 @@ export async function getOperatorTrades(): Promise<{
     accuracyPercent: number;
     totalPips: number;
   };
+  operatorHqStats?: any;
+  rdxGoldStats?: any;
   monthlyData?: Array<{
     monthKey: string;
     monthName: string;
@@ -1062,13 +1064,20 @@ export async function getOperatorTrades(): Promise<{
       accuracyPercent: number;
       totalPips: number;
     };
+    operatorHqStats?: any;
+    rdxGoldStats?: any;
     trades: any[];
   }>;
   trades?: any[];
+  operatorHqTrades?: any[];
+  rdxGoldTrades?: any[];
   error?: string;
 }> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/operator-trades`, {
+    const url = category
+      ? `${BACKEND_URL}/api/operator-trades?category=${encodeURIComponent(category)}`
+      : `${BACKEND_URL}/api/operator-trades`;
+    const res = await fetch(url, {
       method: "GET",
       next: { revalidate: 0 },
     });
