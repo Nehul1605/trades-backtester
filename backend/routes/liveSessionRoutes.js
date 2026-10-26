@@ -37,13 +37,14 @@ const isHostOrCoHostUser = async (session, userId) => {
 router.get("/", protect, async (req, res) => {
   try {
     const { includeEnded } = req.query;
-    const filter = includeEnded === "true" ? {} : { status: "live" };
+    const filter = includeEnded === "true" ? {} : { status: { $in: ["live", "scheduled"] } };
 
     const sessions = await LiveSession.find(filter)
       .populate("host", "name email role")
       .populate("coHosts", "name email role")
       .sort({ status: -1, createdAt: -1 });
 
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(sessions);
   } catch (error) {
     console.error("Error fetching live sessions:", error);

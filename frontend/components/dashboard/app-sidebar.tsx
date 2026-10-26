@@ -32,6 +32,7 @@ import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn, getMediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useLiveMeeting } from "@/components/live-market/LiveMeetingProvider";
 import {
   Sidebar,
   SidebarContent,
@@ -116,6 +117,14 @@ export function AppSidebar({
     router.refresh();
   };
 
+  let isLiveStreamActive = false;
+  try {
+    const meeting = useLiveMeeting();
+    isLiveStreamActive = meeting?.sessions?.some((s: any) => s.status === "live");
+  } catch (e) {
+    // Gracefully handle if rendered outside context
+  }
+
   const navGroups = [
     {
       label: "Core Platform",
@@ -123,7 +132,12 @@ export function AppSidebar({
         { title: "Dashboard Console", url: "/dashboard", icon: LayoutDashboard },
         { title: "RDX Gold Trades", url: "/rdx-trades", icon: Zap, badge: "RDX" },
         { title: "Operator HQ Signals", url: "/operator-hq", icon: Award },
-        { title: "Live Market Stream", url: "/market", icon: TrendingUp },
+        {
+          title: "Live Market Stream",
+          url: "/market",
+          icon: TrendingUp,
+          badge: isLiveStreamActive ? "LIVE" : undefined,
+        },
         { title: "Economic Calendar", url: "/calendar", icon: Calendar },
       ],
     },
@@ -295,8 +309,10 @@ export function AppSidebar({
                             (item as any).badge && (
                               <Badge
                                 className={cn(
-                                  "ml-auto text-[9px] h-4 px-1 group-data-[collapsible=icon]:hidden font-black",
-                                  (item as any).badge === "PRO"
+                                  "ml-auto text-[9px] h-4 px-1.5 group-data-[collapsible=icon]:hidden font-black tracking-wide",
+                                  (item as any).badge === "LIVE"
+                                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-sm shadow-red-500/40 border-none"
+                                    : (item as any).badge === "PRO"
                                     ? "bg-primary-foreground text-primary"
                                     : "bg-muted text-muted-foreground",
                                 )}

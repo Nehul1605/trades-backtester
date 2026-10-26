@@ -36,7 +36,7 @@ interface LiveMeetingContextType {
   leaveSession: () => void;
   handleStartStream: () => Promise<void>;
   handleEndStream: () => Promise<void>;
-  fetchSessions: () => Promise<any[]>;
+  fetchSessions: (silent?: boolean) => Promise<any[]>;
   sessions: any[];
   loadingSessions: boolean;
   connectingLivekit: boolean;
@@ -114,10 +114,15 @@ export function LiveMeetingProvider({
           setCurrentUserRole(data.role);
           setCurrentUserStatus(data.status);
           
-          if (data.role !== (session?.user as any)?.role || data.status !== (session?.user as any)?.status) {
+          if (
+            data.role !== (session?.user as any)?.role ||
+            data.status !== (session?.user as any)?.status ||
+            (data.membershipTag && data.membershipTag !== (session?.user as any)?.membershipTag)
+          ) {
             await updateSession({
               role: data.role,
               status: data.status,
+              membershipTag: data.membershipTag,
             });
           }
         }
@@ -127,36 +132,97 @@ export function LiveMeetingProvider({
     }
   }, [userToken, session, updateSession]);
 
+  // Track previous live session IDs to detect when a stream goes live
+  const prevLiveIdsRef = useRef<Set<string>>(new Set());
+  const initialFetchDoneRef = useRef<boolean>(false);
+
   // Fetch sessions
-  const fetchSessions = useCallback(async () => {
-    if (!userToken) return [];
-    syncUserProfile();
-    try {
-      setLoadingSessions(true);
-      const res = await fetch(
-        `${BACKEND_URL}/api/live-sessions`,
-        { headers: { Authorization: `Bearer ${userToken}` } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const activeOnly = data.filter((s: any) => s.status !== "ended");
-        setSessions(activeOnly);
-        return activeOnly;
+  const fetchSessions = useCallback(
+    async (silent = false) => {
+      if (!userToken) return [];
+      syncUserProfile();
+      try {
+        if (!silent) setLoadingSessions(true);
+        const res = await fetch(
+          `${BACKEND_URL}/api/live-sessions?_t=${Date.now()}`,
+          {
+            headers: { Authorization: `Bearer ${userToken}` },
+            cache: "no-store",
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const activeOnly = data.filter((s: any) => s.status !== "ended");
+          setSessions(activeOnly);
+
+          // Detect if a session is actively live
+          const liveNow = activeOnly.filter((s: any) => s.status === "live");
+          const currentLiveIds = new Set<string>(liveNow.map((s: any) => s._id.toString()));
+
+          if (initialFetchDoneRef.current) {
+            for (const sess of liveNow) {
+              const sid = sess._id.toString();
+              if (!prevLiveIdsRef.current.has(sid) && activeSession?._id?.toString() !== sid) {
+                // Play stream start sound effect
+                streamSFX.playStreamStartSound();
+                toast.info(`🔴 Live Market Stream is NOW LIVE: "${sess.title}"`, {
+                  description: "A live market broadcast is in progress. Click to join!",
+                  duration: 8000,
+                  action: {
+                    label: "Join Stream",
+                    onClick: () => {
+                      router.push(
+                        `/market?channel=${sess.targetAudience === "HQ" ? "hq" : "ttp"}`
+                      );
+                    },
+                  },
+                });
+              }
+            }
+          }
+          prevLiveIdsRef.current = currentLiveIds;
+          initialFetchDoneRef.current = true;
+
+          return activeOnly;
+        }
+      } catch (err) {
+        console.error("Failed to fetch live sessions:", err);
+        if (!silent) toast.error("Failed to load live sessions");
+      } finally {
+        if (!silent) setLoadingSessions(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch live sessions:", err);
-      toast.error("Failed to load live sessions");
-    } finally {
-      setLoadingSessions(false);
-    }
-    return [];
-  }, [userToken]);
+      return [];
+    },
+    [userToken, syncUserProfile, activeSession, router]
+  );
 
   useEffect(() => {
     if (authStatus === "authenticated" && userToken) {
+      // Immediate initial fetch
       fetchSessions();
+
+      // Poll every 10 seconds for real-time live session synchronization
+      const interval = setInterval(() => {
+        fetchSessions(true);
+      }, 10000);
+
+      // Immediately re-fetch when user returns to this browser tab
+      const handleVisibilityOrFocus = () => {
+        if (document.visibilityState === "visible") {
+          fetchSessions(true);
+        }
+      };
+
+      window.addEventListener("focus", handleVisibilityOrFocus);
+      document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("focus", handleVisibilityOrFocus);
+        document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      };
     }
-  }, [authStatus, userToken]);
+  }, [authStatus, userToken, fetchSessions]);
 
   // Leave session helper
   const leaveSession = useCallback(() => {

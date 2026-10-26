@@ -70,7 +70,8 @@ export default function LiveMarketPage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchSessions();
+  }, [fetchSessions]);
 
   useEffect(() => {
     if (channelParam === "hq") {
@@ -86,6 +87,24 @@ export default function LiveMarketPage() {
   };
 
   const liveSessions = sessions.filter((s: any) => s.status !== "ended");
+  const hasLiveTTP = liveSessions.some(
+    (s: any) => (!s.targetAudience || s.targetAudience === "TTP") && s.status === "live"
+  );
+  const hasLiveHQ = liveSessions.some(
+    (s: any) => s.targetAudience === "HQ" && s.status === "live"
+  );
+
+  // Auto-switch to channel with an active live stream if user didn't explicitly pass ?channel=
+  useEffect(() => {
+    if (!searchParams.get("channel") && liveSessions.length > 0) {
+      if (hasLiveHQ && !hasLiveTTP) {
+        setActiveChannel("hq");
+      } else if (hasLiveTTP && !hasLiveHQ) {
+        setActiveChannel("ttp");
+      }
+    }
+  }, [hasLiveHQ, hasLiveTTP, searchParams, liveSessions.length]);
+
   const filteredSessions = liveSessions.filter((s: any) =>
     activeChannel === "hq"
       ? s.targetAudience === "HQ"
@@ -161,6 +180,11 @@ export default function LiveMarketPage() {
         >
           <span className="w-2 h-2 rounded-full bg-cyan-400" />
           🌐 TTP Community Stream
+          {hasLiveTTP && (
+            <span className="ml-1 px-1.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-red-500 text-white animate-pulse tracking-wide">
+              LIVE
+            </span>
+          )}
         </button>
 
         <button
@@ -173,6 +197,11 @@ export default function LiveMarketPage() {
         >
           <Shield className="w-3.5 h-3.5 text-amber-400" />
           🛡️ Operator HQ Stream
+          {hasLiveHQ && (
+            <span className="ml-1 px-1.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-red-500 text-white animate-pulse tracking-wide">
+              LIVE
+            </span>
+          )}
           {!isHQMember && (
             <Lock className="w-3 h-3 ml-1 text-muted-foreground/70" />
           )}
@@ -348,9 +377,29 @@ export default function LiveMarketPage() {
             <p className="text-xs text-muted-foreground max-w-md">
               {mounted && isBroadcaster
                 ? `Start a direct live broadcast room on the ${activeChannel === "hq" ? "Operator HQ" : "TTP Community"} channel below.`
+                : activeChannel === "ttp" && hasLiveHQ
+                ? `A live stream is currently active on the Operator HQ channel!`
+                : activeChannel === "hq" && hasLiveTTP
+                ? `A live stream is currently active on the TTP Community channel!`
                 : `No live stream is broadcasting on this channel right now. Check back soon or switch channels.`}
             </p>
           </div>
+          {activeChannel === "ttp" && hasLiveHQ && (
+            <Button
+              onClick={() => switchChannel("hq")}
+              className="rounded-full px-6 font-bold uppercase text-xs bg-amber-500 hover:bg-amber-600 text-black shadow-md shadow-amber-500/20 gap-2"
+            >
+              <Radio className="w-4 h-4 animate-pulse" /> Switch to Operator HQ Stream (Live Now)
+            </Button>
+          )}
+          {activeChannel === "hq" && hasLiveTTP && (
+            <Button
+              onClick={() => switchChannel("ttp")}
+              className="rounded-full px-6 font-bold uppercase text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-md gap-2"
+            >
+              <Radio className="w-4 h-4 animate-pulse" /> Switch to TTP Community Stream (Live Now)
+            </Button>
+          )}
           {mounted && isBroadcaster && (
             <Button
               onClick={() => setIsCreateModalOpen(true)}
