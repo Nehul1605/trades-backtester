@@ -49,12 +49,15 @@ import {
   Sparkles,
   DollarSign,
   Receipt,
+  Lock,
+  UserX,
 } from "lucide-react";
 import {
   approveVerificationRequest,
   rejectVerificationRequest,
   searchUsers,
   updateUserRole,
+  revokeUserAccess,
   getAdminUsers,
   getAdminSubscriptions,
   updateUserStatus,
@@ -90,6 +93,9 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
   const [foundUsers, setFoundUsers] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
+  const [revokeTargetUser, setRevokeTargetUser] = useState<any | null>(null);
+  const [revokeReason, setRevokeReason] = useState("Referral conditions not met on partnered broker account.");
 
   // Tab 3: Site Users State
   const [siteUsers, setSiteUsers] = useState<any[]>([]);
@@ -209,6 +215,40 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
       });
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleOpenRevokeDialog = (user: any) => {
+    setRevokeTargetUser(user);
+    setRevokeReason("Referral conditions not met on partnered broker account.");
+  };
+
+  const handleRevokeConfirm = async () => {
+    if (!revokeTargetUser) return;
+    const user = revokeTargetUser;
+    const reason = revokeReason.trim() || "Referral conditions not met on partnered broker account.";
+
+    setRevokingUserId(user._id);
+    try {
+      const res = await revokeUserAccess(user._id, reason);
+      if (res.error) throw new Error(res.error);
+
+      toast({
+        title: "Access Revoked & Locked",
+        description: `Lifetime referral access has been revoked for ${user.name || user.email}. An email with the reason "${reason}" has been sent. Everything is now locked.`,
+      });
+
+      // Remove immediately from the approved list
+      setFoundUsers((prev) => prev.filter((u) => u._id !== user._id));
+      setRevokeTargetUser(null);
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Revoke Failed",
+        description: err.message || "Failed to revoke user access.",
+      });
+    } finally {
+      setRevokingUserId(null);
     }
   };
 
@@ -773,7 +813,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                       <th className="py-4 px-6">Telegram</th>
                       <th className="py-4 px-6">Role</th>
                       <th className="py-4 px-6">Joined Date</th>
-                      <th className="py-4 px-6 text-right">Assign Privileges</th>
+                      <th className="py-4 px-6 text-right">Actions & Access</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30 text-xs">
@@ -845,7 +885,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                               {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"}
                             </td>
                             <td className="py-4 px-6 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-2.5">
                                 {updatingUserId === u._id ? (
                                   <Loader2 className="w-4 h-4 text-primary animate-spin mr-3" />
                                 ) : (
@@ -853,7 +893,7 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                                     defaultValue={u.role || "user"}
                                     onValueChange={(val) => handleRoleChange(u._id, val)}
                                   >
-                                    <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50 border-primary/10">
+                                    <SelectTrigger className="w-[125px] h-8 text-xs bg-background/50 border-primary/10">
                                       <SelectValue placeholder="Set Role" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-card">
@@ -863,6 +903,24 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
                                       <SelectItem value="admin" className="text-xs">Admin (Owner)</SelectItem>
                                     </SelectContent>
                                   </Select>
+                                )}
+
+                                {u.role !== "admin" && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={revokingUserId === u._id}
+                                    onClick={() => handleOpenRevokeDialog(u)}
+                                    className="h-8 px-3 text-[11px] font-black uppercase tracking-wider bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 hover:border-red-600 gap-1.5 transition-all shadow-sm rounded-lg shrink-0 cursor-pointer"
+                                    title={`Revoke referral access for ${u.name} (Account #${v.tradingAccountNumber || "N/A"}). This locks everything.`}
+                                  >
+                                    {revokingUserId === u._id ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Lock className="w-3.5 h-3.5" />
+                                    )}
+                                    Revoke Access
+                                  </Button>
                                 )}
                               </div>
                             </td>
@@ -2024,6 +2082,83 @@ export function AdminDashboardClient({ initialData }: AdminDashboardClientProps)
               className="bg-destructive hover:bg-destructive/90 text-white font-bold text-xs uppercase px-5 rounded-lg"
             >
               Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Lifetime Referral Access Dialog with Reason */}
+      <Dialog open={!!revokeTargetUser} onOpenChange={() => setRevokeTargetUser(null)}>
+        <DialogContent className="bg-card border-destructive/30 text-foreground sm:max-w-md w-full rounded-2xl relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-destructive" />
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-destructive/15 flex items-center justify-center text-destructive">
+                <Lock className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-lg font-black uppercase tracking-tight text-foreground">
+                Revoke Referral Access
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              This will revoke referral lifetime access, lock all platform features (dashboards, journals, calculators, live stream), and send an email with the reason below to the user.
+            </DialogDescription>
+          </DialogHeader>
+
+          {revokeTargetUser && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted/30 border border-border/40 rounded-xl p-3 space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">User:</span>
+                  <span className="font-bold text-foreground">{revokeTargetUser.name || "Trader"} ({revokeTargetUser.email})</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Partner Broker:</span>
+                  <span className="font-bold uppercase text-primary">{revokeTargetUser.verification?.broker || "Direct Access"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">XM / Trading Account:</span>
+                  <span className="font-mono font-bold text-foreground bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    #{revokeTargetUser.verification?.tradingAccountNumber || "N/A"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="revokeReasonInput" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Reason for Revoking Access (Included in Email) *
+                </Label>
+                <Input
+                  id="revokeReasonInput"
+                  placeholder="e.g. Inactive trading on partnered referral broker account."
+                  value={revokeReason}
+                  onChange={(e) => setRevokeReason(e.target.value)}
+                  className="bg-muted/30 border-primary/20 hover:border-primary/45 transition-all text-xs rounded-lg h-10"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-2 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setRevokeTargetUser(null)}
+              className="text-xs uppercase font-bold text-muted-foreground"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRevokeConfirm}
+              disabled={!revokeReason.trim() || revokingUserId === revokeTargetUser?._id}
+              className="bg-destructive hover:bg-destructive/90 text-white font-bold text-xs uppercase px-5 rounded-lg gap-1.5 shadow-md shadow-destructive/20"
+            >
+              {revokingUserId === revokeTargetUser?._id ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Lock className="w-3.5 h-3.5" />
+              )}
+              Confirm Revoke & Lock
             </Button>
           </DialogFooter>
         </DialogContent>

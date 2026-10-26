@@ -145,9 +145,11 @@ router.get("/status", protect, async (req, res) => {
 
     // Access is approved if premium, active promo, approved broker verification, or admin exists
     let calculatedStatus = "pending";
-    if (hasActivePremium || isBrokerVerified || hasActivePromo || isAdmin) {
+    if (user.status === "rejected" && !isAdmin) {
+      calculatedStatus = "rejected";
+    } else if (hasActivePremium || isBrokerVerified || hasActivePromo || isAdmin) {
       calculatedStatus = "approved";
-    } else if ((request && request.status === "rejected") || user.status === "rejected") {
+    } else if (request && request.status === "rejected") {
       calculatedStatus = "rejected";
     }
 
@@ -155,6 +157,8 @@ router.get("/status", protect, async (req, res) => {
     let membershipTag = "FREE";
     if (isAdmin) {
       membershipTag = "ADMIN";
+    } else if (calculatedStatus === "rejected") {
+      membershipTag = "FREE";
     } else if (hasActivePremium) {
       membershipTag = "PREMIUM";
     } else if (isBrokerVerified) {

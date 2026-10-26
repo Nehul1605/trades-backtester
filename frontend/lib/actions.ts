@@ -205,6 +205,10 @@ export async function getTradesForUser(
       take_profit: t.takeProfit,
       broker_account_id: t.brokerAccountId,
       commission: t.commission,
+      source: t.source || "manual",
+      is_journaled: t.isJournaled || false,
+      swap: t.swap || 0,
+      external_id: t.externalId || null,
     }));
   } catch (err) {
     console.error("getTradesForUser error:", err);
@@ -251,6 +255,10 @@ export async function getTradesForAccount(
       take_profit: t.takeProfit,
       broker_account_id: t.brokerAccountId,
       commission: t.commission,
+      source: t.source || "manual",
+      is_journaled: t.isJournaled || false,
+      swap: t.swap || 0,
+      external_id: t.externalId || null,
     }));
   } catch (err) {
     console.error("getTradesForAccount error:", err);
@@ -288,6 +296,15 @@ export async function getBrokerAccounts(userId: string) {
       balance: a.balance,
       equity: a.equity,
       currency: a.currency,
+      connection_type: a.connectionType || "manual",
+      tickerall_account_id: a.tickerallAccountId || null,
+      balance_operations: a.balanceOperations || [],
+      pending_orders: a.pendingOrders || [],
+      margin: a.margin || 0,
+      free_margin: a.freeMargin || 0,
+      leverage: a.leverage || 100,
+      last_sync_status: a.lastSyncStatus || "success",
+      last_sync_error: a.lastSyncError || "",
       last_sync: a.lastSync,
       sort_order: a.sortOrder || 0,
     }));
@@ -325,6 +342,15 @@ export async function getBrokerAccountById(id: string): Promise<any> {
       balance: a.balance,
       equity: a.equity,
       currency: a.currency,
+      connection_type: a.connectionType || "manual",
+      tickerall_account_id: a.tickerallAccountId || null,
+      balance_operations: a.balanceOperations || [],
+      pending_orders: a.pendingOrders || [],
+      margin: a.margin || 0,
+      free_margin: a.freeMargin || 0,
+      leverage: a.leverage || 100,
+      last_sync_status: a.lastSyncStatus || "success",
+      last_sync_error: a.lastSyncError || "",
       last_sync: a.lastSync,
     };
   } catch (err) {
@@ -344,6 +370,7 @@ export async function createBrokerAccount(data: {
   balance?: number;
   equity?: number;
   currency?: string;
+  connection_type?: "manual" | "mt5_tickerall";
 }): Promise<{ error?: string; account?: any }> {
   try {
     const authHeader = await getAuthHeader();
@@ -358,6 +385,7 @@ export async function createBrokerAccount(data: {
       balance: data.balance || 0,
       equity: data.equity || data.balance || 0,
       currency: data.currency || "USD",
+      connectionType: data.connection_type || "manual",
     };
 
     const res = await fetch(`${BACKEND_URL}/api/accounts`, {
@@ -378,6 +406,100 @@ export async function createBrokerAccount(data: {
   } catch (err: unknown) {
     return {
       error: err instanceof Error ? err.message : "Failed to create broker account",
+    };
+  }
+}
+
+export async function syncBrokerAccount(id: string): Promise<{
+  error?: string;
+  account?: any;
+  trades?: any[];
+  syncedTradesCount?: number;
+  message?: string;
+}> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/accounts/${id}/sync`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to sync broker account" };
+    }
+
+    const a = result.account;
+    const mappedAccount = a
+      ? {
+          $id: a._id || a.id,
+          id: a._id || a.id,
+          user_id: a.userId,
+          account_category: a.accountCategory || "broker",
+          market_type: a.marketType || "cfd",
+          broker_type: a.brokerType,
+          custom_firm_name: a.customFirmName || "",
+          account_id: a.accountId,
+          server: a.server,
+          status: a.status,
+          balance: a.balance,
+          equity: a.equity,
+          currency: a.currency,
+          connection_type: a.connectionType || "manual",
+          tickerall_account_id: a.tickerallAccountId || null,
+          balance_operations: a.balanceOperations || [],
+          pending_orders: a.pendingOrders || [],
+          margin: a.margin || 0,
+          free_margin: a.freeMargin || 0,
+          leverage: a.leverage || 100,
+          last_sync_status: a.lastSyncStatus || "success",
+          last_sync_error: a.lastSyncError || "",
+          last_sync: a.lastSync,
+        }
+      : null;
+
+    const mappedTrades = Array.isArray(result.trades)
+      ? result.trades.map((t: any) => ({
+          $id: t.id || t._id,
+          id: t.id || t._id,
+          symbol: t.symbol,
+          entry_price: t.entryPrice,
+          exit_price: t.exitPrice,
+          entry_price_text: t.entryPriceText,
+          exit_price_text: t.exitPriceText,
+          quantity: t.quantity,
+          trade_type: t.tradeType,
+          entry_date: t.entryDate,
+          exit_date: t.exitDate,
+          status: t.status,
+          strategy_name: t.strategyName,
+          notes: t.notes,
+          screenshot_url: t.screenshotUrl,
+          pnl: t.pnl,
+          pnl_percentage: t.pnlPercentage,
+          stop_loss: t.stopLoss,
+          take_profit: t.takeProfit,
+          broker_account_id: t.brokerAccountId,
+          commission: t.commission,
+          source: t.source || "manual",
+          is_journaled: t.isJournaled || false,
+          swap: t.swap || 0,
+          external_id: t.externalId || null,
+        }))
+      : [];
+
+    return {
+      account: mappedAccount,
+      trades: mappedTrades,
+      syncedTradesCount: result.syncedTradesCount,
+      message: result.message,
+    };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to sync broker account",
     };
   }
 }
@@ -661,6 +783,30 @@ export async function updateUserRole(id: string, role: string): Promise<{ error?
   } catch (err: unknown) {
     return {
       error: err instanceof Error ? err.message : "Failed to update user role",
+    };
+  }
+}
+
+export async function revokeUserAccess(id: string, reason?: string): Promise<{ success?: boolean; error?: string; message?: string }> {
+  try {
+    const authHeader = await getAuthHeader();
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/revoke-access`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      return { error: result.error || "Failed to revoke user access" };
+    }
+    return result;
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to revoke user access",
     };
   }
 }

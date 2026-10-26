@@ -757,14 +757,30 @@ export function LiveMarketStage({
             </Button>
 
             {isHostOrCoHost && isLive ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={onEndStream}
-                className="rounded-full px-4 text-xs font-bold uppercase gap-1.5 shadow-md shadow-destructive/20"
-              >
-                <Square className="w-3.5 h-3.5 fill-current" /> End Session
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    streamSFX.playUserLeaveSound();
+                    leaveSession();
+                    toast.info("You left the stream room. Broadcast remains live for other participants.");
+                  }}
+                  className="rounded-full px-3.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:border-primary/40 gap-1.5 transition-all"
+                  title="Leave this broadcast room without ending session for other participants"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Leave Room
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={onEndStream}
+                  className="rounded-full px-4 text-xs font-bold uppercase gap-1.5 shadow-md shadow-destructive/20"
+                  title="End broadcast session completely for everyone"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" /> End Session
+                </Button>
+              </div>
             ) : (
               <Button
                 variant="outline"

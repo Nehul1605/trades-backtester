@@ -249,6 +249,99 @@ router.post("/verifications/:id/reject", protect, protectAdmin, async (req, res)
   }
 });
 
+// @desc    Revoke referral / lifetime access for a user
+// @route   POST /api/admin/users/:id/revoke-access
+// @access  Admin/Owner
+router.post("/users/:id/revoke-access", protect, protectAdmin, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.role === "admin") {
+      return res.status(400).json({ error: "Cannot revoke access for an Administrator account." });
+    }
+
+    const defaultReason = reason && reason.trim() ? reason.trim() : "Referral access revoked by administrator";
+
+    // Update User model
+    user.status = "rejected";
+    user.statusRemarks = defaultReason;
+    user.membershipTag = "FREE";
+    user.isPromoUser = false;
+    user.isPremiumUser = false;
+    await user.save();
+
+    // Update all verification requests for this user to rejected
+    await VerificationRequest.updateMany(
+      { user: user._id },
+      {
+        status: "rejected",
+        remarks: defaultReason,
+        reviewedAt: new Date(),
+        reviewedBy: req.userId,
+      }
+    );
+
+    // Send notification email to the user
+    if (user.email) {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: "Notice: TradeTracker Pro Access Revoked",
+          text: `Hi ${user.name || "Trader"},\n\nYour broker referral access on TradeTracker Pro has been revoked by an administrator.\n\nReason: ${defaultReason}\n\nYour platform features and dashboards are now locked. If you believe this is an error or wish to re-apply, please contact support or submit your broker details again.\n\nSupport: ${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/help\n\nBest regards,\nThe TradeTracker Pro Team`,
+          html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; padding: 30px 15px; color: #1e293b; line-height: 1.6;">
+              <div style="max-width: 550px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+                <div style="background-color: #09090b; padding: 24px; text-align: center; border-bottom: 3px solid #ef4444;">
+                  <img src="https://www.tradetrackerpro.in/logo.png" alt="TradeTracker Pro Logo" style="height: 35px; vertical-align: middle; margin-right: 8px; display: inline-block;" />
+                  <span style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1.5px; vertical-align: middle;">TRADETRACKER PRO</span>
+                </div>
+                <div style="padding: 30px;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="display: inline-block; background-color: #fef2f2; border-radius: 50%; padding: 12px; margin-bottom: 16px;">
+                      <span style="font-size: 32px;">🔒</span>
+                    </div>
+                    <h2 style="color: #ef4444; margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase;">Access Revoked</h2>
+                  </div>
+                  <p style="font-size: 15px;">Hi <strong>${user.name || "Trader"}</strong>,</p>
+                  <p style="font-size: 14.5px; color: #475569;">Your referral / broker account access on TradeTracker Pro has been revoked by an administrator.</p>
+                  <div style="background-color: #fff1f2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                    <strong style="color: #9f1239; font-size: 13px; text-transform: uppercase;">Reason:</strong>
+                    <p style="margin: 4px 0 0 0; color: #881337; font-size: 14px;">${defaultReason}</p>
+                  </div>
+                  <p style="font-size: 13.5px; color: #64748b;">All platform features (Dashboards, Live Stream, Trade Logging, Calculators) are now locked. To regain access, please contact support or re-verify your broker account.</p>
+                  <div style="text-align: center; margin: 30px 0 10px 0;">
+                    <a href="${process.env.FRONTEND_URL || "https://www.tradetrackerpro.in"}/help" style="background-color: #09090b; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 13px; text-transform: uppercase; display: inline-block; border: 1px solid #ef4444;">Contact Support</a>
+                  </div>
+                </div>
+                <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                  <p style="font-size: 11px; color: #64748b; margin: 0;">This is an automated notification from TradeTracker Pro.</p>
+                </div>
+              </div>
+            </div>
+          `,
+        });
+      } catch (mailErr) {
+        console.error("Failed to send revocation mail:", mailErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Access revoked for ${user.name || user.email}. User platform is now locked.`,
+      user,
+    });
+  } catch (error) {
+    console.error("Revoke access error:", error);
+    res.status(500).json({ error: "Failed to revoke access" });
+  }
+});
+
 // @desc    Update user role (e.g. set as broadcaster)
 // @route   PATCH /api/admin/users/:id/role
 // @access  Admin/Owner
@@ -391,6 +484,12 @@ router.patch("/users/:id/status", protect, protectAdmin, async (req, res) => {
     targetUser.status = status;
     if (status === "rejected") {
       targetUser.statusRemarks = reason;
+      targetUser.membershipTag = "FREE";
+      // Update any verification requests so user is fully locked
+      await VerificationRequest.updateMany(
+        { user: targetUser._id },
+        { status: "rejected", remarks: reason || "Status set to rejected by administrator" }
+      );
     } else {
       targetUser.statusRemarks = "";
     }
