@@ -131,13 +131,13 @@ export default function LiveMarketPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
+    <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-4 md:p-8 max-w-[1600px] w-full min-w-0 max-w-full overflow-x-hidden mx-auto min-h-screen">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Radio className="w-5 h-5 text-primary animate-pulse" />
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight italic">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight italic">
               Live <span className="text-primary not-italic">Market Stream</span>
             </h1>
           </div>
@@ -173,10 +173,10 @@ export default function LiveMarketPage() {
       </div>
 
       {/* CHANNEL SELECTOR TABS */}
-      <div className="flex items-center gap-3 p-1.5 bg-card/60 border border-border/50 rounded-2xl w-fit backdrop-blur-md">
+      <div className="flex items-center gap-2 sm:gap-3 p-1.5 bg-card/60 border border-border/50 rounded-2xl w-full sm:w-fit backdrop-blur-md overflow-x-auto max-w-full scrollbar-none">
         <button
           onClick={() => switchChannel("ttp")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+          className={`flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all shrink-0 ${
             activeChannel === "ttp"
               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
               : "text-muted-foreground hover:text-foreground hover:bg-card"
@@ -193,7 +193,7 @@ export default function LiveMarketPage() {
 
         <button
           onClick={() => switchChannel("hq")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+          className={`flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all shrink-0 ${
             activeChannel === "hq"
               ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 font-black"
               : "text-muted-foreground hover:text-foreground hover:bg-card"

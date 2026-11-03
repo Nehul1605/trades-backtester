@@ -58,13 +58,13 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <LiveMeetingWrapper>
-        <div className="flex min-h-screen w-full">
+        <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
           <AppSidebar
             statusData={statusData}
             isLocked={isLocked}
             initialUser={session.user}
           />
-          <SidebarInset className="flex flex-col min-h-screen">
+          <SidebarInset className="flex flex-col min-h-screen w-full min-w-0 max-w-full overflow-x-hidden">
             <DashboardHeader
               statusData={statusData}
               isLocked={isLocked}
@@ -72,7 +72,9 @@ export default async function DashboardLayout({
             />
             <Suspense fallback={null}>
               <DashboardContentGuard isLocked={isLocked} statusData={statusData}>
-                {children}
+                <div className="w-full min-w-0 max-w-full flex-1">
+                  {children}
+                </div>
               </DashboardContentGuard>
             </Suspense>
           </SidebarInset>

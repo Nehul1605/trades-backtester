@@ -9,6 +9,13 @@
  * Profit: #22c55e  Loss: #ef4444
  */
 
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 :root {
   --background: #faf9f6;
   --foreground: #1c1917;
