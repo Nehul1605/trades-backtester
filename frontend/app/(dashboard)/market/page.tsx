@@ -31,6 +31,7 @@ import { useLiveMeeting } from "@/components/live-market/LiveMeetingProvider";
 import { useSession } from "next-auth/react";
 import { FeatureLockedOverlay } from "@/components/dashboard/feature-locked-overlay";
 import { streamSFX } from "@/lib/soundEffects";
+import { InstallAppButton } from "@/components/pwa/PWAInstaller";
 
 export default function LiveMarketPage() {
   const { data: session } = useSession();
@@ -129,14 +130,28 @@ export default function LiveMarketPage() {
     scrollRef.current?.scrollBy({ left: 260, behavior: "smooth" });
   };
 
+  const isCurrentlyInStream = Boolean(
+    activeSession && livekitToken && isConnected && !isMinimized
+  );
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
+    <div
+      className={`flex flex-col mx-auto min-h-screen transition-all ${
+        isCurrentlyInStream
+          ? "p-1 sm:p-2 md:p-6 gap-2 md:gap-4 max-w-[1700px]"
+          : "p-3 sm:p-4 md:p-8 gap-4 md:gap-6 max-w-[1600px]"
+      }`}
+    >
+      {/* HEADER: Hidden on phone during active stream to prioritize full-screen Telegram live experience */}
+      <div
+        className={`flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4 ${
+          isCurrentlyInStream ? "hidden md:flex" : "flex"
+        }`}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Radio className="w-5 h-5 text-primary animate-pulse" />
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight italic">
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight italic">
               Live <span className="text-primary not-italic">Market Stream</span>
             </h1>
           </div>
@@ -145,11 +160,14 @@ export default function LiveMarketPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* PWA Install Button on Chrome / Phone */}
+          <InstallAppButton />
+
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchSessions}
+            onClick={() => fetchSessions()}
             className="rounded-full text-xs font-bold gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -168,8 +186,12 @@ export default function LiveMarketPage() {
         </div>
       </div>
 
-      {/* CHANNEL SELECTOR TABS */}
-      <div className="flex items-center gap-3 p-1.5 bg-card/60 border border-border/50 rounded-2xl w-fit backdrop-blur-md">
+      {/* CHANNEL SELECTOR TABS: Hidden on phone during active stream to keep phone view clean */}
+      <div
+        className={`items-center gap-2 sm:gap-3 p-1.5 bg-card/60 border border-border/50 rounded-2xl w-full sm:w-fit backdrop-blur-md overflow-x-auto ${
+          isCurrentlyInStream ? "hidden md:flex" : "flex"
+        }`}
+      >
         <button
           onClick={() => switchChannel("ttp")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${

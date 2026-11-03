@@ -73,7 +73,7 @@ export function MiniPlayer({ sessionData, onLeave, onMaximize }: MiniPlayerProps
   if (isCollapsed) {
     // Collapsed floating pill / bubble
     return (
-      <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-3 duration-300">
         <button
           onClick={() => setIsCollapsed(false)}
           className="relative px-3.5 py-2.5 bg-card/95 backdrop-blur-xl border border-primary/50 hover:border-primary rounded-full flex items-center gap-2.5 shadow-2xl shadow-primary/20 hover:scale-105 transition-all cursor-pointer"
@@ -98,7 +98,7 @@ export function MiniPlayer({ sessionData, onLeave, onMaximize }: MiniPlayerProps
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] w-[340px] rounded-2xl overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-black/60 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] w-[calc(100vw-32px)] max-w-[340px] rounded-2xl overflow-hidden border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl shadow-black/60 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
       {/* Video / Preview Area */}
       <div className="relative w-full h-[190px] bg-black/95 flex items-center justify-center overflow-hidden">
         {displayTrack?.publication?.track ? (

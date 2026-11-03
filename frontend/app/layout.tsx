@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Analytics } from "@vercel/analytics/next";
@@ -8,9 +8,22 @@ import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { PWAProvider } from "@/components/pwa/PWAInstaller";
+
+export const viewport: Viewport = {
+  themeColor: "#09090b",
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tradetrackerpro.in"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "TradeTracker Pro",
+  },
   title: {
     default: "TradeTracker Pro",
     template: "%s",
@@ -73,9 +86,11 @@ export default async function RootLayout({
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" forceTheme="dark" enableSystem={false}>
-            <Suspense fallback={null}>{children}</Suspense>
-            <Toaster />
+          <ThemeProvider>
+            <PWAProvider>
+              <Suspense fallback={null}>{children}</Suspense>
+              <Toaster />
+            </PWAProvider>
           </ThemeProvider>
         </AuthProvider>
         <script

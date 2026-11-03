@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { InstallAppButton } from "@/components/pwa/PWAInstaller";
 
 interface DashboardHeaderProps {
   statusData?: any;
@@ -63,6 +64,7 @@ export function DashboardHeader({
 
         {/* Right Status Actions & Countdown */}
         <div className="flex items-center gap-2.5">
+          <InstallAppButton />
           {/* Active Promo Trial Countdown */}
           {isPromoTrial && (
             <div className="flex items-center gap-2">
