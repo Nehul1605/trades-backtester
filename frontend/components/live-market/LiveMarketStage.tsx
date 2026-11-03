@@ -527,36 +527,33 @@ export function LiveMarketStage({
   }, []);
 
   return (
-    <div
-      ref={stageRef}
-      className="flex flex-col lg:flex-row gap-2 sm:gap-3 lg:gap-4 w-full h-[calc(100dvh-70px)] sm:h-[calc(100dvh-80px)] lg:h-[780px] bg-card/60 backdrop-blur-xl border border-border/60 rounded-xl sm:rounded-2xl p-2 sm:p-3 lg:p-4 overflow-hidden relative shadow-2xl"
-    >
+    <div ref={stageRef} className="flex flex-col lg:flex-row gap-4 w-full lg:h-[780px] h-auto bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 lg:overflow-hidden overflow-visible relative shadow-2xl">
       {/* AUTOMATIC WEBRTC ROOM AUDIO RENDERER (MICROPHONE VOICE + SCREEN SHARE AUDIO) */}
       <RoomAudioRenderer volume={isMuted ? 0 : 1} />
 
-      {/* LEFT / TOP: MAIN STREAMING & VIDEO STAGE */}
-      <div className="flex flex-col justify-between h-[210px] xs:h-[240px] sm:h-[300px] md:h-[360px] lg:h-full lg:flex-1 shrink-0 bg-background/90 rounded-xl border border-border/40 overflow-hidden relative shadow-sm">
+      {/* LEFT: MAIN STREAMING & VIDEO STAGE */}
+      <div className="flex-1 flex flex-col justify-between lg:h-full h-[400px] sm:h-[480px] bg-background/80 rounded-xl border border-border/40 overflow-hidden relative">
         {/* TOP BAR OVERLAY */}
-        <div className="flex items-center justify-between px-3 py-2 sm:px-5 sm:py-3 bg-gradient-to-b from-background/95 via-background/80 to-transparent z-10">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-b from-background/90 to-transparent z-10">
+          <div className="flex items-center gap-3">
             {isLive ? (
-              <Badge className="bg-red-500/20 text-red-500 border-red-500/40 px-2 py-0.5 text-[10px] sm:text-xs font-black uppercase tracking-wider animate-pulse flex items-center gap-1 shrink-0">
-                <Radio className="w-3 h-3" /> LIVE
+              <Badge className="bg-red-500/20 text-red-500 border-red-500/40 px-3 py-1 text-xs font-bold uppercase tracking-wider animate-pulse flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5" /> LIVE
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground border-border px-2 py-0.5 text-[10px] sm:text-xs uppercase shrink-0">
+              <Badge variant="outline" className="text-muted-foreground border-border px-3 py-1 text-xs uppercase">
                 ENDED
               </Badge>
             )}
 
-            <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-black tracking-tight uppercase text-foreground leading-tight truncate">
+            <div>
+              <h2 className="text-lg font-black tracking-tight uppercase text-foreground leading-none">
                 {sessionData?.title || "Live Market Broadcast"}
               </h2>
-              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+              <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
                 <span>Host: {sessionData?.host?.name || "Trader"}</span>
                 {sessionData?.category && (
-                  <span className="hidden sm:inline bg-primary/10 text-primary px-1.5 py-0.2 rounded text-[9px] font-bold">
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold">
                     {sessionData.category}
                   </span>
                 )}
@@ -564,60 +561,17 @@ export function LiveMarketStage({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <div className="flex items-center gap-1 sm:gap-1.5 bg-card/80 border border-border/60 rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-muted-foreground">
-              <Users className="w-3 h-3 text-primary" />
-              <span className="font-bold text-foreground">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-card border border-border/60 rounded-full px-3 py-1 text-xs text-muted-foreground">
+              <Users className="w-3.5 h-3.5 text-primary" />
+              <span className="font-semibold text-foreground">
                 {(remoteParticipants?.length || 0) + 1}
               </span>
+              <span className="text-[10px]">watching</span>
             </div>
 
-            {/* Mobile Audio Mute Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const nextMuted = !isMuted;
-                setIsMuted(nextMuted);
-                if (nextMuted) {
-                  streamSFX.playMuteSound();
-                } else {
-                  streamSFX.playUnmuteSound();
-                }
-              }}
-              className="lg:hidden h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
-              title={isMuted ? "Unmute Audio" : "Mute Audio"}
-            >
-              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-destructive" /> : <Volume2 className="w-3.5 h-3.5" />}
-            </Button>
-
-            {/* Mobile Fullscreen toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleFullscreen}
-              className="lg:hidden h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
-              title="Fullscreen Chart"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </Button>
-
-            {/* Mobile Leave Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                streamSFX.playUserLeaveSound();
-                leaveSession();
-              }}
-              className="lg:hidden h-7 w-7 rounded-full text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-              title="Leave Stream"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </Button>
-
             {sessionData?.coHosts?.length > 0 && (
-              <Badge variant="secondary" className="hidden md:flex items-center gap-1 text-[11px]">
+              <Badge variant="secondary" className="hidden sm:flex items-center gap-1 text-[11px]">
                 <Shield className="w-3 h-3 text-emerald-400" />
                 {sessionData.coHosts.length} Co-Host{sessionData.coHosts.length > 1 ? "s" : ""}
               </Badge>
@@ -626,28 +580,20 @@ export function LiveMarketStage({
         </div>
 
         {/* CENTER VIDEO STAGE */}
-        <div className="flex-1 relative flex items-center justify-center p-1 sm:p-3 overflow-hidden bg-black/50">
+        <div className="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-black/40">
           {/* SCREEN SHARE PRESENTATION VIEW */}
           {screenShareTrack && screenShareTrack.publication ? (
-            <div className="w-full h-full relative rounded-lg overflow-hidden border border-primary/30 flex items-center justify-center bg-black">
+            <div className="w-full h-full relative rounded-lg overflow-hidden border border-primary/30 flex items-center justify-center">
               <VideoTrack trackRef={screenShareTrack} className="w-full h-full object-contain" />
-              <div className="absolute top-2 left-2 bg-background/85 backdrop-blur-md px-2 py-0.5 rounded border border-border text-[9px] sm:text-xs font-bold text-primary flex items-center gap-1 shadow-md">
-                <Monitor className="w-3 h-3 text-primary animate-pulse" />
-                <span className="truncate max-w-[120px] sm:max-w-none">{screenShareTrack.participant.name}'s Chart</span>
+              <div className="absolute top-3 left-3 bg-background/80 backdrop-blur-md px-3 py-1 rounded border border-border text-xs font-bold text-primary flex items-center gap-1.5">
+                <Monitor className="w-3.5 h-3.5 text-primary animate-pulse" />
+                {screenShareTrack.participant.name}'s Screen Share
               </div>
-              <button
-                onClick={toggleFullscreen}
-                className="absolute top-2 right-2 bg-background/85 hover:bg-background backdrop-blur-md px-2 py-0.5 rounded border border-border text-[9px] sm:text-xs font-bold text-foreground flex items-center gap-1 shadow-md transition-all active:scale-95"
-                title="Fullscreen Chart"
-              >
-                <Maximize2 className="w-3 h-3 text-primary" />
-                <span className="hidden xs:inline">Fullscreen</span>
-              </button>
             </div>
           ) : cameraTracks.length > 0 && cameraTracks.some((t) => t.publication) ? (
             /* CAMERA TRACKS GRID */
             <div
-              className={`w-full h-full grid gap-2 sm:gap-4 ${
+              className={`w-full h-full grid gap-4 ${
                 cameraTracks.length === 1
                   ? "grid-cols-1"
                   : cameraTracks.length === 2
@@ -663,126 +609,49 @@ export function LiveMarketStage({
                   {tRef.publication ? (
                     <VideoTrack trackRef={tRef} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="flex flex-col items-center gap-1 sm:gap-2">
-                      <Avatar className="h-10 w-10 sm:h-16 sm:w-16 border-2 border-primary">
-                        <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm sm:text-xl">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="h-16 w-16 border-2 border-primary">
+                        <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl">
                           {tRef.participant.name?.substring(0, 2).toUpperCase() || "TR"}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-[10px] sm:text-xs font-bold text-muted-foreground">
+                      <span className="text-xs font-bold text-muted-foreground">
                         {tRef.participant.name} (Camera Off)
                       </span>
                     </div>
                   )}
-                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold text-white flex items-center gap-1">
+                  <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded text-xs font-bold text-white flex items-center gap-1.5">
                     {tRef.participant.identity === localParticipant.identity ? "You" : tRef.participant.name}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            /* OFFLINE / WAITING STAGE DISPLAY (TELEGRAM LIVE STYLE VOICE WAVE) */
-            <div className="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3 max-w-md p-3 sm:p-6">
+            /* OFFLINE / WAITING STAGE DISPLAY */
+            <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-md p-8">
               <div className="relative">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center animate-pulse">
-                  <Radio className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center animate-pulse">
+                  <Radio className="w-10 h-10 text-primary" />
                 </div>
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-black text-xs">
+                  Pro
+                </div>
               </div>
 
               <div>
-                <h3 className="text-xs sm:text-base font-black uppercase tracking-tight text-foreground">
-                  Traders Audio Room Active
+                <h3 className="text-xl font-bold uppercase tracking-tight text-foreground">
+                  Waiting for Host Video / Screen Share
                 </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed max-w-xs">
-                  Audio & voice stage is live. Host screen and chart streams appear automatically when shared.
+                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                  The session is live! Audio and real-time order flow streams will play automatically as hosts begin broadcasting.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* MOBILE COMPACT ACTION BAR (TELEGRAM VOICE STYLE) */}
-        <div className="lg:hidden px-3 py-2 bg-background/95 border-t border-border/40 flex items-center justify-between gap-2 z-10 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={isMicOn ? "default" : "destructive"}
-              size="sm"
-              onClick={toggleMic}
-              disabled={!isLive || isMicLoading}
-              className={`rounded-full h-8 px-3 text-[11px] font-black uppercase gap-1.5 transition-all ${
-                isMicOn ? "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-500/50" : ""
-              }`}
-            >
-              {isMicLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : isMicOn ? (
-                <Mic className="w-3.5 h-3.5 animate-pulse" />
-              ) : (
-                <MicOff className="w-3.5 h-3.5" />
-              )}
-              <span>{isMicLoading ? "..." : isMicOn ? "Mic On" : "Muted"}</span>
-            </Button>
-
-            <Button
-              variant={isCamOn ? "default" : "secondary"}
-              size="sm"
-              onClick={toggleCam}
-              disabled={!isLive || isCamLoading}
-              className="rounded-full h-8 px-2.5 text-[11px] font-bold gap-1"
-            >
-              {isCamLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : isCamOn ? (
-                <VideoIcon className="w-3.5 h-3.5 text-primary" />
-              ) : (
-                <VideoOff className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </Button>
-
-            {isHostOrCoHost && (
-              <Button
-                variant={isScreenSharing ? "default" : "outline"}
-                size="sm"
-                onClick={toggleScreenShare}
-                disabled={!isLive}
-                className="rounded-full h-8 px-2.5 text-[11px] font-bold gap-1"
-                title="Share Screen"
-              >
-                {isScreenSharing ? <MonitorOff className="w-3.5 h-3.5 text-white" /> : <Monitor className="w-3.5 h-3.5 text-emerald-400" />}
-              </Button>
-            )}
-          </div>
-
-          {/* Segmented Tab Toggles on Mobile */}
-          <div className="flex items-center bg-card/60 p-0.5 rounded-full border border-border/50">
-            <button
-              onClick={() => setActiveTab("chat")}
-              className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
-                activeTab === "chat"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <MessageSquare className="w-3 h-3" />
-              <span>Chat</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("participants")}
-              className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
-                activeTab === "participants"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Users className="w-3 h-3" />
-              <span>{(remoteParticipants?.length || 0) + 1}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* DESKTOP CONTROLS TOOLBAR */}
-        <div className="hidden lg:flex px-6 py-4 bg-gradient-to-t from-background to-background/90 border-t border-border/40 flex-wrap items-center justify-between gap-4 z-10 shrink-0">
+        {/* BOTTOM CONTROLS TOOLBAR */}
+        <div className="px-6 py-4 bg-gradient-to-t from-background to-background/90 border-t border-border/40 flex flex-wrap items-center justify-between gap-4 z-10">
           {/* LEFT CONTROLS: HOST / COHOST TOOLS */}
           {isHostOrCoHost ? (
             <div className="flex items-center gap-2">
@@ -845,7 +714,7 @@ export function LiveMarketStage({
               )}
             </div>
           ) : (
-            /* VIEWERS CONTROLS */
+            /* VIEWERS CONTROLS - Now with Mic and Camera options, but NO Screen Share */
             <div className="flex items-center gap-2">
               <Button
                 variant={isMicOn ? "default" : "destructive"}
@@ -883,7 +752,7 @@ export function LiveMarketStage({
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium ml-2">
                 <Shield className="w-3.5 h-3.5 text-primary" />
-                <span>Audience Mode</span>
+                <span>Audience Mode (Screen sharing disabled)</span>
               </div>
             </div>
           )}
@@ -908,6 +777,7 @@ export function LiveMarketStage({
               {isMuted ? <VolumeX className="w-4 h-4 text-destructive" /> : <Volume2 className="w-4 h-4" />}
             </Button>
 
+            {/* Minimize stage to floating mini-player */}
             <Button
               variant="ghost"
               size="icon"
@@ -990,11 +860,12 @@ export function LiveMarketStage({
         </div>
       </div>
 
-      {/* RIGHT / BOTTOM: TELEGRAM-STYLE LIVE CHAT & AUDIENCE PANEL */}
+      {/* RIGHT: LIVE CHAT & AUDIENCE PANEL */}
+      {/* RIGHT SIDEBAR: LIVE CHAT & PARTICIPANTS */}
       {showSidebar && (
-        <div className="flex-1 min-h-0 lg:flex-none w-full lg:w-80 xl:w-96 lg:h-full bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
-          {/* TABS HEADER (Hidden on mobile because mobile action bar has quick tabs) */}
-          <div className="hidden lg:flex border-b border-border/40 bg-card/20 shrink-0">
+        <div className="w-full lg:w-80 lg:h-full h-[400px] shrink-0 bg-background/90 rounded-xl border border-border/40 flex flex-col justify-between overflow-hidden shadow-lg">
+          {/* TABS HEADER */}
+          <div className="flex border-b border-border/40 bg-card/20">
             <button
               onClick={() => setActiveTab("chat")}
               className={`flex-1 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
@@ -1015,86 +886,53 @@ export function LiveMarketStage({
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Traders ({(remoteParticipants?.length || 0) + 1})</span>
+              <span>Users ({(remoteParticipants?.length || 0) + 1})</span>
             </button>
           </div>
 
-          {/* TAB CONTENT: CHAT (TELEGRAM MOBILE STYLE) */}
+          {/* TAB CONTENT: CHAT */}
           {activeTab === "chat" && (
-            <div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 flex flex-col justify-between overflow-hidden min-w-0">
               {/* CHAT MESSAGES STREAM */}
-              <ScrollArea className="flex-1 min-h-0 p-2 sm:p-3">
-                <div className="space-y-2 min-w-0 max-w-full pb-1">
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3 min-w-0 max-w-full">
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center py-10 sm:py-16 text-muted-foreground/60 space-y-1.5">
-                      <MessageSquare className="w-7 h-7 stroke-1 text-muted-foreground/45" />
-                      <p className="text-xs">No messages yet. Send a greeting to the traders!</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center py-16 text-muted-foreground/60 space-y-2">
+                      <MessageSquare className="w-8 h-8 stroke-1 text-muted-foreground/45" />
+                      <p className="text-xs">No messages yet. Say hi to the traders!</p>
                     </div>
                   ) : (
-                    messages.map((msg, idx) => {
-                      const isMsgHost =
-                        msg.sender?.toLowerCase().includes("host") ||
-                        (sessionData?.host?.name && msg.sender === sessionData.host.name);
-                      return (
-                        <div key={msg.messageId || idx} className="flex items-start gap-2 min-w-0 max-w-full">
-                          <Avatar className="h-6 w-6 border border-border shrink-0 mt-0.5">
-                            <AvatarFallback
-                              className={`text-[9px] font-black uppercase ${
-                                isMsgHost ? "bg-amber-500/20 text-amber-400" : "bg-primary/20 text-primary"
-                              }`}
-                            >
-                              {msg.sender?.substring(0, 2).toUpperCase() || "TR"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 text-[10px] mb-0.5">
-                              <span
-                                className={`font-black truncate ${isMsgHost ? "text-amber-400" : "text-primary"}`}
-                                title={msg.sender}
-                              >
-                                {msg.sender}
-                              </span>
-                              {isMsgHost && (
-                                <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1 py-0 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5">
-                                  <Crown className="w-2.5 h-2.5" /> Host
-                                </span>
-                              )}
-                              <span className="text-muted-foreground/50 text-[9px] ml-auto shrink-0 font-medium">
-                                {msg.time}
-                              </span>
-                            </div>
-                            <div className="bg-card/85 border border-border/50 rounded-2xl rounded-tl-sm px-2.5 py-1.5 text-xs text-foreground leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap max-w-full shadow-sm">
-                              {msg.text}
-                            </div>
-                          </div>
+                    messages.map((msg, idx) => (
+                      <div key={msg.messageId || idx} className="mb-3 space-y-1 min-w-0 max-w-full">
+                        <div className="flex items-center justify-between text-[10px] gap-2 min-w-0">
+                          <span className="font-bold text-primary truncate flex-1 min-w-0" title={msg.sender}>
+                            {msg.sender}
+                          </span>
+                          <span className="text-muted-foreground/60 shrink-0">
+                            {msg.time}
+                          </span>
                         </div>
-                      );
-                    })
+                        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-xs text-foreground leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap max-w-full overflow-hidden">
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
                   )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
-              {/* CHAT INPUT BOX (PINNED DOCKED TELEGRAM STYLE) */}
-              <form
-                onSubmit={handleSendMessage}
-                className="p-2 sm:p-3 border-t border-border/40 bg-card/30 flex items-center gap-1.5 sm:gap-2 shrink-0"
-              >
+              {/* CHAT INPUT BOX */}
+              <form onSubmit={handleSendMessage} className="p-3 border-t border-border/40 bg-card/20 flex gap-2 shrink-0">
                 <Input
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="Send message to traders..."
+                  placeholder="Send message..."
                   maxLength={1000}
-                  className="text-xs bg-background/90 border-border/60 focus-visible:ring-primary h-9 rounded-full px-3.5 min-w-0 flex-1 shadow-inner"
+                  className="text-xs bg-background/80 border-border/60 focus-visible:ring-primary h-9 rounded-lg min-w-0 flex-1"
                 />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!chatMessage.trim()}
-                  className="h-9 w-9 rounded-full p-0 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-md flex items-center justify-center transition-all disabled:opacity-40"
-                  title="Send message"
-                >
-                  <Send className="w-4 h-4 ml-0.5" />
+                <Button type="submit" size="sm" className="h-9 px-3 text-xs font-bold uppercase bg-primary text-primary-foreground shrink-0">
+                  Send
                 </Button>
               </form>
             </div>
@@ -1102,10 +940,10 @@ export function LiveMarketStage({
 
           {/* TAB CONTENT: PARTICIPANTS */}
           {activeTab === "participants" && (
-            <div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 flex flex-col justify-between overflow-hidden">
               {/* MUTE/UNMUTE ALL - ONLY FOR HOST */}
               {isHost && (
-                <div className="px-3 py-2 border-b border-border/40 bg-card/10 flex gap-2 shrink-0">
+                <div className="px-4 py-3 border-b border-border/40 bg-card/10 flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -1126,133 +964,126 @@ export function LiveMarketStage({
               )}
 
               {/* PARTICIPANTS LIST */}
-              <ScrollArea className="flex-1 min-h-0 p-2 sm:p-3">
-                <div className="space-y-2">
-                  {[
-                    {
-                      identity: localParticipant.identity,
-                      name: localParticipant.name || "Host",
-                      isHost: isHost,
-                      isCoHost: isHostOrCoHost && !isHost,
-                      isLocal: true,
-                      isMicOn: isMicOn,
-                    },
-                    ...remoteParticipants.map((p) => {
-                      const isCo = sessionData?.coHosts?.some(
-                        (ch: any) => ch.email === p.identity || ch._id === p.identity
-                      );
-                      return {
-                        identity: p.identity,
-                        name: p.name || p.identity,
-                        isHost: false,
-                        isCoHost: !!isCo,
-                        isLocal: false,
-                        isMicOn: p.isMicrophoneEnabled,
-                      };
-                    }),
-                  ].map((p, idx) => (
-                    <div
-                      key={p.identity + idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-card/40 border border-border/40 hover:bg-card/75 transition-colors gap-2"
-                    >
-                      <div className="flex items-center gap-2 truncate min-w-0">
-                        <Avatar className="h-7 w-7 border border-primary/20 shrink-0">
-                          <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
-                            {p.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="truncate flex flex-col leading-tight min-w-0">
-                          <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-                          <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-semibold">
-                            {p.isHost ? "Host" : p.isCoHost ? "Co-Host" : "Trader"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Status Indicator */}
-                        {p.isMicOn ? (
-                          <span title="Microphone Active">
-                            <Mic className="w-3.5 h-3.5 text-primary animate-pulse" />
-                          </span>
-                        ) : (
-                          <span title="Microphone Muted">
-                            <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" />
-                          </span>
-                        )}
-
-                        {/* Telegram style Individual Voice Volume Slider (10% - 100%) */}
-                        {!p.isLocal && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-1.5 text-[10px] font-bold gap-1 text-muted-foreground hover:text-foreground bg-card/60 border border-border/40 rounded-md shrink-0"
-                                title={`Adjust ${p.name}'s voice volume (${userVolumes[p.identity] ?? 100}%)`}
-                              >
-                                {(userVolumes[p.identity] ?? 100) === 0 ? (
-                                  <VolumeX className="w-3 h-3 text-destructive" />
-                                ) : (userVolumes[p.identity] ?? 100) < 50 ? (
-                                  <Volume1 className="w-3 h-3 text-amber-400" />
-                                ) : (
-                                  <Volume2 className="w-3 h-3 text-emerald-400" />
-                                )}
-                                <span>{userVolumes[p.identity] ?? 100}%</span>
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              container={stageRef.current}
-                              className="w-56 p-3 bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl z-[9999]"
-                              align="end"
-                            >
-                              <div className="space-y-2.5">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="font-bold text-foreground truncate max-w-[120px]">
-                                    {p.name} Voice
-                                  </span>
-                                  <span className="font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">
-                                    {userVolumes[p.identity] ?? 100}%
-                                  </span>
-                                </div>
-                                <Slider
-                                  min={10}
-                                  max={100}
-                                  step={5}
-                                  value={[userVolumes[p.identity] ?? 100]}
-                                  onValueChange={(vals) => handleParticipantVolumeChange(p.identity, vals[0])}
-                                  className="w-full cursor-pointer"
-                                />
-                                <div className="flex justify-between text-[9px] text-muted-foreground font-semibold pt-0.5">
-                                  <span>10%</span>
-                                  <span>50%</span>
-                                  <span>100%</span>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        )}
-
-                        {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
-                        {isHost && !p.isLocal && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => sendModerationCommand(p.isMicOn ? "mute" : "unmute", p.identity)}
-                            title={p.isMicOn ? "Mute user microphone" : "Unmute user microphone"}
-                            className="h-6 w-6 rounded-full hover:bg-neutral-800/80 text-muted-foreground hover:text-foreground"
-                          >
-                            {p.isMicOn ? (
-                              <MicOff className="w-3 h-3 text-destructive" />
-                            ) : (
-                              <Mic className="w-3 h-3 text-primary" />
-                            )}
-                          </Button>
-                        )}
+              <ScrollArea className="flex-1 p-4 space-y-3">
+                {[
+                  {
+                    identity: localParticipant.identity,
+                    name: localParticipant.name || "Host",
+                    isHost: isHost,
+                    isCoHost: isHostOrCoHost && !isHost,
+                    isLocal: true,
+                    isMicOn: isMicOn,
+                  },
+                  ...remoteParticipants.map((p) => {
+                    const isCo = sessionData?.coHosts?.some(
+                      (ch: any) => ch.email === p.identity || ch._id === p.identity
+                    );
+                    return {
+                      identity: p.identity,
+                      name: p.name || p.identity,
+                      isHost: false,
+                      isCoHost: !!isCo,
+                      isLocal: false,
+                      isMicOn: p.isMicrophoneEnabled,
+                    };
+                  }),
+                ].map((p, idx) => (
+                  <div
+                    key={p.identity + idx}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-card/40 border border-border/40 hover:bg-card/75 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Avatar className="h-7 w-7 border border-primary/20 shrink-0">
+                        <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
+                          {p.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="truncate flex flex-col leading-tight">
+                        <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-semibold">
+                          {p.isHost ? "Host" : p.isCoHost ? "Co-Host" : "Viewer"}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Status Indicator */}
+                      {p.isMicOn ? (
+                        <span title="Microphone Active">
+                          <Mic className="w-3.5 h-3.5 text-primary animate-pulse" />
+                        </span>
+                      ) : (
+                        <span title="Microphone Muted">
+                          <MicOff className="w-3.5 h-3.5 text-muted-foreground/60" />
+                        </span>
+                      )}
+
+                      {/* Telegram style Individual Voice Volume Slider (10% - 100%) */}
+                      {!p.isLocal && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[10px] font-bold gap-1 text-muted-foreground hover:text-foreground bg-card/60 border border-border/40 rounded-md shrink-0"
+                              title={`Adjust ${p.name}'s voice volume (${userVolumes[p.identity] ?? 100}%)`}
+                            >
+                              {(userVolumes[p.identity] ?? 100) === 0 ? (
+                                <VolumeX className="w-3 h-3 text-destructive" />
+                              ) : (userVolumes[p.identity] ?? 100) < 50 ? (
+                                <Volume1 className="w-3 h-3 text-amber-400" />
+                              ) : (
+                                <Volume2 className="w-3 h-3 text-emerald-400" />
+                              )}
+                              <span>{userVolumes[p.identity] ?? 100}%</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent container={stageRef.current} className="w-56 p-3 bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl z-[9999]" align="end">
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-foreground truncate max-w-[120px]">{p.name} Voice</span>
+                                <span className="font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">
+                                  {userVolumes[p.identity] ?? 100}%
+                                </span>
+                              </div>
+                              <Slider
+                                min={10}
+                                max={100}
+                                step={5}
+                                value={[userVolumes[p.identity] ?? 100]}
+                                onValueChange={(vals) => handleParticipantVolumeChange(p.identity, vals[0])}
+                                className="w-full cursor-pointer"
+                              />
+                              <div className="flex justify-between text-[9px] text-muted-foreground font-semibold pt-0.5">
+                                <span>10%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+
+                      {/* Remote Mute Action Trigger (Visible to Host on all remote participants) */}
+                      {isHost && !p.isLocal && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => sendModerationCommand(p.isMicOn ? "mute" : "unmute", p.identity)}
+                          title={p.isMicOn ? "Mute user microphone" : "Unmute user microphone"}
+                          className="h-6 w-6 rounded-full hover:bg-neutral-800/80 text-muted-foreground hover:text-foreground"
+                        >
+                          {p.isMicOn ? (
+                            <MicOff className="w-3 h-3 text-destructive" />
+                          ) : (
+                            <Mic className="w-3 h-3 text-primary" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+
+                  </div>
+                ))}
               </ScrollArea>
             </div>
           )}
